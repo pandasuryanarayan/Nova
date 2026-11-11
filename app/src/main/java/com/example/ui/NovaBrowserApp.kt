@@ -54,6 +54,11 @@ import com.example.ui.components.VideoLongPressBottomSheet
 import com.example.ui.theme.NovaBrowserTheme
 import com.example.viewmodel.BrowserViewModel
 
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.ui.components.TopWebsiteHeaderBar
+
 @Composable
 fun NovaBrowserApp(
     viewModel: BrowserViewModel
@@ -68,6 +73,7 @@ fun NovaBrowserApp(
 
     val activeTab = uiState.activeTab
     val isBookmarked = bookmarks.any { it.url == activeTab.url }
+    var cookieRefreshTick by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         viewModel.toastEvents.collect { message ->
@@ -161,17 +167,37 @@ fun NovaBrowserApp(
             Scaffold(
                 contentWindowInsets = WindowInsets.safeDrawing,
                 topBar = {
-                    AnimatedVisibility(visible = uiState.isFindInPageVisible) {
-                        FindInPageTopBar(
-                            query = uiState.findQuery,
-                            activeOrdinal = uiState.findActiveOrdinal,
-                            totalMatches = uiState.findTotalMatches,
-                            onQueryChange = viewModel::updateFindQuery,
-                            onFindNext = { viewModel.findNext(true) },
-                            onFindPrev = { viewModel.findNext(false) },
-                            onClose = viewModel::closeFindInPage,
-                            modifier = Modifier.statusBarsPadding()
-                        )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // Top Bar shown whenever a website is opened: Lock + Website Title + Falldown Link Button
+                        AnimatedVisibility(visible = !activeTab.isHomePage) {
+                            TopWebsiteHeaderBar(
+                                activeTab = activeTab,
+                                onSslIconClick = {
+                                    viewModel.setActiveSheet(ActiveSheet.SSL_INFO_DIALOG)
+                                },
+                                onSubmitUrlOrSearch = viewModel::loadUrlOrSearch,
+                                onCopyUrlClick = { url ->
+                                    copyTextToClipboard(context, "Website Link", url)
+                                    viewModel.emitToast("Website link copied to clipboard")
+                                },
+                                onShareUrlClick = { title, url ->
+                                    shareUrl(context, title, url)
+                                }
+                            )
+                        }
+
+                        AnimatedVisibility(visible = uiState.isFindInPageVisible) {
+                            FindInPageTopBar(
+                                query = uiState.findQuery,
+                                activeOrdinal = uiState.findActiveOrdinal,
+                                totalMatches = uiState.findTotalMatches,
+                                onQueryChange = viewModel::updateFindQuery,
+                                onFindNext = { viewModel.findNext(true) },
+                                onFindPrev = { viewModel.findNext(false) },
+                                onClose = viewModel::closeFindInPage,
+                                modifier = if (activeTab.isHomePage) Modifier.statusBarsPadding() else Modifier
+                            )
+                        }
                     }
                 },
                 bottomBar = {
@@ -447,8 +473,30 @@ fun NovaBrowserApp(
             }
 
             ActiveSheet.SSL_INFO_DIALOG -> {
+                val certDetails = remember(activeTab.id, activeTab.url, activeTab.isLoading) {
+                    viewModel.webViewPool.getSslCertificateDetails(activeTab)
+                }
+                val siteCookies = remember(activeTab.id, activeTab.url, activeTab.isLoading, cookieRefreshTick) {
+                    viewModel.webViewPool.getSiteCookies(activeTab.url)
+                }
                 SslSecurityInfoDialog(
                     tab = activeTab,
+                    certificateDetails = certDetails,
+                    siteCookies = siteCookies,
+                    isAdBlockEnabled = preferences.isAdBlockEnabled,
+                    isDarkMode = preferences.isDarkMode,
+                    onToggleAdBlock = viewModel::toggleAdBlock,
+                    onToggleDesktopMode = viewModel::toggleDesktopMode,
+                    onToggleDarkMode = viewModel::toggleDarkMode,
+                    onCopyText = { label, text ->
+                        copyTextToClipboard(context, label, text)
+                        viewModel.emitToast("$label copied to clipboard")
+                    },
+                    onClearSiteCookies = {
+                        viewModel.webViewPool.clearSiteCookies(activeTab.url)
+                        cookieRefreshTick++
+                        viewModel.emitToast("Site cookies cleared")
+                    },
                     onDismiss = viewModel::dismissSheet
                 )
             }

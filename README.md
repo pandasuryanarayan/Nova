@@ -16,8 +16,8 @@ The latest signed, R8-minified release APK is included directly in this reposito
 - **Direct APK in Repo**: [`releases/v3.0/NovaBrowser-v3.0-release.apk`](releases/v3.0/NovaBrowser-v3.0-release.apk)
 - **Release Notes**: [`releases/v3.0/RELEASE_NOTES.md`](releases/v3.0/RELEASE_NOTES.md)
 - **Version Name / Code**: `v3.0` (`versionCode = 3`, `versionName = "3.0"`)
-- **Size**: `3.02 MB` (`3,165,740 bytes`)
-- **SHA-256**: `ad26508a82480ad6bacc39f7de70aeb5d5d79f7ddd8917c659b58515179acada`
+- **Size**: `3.05 MB` (`3,198,508 bytes`)
+- **SHA-256**: `71ff01d9903218e3cb0077c0c0529d09fc26ebca8d606d53672dfd8a1acfe03a`
 
 ---
 

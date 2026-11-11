@@ -89,6 +89,22 @@ data class BlockedAdEntry(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+data class SslCertificateDetails(
+    val isSecure: Boolean = true,
+    val summary: String = "Verified Secure Connection",
+    val issuedToCommonName: String = "",
+    val issuedToOrganization: String = "",
+    val issuedToOrganizationalUnit: String = "",
+    val issuedByCommonName: String = "",
+    val issuedByOrganization: String = "",
+    val issuedByOrganizationalUnit: String = "",
+    val validFrom: String = "",
+    val validUntil: String = "",
+    val sha256Fingerprint: String = "",
+    val serialNumber: String = "",
+    val protocol: String = "TLS 1.3 / HTTPS"
+)
+
 data class BrowserTab(
     val id: String = UUID.randomUUID().toString(),
     val url: String = NOVA_HOME_URL,

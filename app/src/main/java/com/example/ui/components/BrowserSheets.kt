@@ -1285,43 +1285,729 @@ fun AddShortcutDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SslSecurityInfoDialog(
     tab: BrowserTab,
+    certificateDetails: com.example.data.SslCertificateDetails,
+    siteCookies: List<Pair<String, String>>,
+    isAdBlockEnabled: Boolean,
+    isDarkMode: Boolean,
+    onToggleAdBlock: () -> Unit,
+    onToggleDesktopMode: () -> Unit,
+    onToggleDarkMode: () -> Unit,
+    onCopyText: (label: String, text: String) -> Unit,
+    onClearSiteCookies: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Tabs: "CERTIFICATE", "COOKIES", "CONFIG"
+    var selectedSection by remember { mutableStateOf("CERTIFICATE") }
+
+    val domain = BrowserUrlUtils.extractDomain(tab.url).ifBlank { tab.url }
+
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = if (tab.isSecureSsl) Icons.Filled.Lock else Icons.Filled.Warning,
-                contentDescription = null,
-                tint = if (tab.isSecureSsl) Color(0xFF00E676) else Color(0xFFFFB300)
-            )
-        },
-        title = {
-            Text(if (tab.isSecureSsl) "Connection is Secure" else "Connection Not Secure")
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = tab.sslSummary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 20.dp)
+                .testTag("ssl_security_info_sheet")
+        ) {
+            // Top Header: Lock Status + Website Title & Domain
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = if (tab.isSecureSsl) {
+                        Color(0xFF00E676).copy(alpha = 0.16f)
+                    } else {
+                        Color(0xFFFFB300).copy(alpha = 0.18f)
+                    },
+                    modifier = Modifier.size(46.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (tab.isSecureSsl) Icons.Filled.Lock else Icons.Filled.Warning,
+                            contentDescription = null,
+                            tint = if (tab.isSecureSsl) Color(0xFF00E676) else Color(0xFFFFB300),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (tab.isSecureSsl) "Connection is Secure" else "Connection Not Secure",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (tab.isSecureSsl) Color(0xFF00E676) else Color(0xFFFFB300)
+                    )
+                    Text(
+                        text = tab.title.ifBlank { domain },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = domain,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close Site Security Sheet"
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 3 Option Selector Cards: View Certificate | Available Cookies | Site Configuration
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LockSectionSelectorCard(
+                    title = "Certificate",
+                    subtitle = if (tab.isSecureSsl) "Valid X.509" else "HTTP Only",
+                    isSelected = selectedSection == "CERTIFICATE",
+                    onClick = { selectedSection = "CERTIFICATE" },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("lock_tab_certificate")
                 )
+
+                LockSectionSelectorCard(
+                    title = "Cookies",
+                    subtitle = "${siteCookies.size} available",
+                    isSelected = selectedSection == "COOKIES",
+                    onClick = { selectedSection = "COOKIES" },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("lock_tab_cookies")
+                )
+
+                LockSectionSelectorCard(
+                    title = "Site Config",
+                    subtitle = "Active settings",
+                    isSelected = selectedSection == "CONFIG",
+                    onClick = { selectedSection = "CONFIG" },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("lock_tab_site_config")
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            when (selectedSection) {
+                "CERTIFICATE" -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "SSL / TLS CERTIFICATE OVERVIEW",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    CertificateFieldRow("Status", certificateDetails.summary)
+                                    CertificateFieldRow("Protocol", certificateDetails.protocol)
+                                    CertificateFieldRow("Serial Number", certificateDetails.serialNumber)
+                                }
+                            }
+                        }
+
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "ISSUED TO (SUBJECT)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    CertificateFieldRow("Common Name (CN)", certificateDetails.issuedToCommonName)
+                                    CertificateFieldRow("Organization (O)", certificateDetails.issuedToOrganization)
+                                    CertificateFieldRow("Organizational Unit (OU)", certificateDetails.issuedToOrganizationalUnit)
+                                }
+                            }
+                        }
+
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "ISSUED BY (CERTIFICATE AUTHORITY)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    CertificateFieldRow("Common Name (CN)", certificateDetails.issuedByCommonName)
+                                    CertificateFieldRow("Organization (O)", certificateDetails.issuedByOrganization)
+                                    CertificateFieldRow("Organizational Unit (OU)", certificateDetails.issuedByOrganizationalUnit)
+                                }
+                            }
+                        }
+
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "VALIDITY PERIOD & SHA-256 FINGERPRINT",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    CertificateFieldRow("Issued On", certificateDetails.validFrom)
+                                    CertificateFieldRow("Expires On", certificateDetails.validUntil)
+                                    CertificateFieldRow("SHA-256 Fingerprint", certificateDetails.sha256Fingerprint)
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.End,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        TextButton(
+                                            onClick = {
+                                                val certSummaryText = buildString {
+                                                    appendLine("Domain: $domain")
+                                                    appendLine("Issued To: ${certificateDetails.issuedToCommonName} (${certificateDetails.issuedToOrganization})")
+                                                    appendLine("Issued By: ${certificateDetails.issuedByCommonName} (${certificateDetails.issuedByOrganization})")
+                                                    appendLine("Valid From: ${certificateDetails.validFrom}")
+                                                    appendLine("Valid Until: ${certificateDetails.validUntil}")
+                                                    append("SHA-256: ${certificateDetails.sha256Fingerprint}")
+                                                }
+                                                onCopyText("Certificate Details", certSummaryText)
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.ContentCopy,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Copy Certificate Info")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "COOKIES" -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp)
+                        ) {
+                            Text(
+                                text = "AVAILABLE SITE COOKIES (${siteCookies.size})",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            if (siteCookies.isNotEmpty()) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    TextButton(
+                                        onClick = {
+                                            val allCookiesStr = siteCookies.joinToString("; ") { "${it.first}=${it.second}" }
+                                            onCopyText("Site Cookies", allCookiesStr)
+                                        }
+                                    ) {
+                                        Text("Copy All", style = MaterialTheme.typography.labelMedium)
+                                    }
+                                    TextButton(
+                                        onClick = onClearSiteCookies,
+                                        modifier = Modifier.testTag("clear_site_cookies_button")
+                                    ) {
+                                        Text(
+                                            text = "Clear Cookies",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (siteCookies.isEmpty()) {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(24.dp)
+                                ) {
+                                    Text(
+                                        text = "No Cookies Stored for This Page",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = if (tab.isIncognito) {
+                                            "Incognito Mode is active — persistent cookies are blocked."
+                                        } else {
+                                            "This website has not set any readable HTTP/JS cookies in your current session."
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(siteCookies, key = { it.first }) { (cookieName, cookieValue) ->
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(
+                                                width = 1.dp,
+                                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = cookieName,
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontFamily = FontFamily.Monospace,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = cookieValue.ifBlank { "(empty)" },
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontFamily = FontFamily.Monospace,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    maxLines = 3,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = {
+                                                    onCopyText("Cookie $cookieName", "$cookieName=$cookieValue")
+                                                },
+                                                modifier = Modifier.size(34.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.ContentCopy,
+                                                    contentDescription = "Copy Cookie",
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "CONFIG" -> {
+                    val cookiesEnabled = !tab.isIncognito
+                    val domStorageEnabled = !tab.isIncognito
+                    val httpsEnabled = tab.isSecureSsl
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
+                            Text(
+                                text = "SITE CONFIGURATION & ENABLED CAPABILITIES",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+                        }
+
+                        item {
+                            SiteConfigToggleItem(
+                                title = "Ad-Block Shield",
+                                subtitle = if (isAdBlockEnabled) {
+                                    "Blocking intrusive ads & trackers (${tab.adsBlockedInTab} blocked on this page)"
+                                } else {
+                                    "Ad-blocking is currently disabled"
+                                },
+                                isEnabled = isAdBlockEnabled,
+                                onToggle = onToggleAdBlock
+                            )
+                        }
+
+                        item {
+                            SiteConfigToggleItem(
+                                title = "Desktop Site Mode (1280px Viewport)",
+                                subtitle = if (tab.isDesktopMode) {
+                                    "Rendering full 1280px desktop layout & Desktop User-Agent"
+                                } else {
+                                    "Rendering standard responsive mobile layout"
+                                },
+                                isEnabled = tab.isDesktopMode,
+                                onToggle = onToggleDesktopMode
+                            )
+                        }
+
+                        item {
+                            SiteConfigToggleItem(
+                                title = "Dark Mode Web Hint",
+                                subtitle = if (isDarkMode) {
+                                    "Injecting prefers-color-scheme: dark for dark-aware websites"
+                                } else {
+                                    "Using standard light color scheme"
+                                },
+                                isEnabled = isDarkMode,
+                                onToggle = onToggleDarkMode
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "JavaScript Engine (V8)",
+                                subtitle = "Interactive scripts & dynamic web applications",
+                                isEnabled = true
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "HTTPS / TLS Encryption",
+                                subtitle = if (httpsEnabled) "Encrypted TLS connection active" else "Plaintext HTTP connection",
+                                isEnabled = httpsEnabled
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "Cookies & Session Data",
+                                subtitle = if (cookiesEnabled) {
+                                    "First-party & third-party cookies allowed (${siteCookies.size} stored)"
+                                } else {
+                                    "Isolated in Incognito Mode (not saved to disk)"
+                                },
+                                isEnabled = cookiesEnabled
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "DOM Storage (localStorage / IndexedDB)",
+                                subtitle = if (domStorageEnabled) {
+                                    "Web storage enabled for offline & site state"
+                                } else {
+                                    "Disabled in Incognito sandbox"
+                                },
+                                isEnabled = domStorageEnabled
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "Automatic Image & Media Loading",
+                                subtitle = "WebP, PNG, SVG, and HTML5 <video> streams enabled",
+                                isEnabled = true
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "Long-Press MP4 Video Sniffer",
+                                subtitle = "Detects downloadable HTML5 video streams on this page",
+                                isEnabled = true
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "Pinch-to-Zoom & Wide Viewport",
+                                subtitle = "Text Zoom set to ${tab.textZoom}% • Multi-touch zoom enabled",
+                                isEnabled = true
+                            )
+                        }
+
+                        item {
+                            SiteConfigStatusItem(
+                                title = "Incognito Private Sandbox",
+                                subtitle = if (tab.isIncognito) {
+                                    "Active — history and site storage are wiped on close"
+                                } else {
+                                    "Normal browsing tab"
+                                },
+                                isEnabled = tab.isIncognito
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LockSectionSelectorCard(
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        },
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() }
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                },
+                shape = RoundedCornerShape(14.dp)
+            )
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun CertificateFieldRow(label: String, value: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value.ifBlank { "N/A" },
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun SiteConfigToggleItem(
+    title: String,
+    subtitle: String,
+    isEnabled: Boolean,
+    onToggle: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onToggle() }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isEnabled) {
+                            Color(0xFF00E676).copy(alpha = 0.16f)
+                        } else {
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        }
+                    ) {
+                        Text(
+                            text = if (isEnabled) "ENABLED" else "DISABLED",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isEnabled) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "URL: ${tab.url}",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK")
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = { onToggle() }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SiteConfigStatusItem(
+    title: String,
+    subtitle: String,
+    isEnabled: Boolean
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = if (isEnabled) {
+                    Color(0xFF00E676).copy(alpha = 0.16f)
+                } else {
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                }
+            ) {
+                Text(
+                    text = if (isEnabled) "ENABLED" else "DISABLED",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isEnabled) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
             }
         }
-    )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

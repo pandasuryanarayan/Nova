@@ -5,14 +5,16 @@
 - **Package ID**: `com.aistudio.novabrowser.xkvpzr`
 - **Min / Target SDK**: API 24 (Android 7.0) – API 36 (Android 16)
 - **Signed Release APK**: `NovaBrowser-v3.0-release.apk`
-- **Compressed Size**: `3.02 MB` (`3,165,740 bytes`)
-- **SHA-256 Checksum**: `ad26508a82480ad6bacc39f7de70aeb5d5d79f7ddd8917c659b58515179acada`
+- **Compressed Size**: `3.05 MB` (`3,198,508 bytes`)
+- **SHA-256 Checksum**: `71ff01d9903218e3cb0077c0c0529d09fc26ebca8d606d53672dfd8a1acfe03a`
 
 ## What's New in v3.0
-1. **Clean, Streamlined Architecture (VPN-Free Build)**:
+1. **Dual-Bar Website Layout (Top Website Header + Bottom Action Toolbar)**:
+   - **Top Bar**: Shows the **Lock** button, the **Website Title** (set by the website), and a **Dropdown Link Button** that opens a smooth fall-down panel displaying the full website link (and vanishes when clicked again).
+   - **Lock Inspector Sheet**: Clicking the Lock icon opens a 3-tab inspector to view the **Page SSL/TLS Certificate**, **Available Site Cookies**, and **Site Configuration** (showing all enabled capabilities & toggles).
+   - **Bottom Toolbar**: Dedicated 7-button bar with **Back (Left Arrow)**, **Home**, **Inspect (DevTools)**, **Video Detector**, **Refresh/Stop**, **Tab View**, and **3-Dot Menu**.
+2. **Clean, Streamlined Architecture (VPN-Free Build)**:
    - Removed all VPN services, background tunnels, and permissions for a faster, lighter ~3.0 MB R8-minified binary.
-2. **Expanded Wide Bottom Search & Address Bar**:
-   - Reclaimed horizontal space in the bottom navigation bar to provide a wider, more comfortable search/URL pill (`46dp` height) with `40dp` navigation buttons.
 3. **True 1280px Desktop Site Mode**:
    - Full desktop User-Agent (`X11; Linux x86_64`), `navigator.platform` spoofing, and `width=1280` viewport emulation.
 4. **Ad-Block Shield & Detailed Blocked Ads Log**:
