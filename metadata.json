@@ -1,0 +1,6 @@
+{
+  "name": "Nova Browser",
+  "description": "Fast, privacy-first Android web browser with multi-tab browsing, ad-blocking, incognito mode, and a smart long-press direct MP4 video downloader.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

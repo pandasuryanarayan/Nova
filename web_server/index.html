@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download Nova Browser Release APK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B1021;
+      --surface: #131B33;
+      --surface-variant: #1C2747;
+      --primary: #00E5FF;
+      --primary-dark: #00B8D4;
+      --secondary: #8C62FF;
+      --emerald: #00E676;
+      --text: #F3F6FF;
+      --text-muted: #9EABC9;
+      --outline: rgba(0, 229, 255, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(140, 98, 255, 0.16) 0%, transparent 50%);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .portal-card {
+      width: 100%;
+      max-width: 540px;
+      background: rgba(19, 27, 51, 0.92);
+      border: 1px solid var(--outline);
+      border-radius: 28px;
+      padding: 32px 26px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px rgba(0, 229, 255, 0.08);
+      backdrop-filter: blur(16px);
+      text-align: center;
+    }
+
+    .app-icon-wrapper {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 18px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 2px solid rgba(0, 229, 255, 0.45);
+      box-shadow: 0 10px 28px rgba(0, 229, 255, 0.22);
+      background: #0B1021;
+    }
+
+    .app-icon-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .verified-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 230, 118, 0.14);
+      border: 1px solid rgba(0, 230, 118, 0.4);
+      color: var(--emerald);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      color: #FFFFFF;
+    }
+
+    .subtitle {
+      font-size: 14.5px;
+      line-height: 1.55;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .spec-box {
+      background: var(--surface-variant);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+
+    .spec-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .spec-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--primary);
+      word-break: break-all;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 17px 24px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary) 0%, #00B0FF 50%, var(--secondary) 100%);
+      color: #04131A;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 12px 30px rgba(0, 229, 255, 0.32);
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+      margin-bottom: 14px;
+    }
+
+    .download-btn:hover, .download-btn:active {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(0, 229, 255, 0.45);
+    }
+
+    .feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tag {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+
+    .sha-box {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <main class="portal-card">
+    <div class="app-icon-wrapper">
+      <img src="ic_launcher.png" alt="Nova Browser Icon" />
+    </div>
+
+    <div class="verified-pill">
+      <span>●</span> Signed Release APK • Ready to Install
+    </div>
+
+    <h1>Nova Browser</h1>
+    <p class="subtitle">
+      Fast, lightweight Android web browser with an <strong>Expanded Wide Search Bar</strong>, <strong>True 1280px Desktop Site Mode</strong>, <strong>Detailed Blocked Ads Inspector Log</strong>, <strong>Desktop DevTools</strong>, and <strong>Long-Press MP4 Video Downloader</strong>.
+    </p>
+
+    <div class="specs-grid">
+      <div class="spec-box">
+        <div class="spec-label">Compressed APK Size</div>
+        <div class="spec-value" id="apk-size-val">3.0 MB (3,165,740 B)</div>
+      </div>
+      <div class="spec-box">
+        <div class="spec-label">Version &amp; SDK</div>
+        <div class="spec-value">v3.0 Release (R8) • API 24–36</div>
+      </div>
+      <div class="spec-box">
+        <div class="spec-label">Package ID</div>
+        <div class="spec-value">com.aistudio.novabrowser.xkvpzr</div>
+      </div>
+      <div class="spec-box">
+        <div class="spec-label">Ad-Block Shield</div>
+        <div class="spec-value">Full Blocked Ads Log</div>
+      </div>
+    </div>
+
+    <a class="download-btn" href="NovaBrowser-release.apk?v=3.0" download="NovaBrowser-release.apk">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download Fresh Signed v3.0 Release APK (3.0 MB)
+    </a>
+
+    <div class="sha-box" id="sha-box">
+      Direct File: <strong>NovaBrowser-release.apk (v3.0)</strong> • SHA-256: ad26508a8248...58515179acada
+    </div>
+
+    <div class="feature-tags">
+      <span class="tag">Wide Bottom Search Bar</span>
+      <span class="tag">True 1280px Desktop Site Mode</span>
+      <span class="tag">Detailed Blocked Ads List &amp; Rules</span>
+      <span class="tag">Desktop DevTools (Elements, Sources, Console, Network)</span>
+      <span class="tag">Long-Press MP4 Video Downloader</span>
+    </div>
+  </main>
+</body>
+</html>

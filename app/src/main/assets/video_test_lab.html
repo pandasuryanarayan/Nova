@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova Video Test Lab</title>
+  <style>
+    :root {
+      --bg: #0B1021;
+      --card: #151C33;
+      --border: #263259;
+      --accent: #00E5FF;
+      --violet: #7C4DFF;
+      --text: #F2F5FF;
+      --muted: #9BA7C9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 18px 16px 80px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      background: rgba(0, 229, 255, 0.14);
+      color: var(--accent);
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    p.lead {
+      margin: 0 0 18px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    }
+    .card h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      color: #fff;
+    }
+    .card p {
+      margin: 0 0 10px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    video {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+      display: block;
+    }
+    .links-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .links-row a {
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: rgba(124, 77, 255, 0.18);
+      border: 1px solid rgba(124, 77, 255, 0.45);
+      color: #E2D9FF;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    iframe {
+      width: 100%;
+      height: 200px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <span class="badge">Long-Press Test Suite</span>
+  <h1>Nova Video Downloader Lab</h1>
+  <p class="lead">
+    <strong>Long-press directly on any video player below</strong> (or any direct MP4 link) to open the custom Nova Video Downloader Bottom Sheet.
+  </p>
+
+  <!-- 1. Multi-Quality HTML5 Video (<source> tags) -->
+  <div class="card">
+    <h2>1. Multi-Quality MP4 Video (&lt;source&gt; tags)</h2>
+    <p>Contains 1080p, 720p, and 480p direct MP4 streams. Long-press the player to inspect &amp; choose quality.</p>
+    <video
+      controls
+      preload="metadata"
+      poster="https://peach.blender.org/wp-content/uploads/title_anouncement.jpg?x11217">
+      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" label="720p HD (Big Buck Bunny)" res="720" />
+      <source src="https://media.w3.org/2010/05/sintel/trailer.mp4" type="video/mp4" label="1080p FHD (Sintel Trailer)" res="1080" />
+      <source src="https://media.w3.org/2010/05/bunny/movie.mp4" type="video/mp4" label="480p SD (Bunny Clip)" res="480" />
+    </video>
+  </div>
+
+  <!-- 2. Direct Video File Anchor Links & Content-Type test -->
+  <div class="card">
+    <h2>2. Direct Video File Links (.mp4 / Content-Type)</h2>
+    <p>Long-press the video or any of the direct download links below:</p>
+    <video
+      controls
+      preload="metadata"
+      src="https://media.w3.org/2010/05/sintel/trailer.mp4">
+    </video>
+    <div class="links-row">
+      <a href="https://www.w3schools.com/html/mov_bbb.mp4">Direct MP4 (Big Buck Bunny)</a>
+      <a href="https://media.w3.org/2010/05/sintel/trailer.mp4">Direct MP4 (Sintel 1080p)</a>
+      <a href="https://www.w3schools.com/html/Include/mov_bbb.mp4?format=mp4">No-Ext Content-Type MP4</a>
+    </div>
+  </div>
+
+  <!-- 3. Video Inside Same-Origin Iframe -->
+  <div class="card">
+    <h2>3. Video Inside &lt;iframe&gt;</h2>
+    <p>Tests automatic detection of HTML5 video embedded inside an iframe.</p>
+    <iframe srcdoc="<!DOCTYPE html><html><body style='margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;'><video controls style='width:100%;height:100%;' src='https://www.w3schools.com/html/mov_bbb.mp4'></video></body></html>"></iframe>
+  </div>
+
+  <!-- 4. Protected / HLS Streaming Video Edge Case -->
+  <div class="card">
+    <h2>4. Protected / HLS Stream (.m3u8 / blob:)</h2>
+    <p>Long-pressing this player verifies that streaming/DRM videos trigger the protected stream warning toast and block downloading.</p>
+    <video
+      controls
+      preload="none"
+      src="blob:https://stream.novabrowser.local/f8a92c10-protected-hls-stream">
+      <source src="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" type="application/x-mpegURL" label="HLS Stream (.m3u8)" />
+    </video>
+  </div>
+</body>
+</html>

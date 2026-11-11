@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Nova Browser</string>
+    <string name="search_or_type_url">Search or type URL…</string>
+    <string name="incognito_mode_active">Incognito Mode • History &amp; cookies won\'t be saved</string>
+    <string name="streaming_protected_toast">This video is streaming / protected and cannot be downloaded</string>
+    <string name="download_video_mp4">Download Video (MP4)</string>
+    <string name="copy_video_link">Copy Video Link</string>
+    <string name="open_video_new_tab">Open Video in New Tab</string>
+    <string name="play_in_background">Play in Background</string>
+    <string name="tabs_title">Open Tabs</string>
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="history_title">Browsing History</string>
+    <string name="downloads_title">Downloads</string>
+    <string name="clear_browsing_data">Clear Browsing Data</string>
+    <string name="ad_blocker">Ad-Block Shield</string>
+    <string name="desktop_site">Desktop Mode</string>
+    <string name="find_in_page">Find in Page</string>
+    <string name="text_zoom">Text Zoom</string>
+    <string name="share_page">Share Page</string>
+    <string name="copy_link">Copy Link</string>
+</resources>
