@@ -1,6 +1,22 @@
 # Nova Browser
 
+![Version](https://img.shields.io/badge/version-v3.0-00E5FF?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Android%207.0%2B%20(API%2024--36)-00E676?style=flat-square)
+![APK Size](https://img.shields.io/badge/APK%20size-3.0%20MB%20(R8%20Signed)-8C62FF?style=flat-square)
+
 **Nova Browser** is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**. It features multi-tab browsing, Incognito mode, a real-time Ad-Block Shield with a detailed blocked-requests inspector log, true 1280px Desktop Site emulation, built-in Desktop DevTools (`Elements`, `Sources`, `Console`, `Network`, `Storage`), and a smart long-press MP4 video downloader powered by the Android System `DownloadManager`.
+
+---
+
+## 📦 Download Signed Release APK (`v3.0`)
+
+The latest signed, R8-minified release APK is included directly in this repository and automatically published to **GitHub Releases**:
+
+- **Direct APK in Repo**: [`releases/v3.0/NovaBrowser-v3.0-release.apk`](releases/v3.0/NovaBrowser-v3.0-release.apk)
+- **Release Notes**: [`releases/v3.0/RELEASE_NOTES.md`](releases/v3.0/RELEASE_NOTES.md)
+- **Version Name / Code**: `v3.0` (`versionCode = 3`, `versionName = "3.0"`)
+- **Size**: `3.02 MB` (`3,165,740 bytes`)
+- **SHA-256**: `ad26508a82480ad6bacc39f7de70aeb5d5d79f7ddd8917c659b58515179acada`
 
 ---
 
@@ -9,7 +25,7 @@
 ### 1. Multi-Tab & Private Incognito Browsing
 - **Pooled WebView Architecture**: Instant tab switching without reloading active pages.
 - **Incognito Mode**: Isolated private tabs where browsing history, cookies, and site data are never persisted to local storage.
-- **Ergonomic Bottom Address Bar**: Wide, thumb-friendly bottom search and URL bar with SSL security indicator, quick reader/shield badges, tab counter badge, and one-tap tools menu.
+- **Ergonomic Wide Bottom Address Bar**: Spacious, thumb-friendly bottom search and URL bar with SSL security indicator, quick reader/shield badges, tab counter badge, and one-tap tools menu.
 
 ### 2. Ad-Block Shield & Detailed Blocked Ads Inspector
 - **Real-Time Request Interception**: Blocks intrusive ad networks, tracking pixels, and analytics scripts at the `WebViewClient.shouldInterceptRequest` layer.
@@ -50,31 +66,36 @@
 ## 📂 Project Structure
 
 ```text
-app/src/main/java/com/example/
-├── MainActivity.kt                  # Edge-to-Edge Activity entry point
-├── browser/
-│   ├── AdBlockEngine.kt             # Domain/rule ad & tracker blocker
-│   ├── NovaDownloadHelper.kt        # Media metadata prober & System DownloadManager handoff
-│   └── NovaWebViewPool.kt           # Pooled WebView manager, JS bridges & Desktop Mode spoofing
-├── data/
-│   ├── BrowserModels.kt             # Tab, Media, Ad-Block, DevTools & UI state models
-│   ├── BrowserPreferences.kt        # DataStore preferences (Search engine, Ad-Block, Zoom)
-│   └── NovaDatabase.kt              # Room entities & DAOs (Bookmarks, History, Downloads)
-├── ui/
-│   ├── NovaBrowserApp.kt            # Root Compose screen, sheets & navigation handlers
-│   ├── components/
-│   │   ├── BottomBrowserBar.kt      # Wide bottom search/URL bar & navigation controls
-│   │   ├── BrowserMenuSheet.kt      # Browser tools, Desktop Mode toggle & Ad-Block shield
-│   │   ├── BrowserSheets.kt         # Tabs, Bookmarks, History, Downloads & Blocked Ads sheets
-│   │   ├── DevToolsSheet.kt         # In-app Desktop DevTools inspector
-│   │   ├── NovaHomeContent.kt       # Speed-dial home screen & privacy shield stats card
-│   │   └── VideoActionSheet.kt      # Long-press video preview & MP4 download sheet
-│   └── theme/
-│       ├── Color.kt                 # Midnight Sapphire & Electric Cyan palette
-│       ├── Theme.kt                 # Material 3 theme configuration
-│       └── Type.kt                  # Custom Google Fonts typography (Space Grotesk, Plus Jakarta Sans, JetBrains Mono)
-└── viewmodel/
-    └── BrowserViewModel.kt          # Central state holder for tabs, downloads, DevTools & persistence
+├── releases/v3.0/
+│   ├── NovaBrowser-v3.0-release.apk # Signed v3.0 Release APK (3.02 MB)
+│   └── RELEASE_NOTES.md             # Release v3.0 changelog & checksums
+├── .github/workflows/
+│   └── release.yml                  # Auto-publishes GitHub Release v3.0 on push
+└── app/src/main/java/com/example/
+    ├── MainActivity.kt              # Edge-to-Edge Activity entry point
+    ├── browser/
+    │   ├── AdBlockEngine.kt         # Domain/rule ad & tracker blocker
+    │   ├── NovaDownloadHelper.kt    # Media metadata prober & System DownloadManager handoff
+    │   └── NovaWebViewPool.kt       # Pooled WebView manager, JS bridges & Desktop Mode spoofing
+    ├── data/
+    │   ├── BrowserModels.kt         # Tab, Media, Ad-Block, DevTools & UI state models
+    │   ├── BrowserPreferences.kt    # DataStore preferences (Search engine, Ad-Block, Zoom)
+    │   └── NovaDatabase.kt          # Room entities & DAOs (Bookmarks, History, Downloads)
+    ├── ui/
+    │   ├── NovaBrowserApp.kt        # Root Compose screen, sheets & navigation handlers
+    │   ├── components/
+    │   │   ├── BottomBrowserBar.kt  # Wide bottom search/URL bar & navigation controls
+    │   │   ├── BrowserMenuSheet.kt  # Browser tools, Desktop Mode toggle & Ad-Block shield
+    │   │   ├── BrowserSheets.kt     # Tabs, Bookmarks, History, Downloads & Blocked Ads sheets
+    │   │   ├── DevToolsSheet.kt     # In-app Desktop DevTools inspector
+    │   │   ├── NovaHomeContent.kt   # Speed-dial home screen & privacy shield stats card
+    │   │   └── VideoActionSheet.kt  # Long-press video preview & MP4 download sheet
+    │   └── theme/
+    │       ├── Color.kt             # Midnight Sapphire & Electric Cyan palette
+    │       ├── Theme.kt             # Material 3 theme configuration
+    │       └── Type.kt              # Custom Google Fonts typography
+    └── viewmodel/
+        └── BrowserViewModel.kt      # Central state holder for tabs, downloads, DevTools & persistence
 ```
 
 ---
@@ -90,15 +111,11 @@ app/src/main/java/com/example/
 ```bash
 ./gradlew :app:assembleDebug
 ```
-The debug APK will be generated at:
-`app/build/outputs/apk/debug/app-debug.apk`
 
 ### Build Signed Release APK (R8 Minified)
 ```bash
 STORE_PASSWORD=android KEY_PASSWORD=android ./gradlew :app:assembleRelease
 ```
-The signed, R8-shrunk release APK (~3.0 MB) will be generated at:
-`app/build/outputs/apk/release/app-release.apk`
 
 ---
 
