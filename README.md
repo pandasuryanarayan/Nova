@@ -34,8 +34,13 @@ The latest signed, R8-minified release APK is included directly in this reposito
 - **Pooled WebView Architecture**: Instant tab switching without reloading active pages.
 - **Incognito Mode**: Isolated private tabs where browsing history, cookies, and site data are never persisted to local storage.
 
-### 3. Ad-Block Shield & Detailed Blocked Ads Inspector
-- **Real-Time Request Interception**: Blocks intrusive ad networks, tracking pixels, and analytics scripts at the `WebViewClient.shouldInterceptRequest` layer.
+### 3. Ad-Block Shield & Detailed Blocked Ads Inspector (58 Filter Rules)
+- **Multi-Layered Ad Protection (58 Rules Total)**:
+  - **40 Host-Level Filters**: Intercepts and blocks requests to major advertising, tracking, behavioral analytics, and pop-up networks (e.g., DoubleClick, AdSense, Google Syndication, AppNexus, Taboola, Outbrain, Criteo, ScorecardResearch, Rubicon, PubMatic, OpenX, PopAds, PropellerAds, Amazon AdSystem, TheTradeDesk, Teads, Hotjar, Clarity, and Facebook pixel trackers).
+  - **8 Path & Script Pattern Filters**: Intercepts generic ad server script paths, iframe wrappers, and tag loaders across any host (`/pagead/*`, `/ads/ga-audiences*`, `/adserver/*`, `/adframe*`, `*/ads.js`, `*/prebid*.js`, `*/gpt.js`, `*/adsbygoogle.js`).
+  - **10 Cosmetic DOM Hiding Rules**: Hides and collapses blank ad frames, auto-ads, and sponsored layout slots directly inside web page markup (`ins.adsbygoogle`, `[id^="div-gpt-ad"]`, `[id^="google_ads_iframe"]`, `[class*="ad-banner"]`, `[class*="ad-slot"]`, `[data-ad-client]`, etc.).
+- **Smart Anti-Bot & Search Engine Whitelist**: Automatically excludes core search and verification endpoints (Google search, reCAPTCHA, gstatic, Google accounts) so authentication flows and search results never trigger bot verification loops.
+- **Real-Time Request Interception**: Blocks requests seamlessly at the `WebViewClient.shouldInterceptRequest` layer before network bandwidth is consumed.
 - **Blocked Ads Inspector Sheet**: View the exact list of blocked ad URLs, domains, matched filter rules, and timestamps in real time, with one-tap copy or log clearing.
 
 ### 4. Smart Long-Press & Floating MP4 Video Downloader
