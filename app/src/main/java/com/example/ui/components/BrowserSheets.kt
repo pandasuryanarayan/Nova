@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Block
@@ -873,28 +874,34 @@ fun BrowserMenuSheet(
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 6.dp, vertical = 6.dp)
                             ) {
                                 Text(
-                                    text = if (mode == com.example.data.AdBlockMode.MINIMAL) "${mode.shortBadge} (Default)" else mode.shortBadge,
+                                    text = mode.shortBadge,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
                                     color = if (selected) {
                                         MaterialTheme.colorScheme.onPrimary
                                     } else {
                                         MaterialTheme.colorScheme.onSurface
                                     },
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                                 Text(
                                     text = "$ruleCount rules",
                                     style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
                                     color = if (selected) {
                                         MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f)
                                     } else {
                                         MaterialTheme.colorScheme.onSurfaceVariant
                                     },
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }

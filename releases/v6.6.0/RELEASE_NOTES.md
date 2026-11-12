@@ -34,5 +34,5 @@ Nova Browser now includes a **3-tier Ad-Blocker Shield** (`com.example.browser.A
 - **Application ID**: `com.suryatech.browser.nova`
 - **Version**: `6.6.0` (`versionCode = 12`)
 - **Size**: `2,507,848 bytes` (~2.39 MB)
-- **SHA-256**: `106e49a873987eb0850c16743f01d5182d4377e98e61064aea8be6f4d367b635`
+- **SHA-256**: `4fd5ff6ecf7db906d1e32a38336fc286f0dc87c415d54693347f2168c9601b54`
 - **Signing**: V1 + V2 + V3 Signed (`CN=SuryaTech, OU=Mobile, O=SuryaTech, L=Bengaluru, ST=KA, C=IN`)

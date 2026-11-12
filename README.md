@@ -204,7 +204,7 @@ A production-ready, R8-minified, resource-shrunk, signed release APK is pre-buil
 | **Version** | `6.6.0` (`versionCode = 12`) |
 | **Min / Target SDK** | `minSdk = 24` (Android 7.0) / `targetSdk = 36` |
 | **APK Size** | `2,507,848 bytes` (~2.39 MB) |
-| **SHA-256 Checksum** | `106e49a873987eb0850c16743f01d5182d4377e98e61064aea8be6f4d367b635` |
+| **SHA-256 Checksum** | `4fd5ff6ecf7db906d1e32a38336fc286f0dc87c415d54693347f2168c9601b54` |
 
 ---
 
