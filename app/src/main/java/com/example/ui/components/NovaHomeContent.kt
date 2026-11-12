@@ -114,93 +114,13 @@ fun NovaHomeContent(
             contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // 1. Top Status Bar Row (Ad-Block Shield Pill on Left + Incognito Toggle Pill on Right)
-            item(key = "top_status_row", contentType = "status_row") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Left: Ad-Block Shield Status Pill
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(
-                                color = Color(0xFF00E5FF).copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(50)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFF00E5FF).copy(alpha = 0.35f),
-                                shape = RoundedCornerShape(50)
-                            )
-                            .clickable { onOpenBlockedAds() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                            .testTag("home_blocked_ads_badge")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Shield,
-                            contentDescription = null,
-                            tint = Color(0xFF00E5FF),
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isAdBlockEnabled) {
-                                "$totalAdsBlocked Ads Blocked"
-                            } else {
-                                "Ad-Shield Off"
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-
-                    // Right: Incognito / Private Mode Toggle Pill
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(incognitoPillBg, RoundedCornerShape(50))
-                            .border(
-                                width = 1.dp,
-                                color = if (isIncognito) {
-                                    Color(0xFFD580FF).copy(alpha = 0.5f)
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                },
-                                shape = RoundedCornerShape(50)
-                            )
-                            .clickable { onToggleIncognito() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                            .testTag("home_incognito_toggle")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.VisibilityOff,
-                            contentDescription = "Toggle Incognito Mode",
-                            tint = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = if (isIncognito) "Incognito On" else "Incognito",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-
-            // 2. Chrome-Style Centric App Icon & Large Brand Identity + Middle Omnibox Search Bar
+            // 1. Chrome-Style Centric App Icon & Large Brand Identity + Middle Omnibox Search Bar + 2 Individual Split Buttons Below Search Bar
             item(key = "centric_brand_and_search", contentType = "brand_search") {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 10.dp, bottom = 4.dp)
+                        .padding(top = 20.dp, bottom = 4.dp)
                 ) {
                     // Concentric Glowing App Icon Badge
                     Box(
@@ -223,7 +143,7 @@ fun NovaHomeContent(
                             modifier = Modifier
                                 .size(72.dp)
                                 .clip(RoundedCornerShape(22.dp))
-                                .background( Color(0xFF0B1021), RoundedCornerShape(22.dp))
+                                .background(Color(0xFF0B1021), RoundedCornerShape(22.dp))
                                 .border(
                                     width = 1.5.dp,
                                     brush = Brush.linearGradient(
@@ -345,6 +265,97 @@ fun NovaHomeContent(
                             .fillMaxWidth()
                             .testTag("home_search_input")
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // One-Line 2 Individual Split Buttons Directly Below Search Bar:
+                    // [0 Ads Blocked]  |  [Incognito]
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left Individual Split Button: Ads Blocker Inspector
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    color = Color(0xFF00E5FF).copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = Color(0xFF00E5FF).copy(alpha = 0.38f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .clickable { onOpenBlockedAds() }
+                                .padding(horizontal = 12.dp)
+                                .testTag("home_blocked_ads_badge")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Shield,
+                                contentDescription = null,
+                                tint = Color(0xFF00E5FF),
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(modifier = Modifier.width(7.dp))
+                            Text(
+                                text = if (isAdBlockEnabled) {
+                                    "$totalAdsBlocked Ads Blocked"
+                                } else {
+                                    "Ad-Shield Off"
+                                },
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Right Individual Split Button: Incognito Mode Toggle
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(incognitoPillBg, RoundedCornerShape(16.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isIncognito) {
+                                        Color(0xFFD580FF).copy(alpha = 0.55f)
+                                    } else {
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                                    },
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .clickable { onToggleIncognito() }
+                                .padding(horizontal = 12.dp)
+                                .testTag("home_incognito_toggle")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.VisibilityOff,
+                                contentDescription = "Toggle Incognito Mode",
+                                tint = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(modifier = Modifier.width(7.dp))
+                            Text(
+                                text = if (isIncognito) "Incognito: ON" else "Incognito",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
 

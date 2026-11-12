@@ -284,7 +284,8 @@ fun NovaBrowserApp(
                                 onOpenBlockedAds = { viewModel.setActiveSheet(ActiveSheet.BLOCKED_ADS) },
                                 onToggleIncognito = viewModel::toggleIncognitoMode,
                                 onAddShortcutClick = { viewModel.setActiveSheet(ActiveSheet.ADD_SHORTCUT_DIALOG) },
-                                onDeleteShortcut = viewModel::deleteQuickShortcut
+                                onDeleteShortcut = viewModel::deleteQuickShortcut,
+                                modifier = if (!uiState.isFindInPageVisible) Modifier.statusBarsPadding() else Modifier
                             )
                         } else {
                             AndroidView(
