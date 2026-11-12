@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DarkMode
@@ -793,7 +794,7 @@ fun BrowserMenuSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 MenuQuickIconTile(
-                    icon = Icons.Filled.Bookmark,
+                    icon = Icons.Filled.Bookmarks,
                     label = "Bookmarks",
                     onClick = onOpenBookmarks,
                     testTag = "menu_bookmarks_button"

@@ -1,33 +1,34 @@
 # Nova Browser
 
-![Version](https://img.shields.io/badge/version-v5.0.0-00E5FF?style=flat-square)
+![Version](https://img.shields.io/badge/version-v6.0.0-00E5FF?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Android%207.0%2B%20(API%2024--36)-00E676?style=flat-square)
-![APK Size](https://img.shields.io/badge/APK%20size-3.05%20MB%20(R8%20Signed)-8C62FF?style=flat-square)
+![APK Size](https://img.shields.io/badge/APK%20size-2.36%20MB%20(R8%20Signed)-8C62FF?style=flat-square)
 ![License](https://img.shields.io/badge/license-GNU%20GPL%20v3.0-blue?style=flat-square)
 
-**Nova Browser** (`com.suryatech.browser.nova`) is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**, engineered to run smoothly even on budget Android devices. It features a clean 2-bar website layout (Top Website Title, Lock & 1-Tap Bookmark Bar with Fall-Down URL Drawer + Bottom 7-Action Toolbar), multi-tab & Incognito browsing, a real-time Ad-Block Shield with a detailed blocked-requests inspector log, true 1280px Desktop Site emulation, built-in Desktop DevTools (`Elements`, `Sources`, `Console`, `Network`), and a smart long-press MP4 video downloader powered by the Android System `DownloadManager`.
+**Nova Browser** (`com.suryatech.browser.nova`) is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**, engineered to run smoothly even on budget Android devices. It features a Chrome-style centric Home screen with a minimal bottom bar (Tab View & 3-Dot Menu only) and an on-demand 2-bar website layout (Top Website Title, Lock & 1-Tap Bookmark Bar with Fall-Down URL Drawer + Bottom 7-Action Toolbar with smooth Left-to-Right slide animation), multi-tab & Incognito browsing, a real-time Ad-Block Shield with a detailed blocked-requests inspector log, true 1280px Desktop Site emulation, built-in Desktop DevTools (`Elements`, `Sources`, `Console`, `Network`), and a smart long-press MP4 video downloader powered by the Android System `DownloadManager`.
 
 ---
 
-## 📦 Download Signed Release APK (`v5.0.0`)
+## 📦 Download Signed Release APK (`v6.0.0`)
 
 The latest signed, R8-minified release APK is included directly in this repository and automatically published to **GitHub Releases**:
 
-- **Direct APK in Repo**: [`releases/v5.0.0/NovaBrowser-v5.0.0-release.apk`](releases/v5.0.0/NovaBrowser-v5.0.0-release.apk)
-- **Release Notes**: [`releases/v5.0.0/RELEASE_NOTES.md`](releases/v5.0.0/RELEASE_NOTES.md)
+- **Direct APK in Repo**: [`releases/v6.0.0/NovaBrowser-v6.0.0-release.apk`](releases/v6.0.0/NovaBrowser-v6.0.0-release.apk)
+- **Release Notes**: [`releases/v6.0.0/RELEASE_NOTES.md`](releases/v6.0.0/RELEASE_NOTES.md)
 - **Package ID**: `com.suryatech.browser.nova`
-- **Version Name / Code**: `v5.0.0` (`versionCode = 5`, `versionName = "5.0.0"`)
-- **Size**: `3.05 MB` (`3,198,500 bytes`)
-- **SHA-256**: `ba98a4fb75fec3e68da204dca3e06a219100fdb950d5cbfdb3e05e45e8b9f094`
+- **Version Name / Code**: `v6.0.0` (`versionCode = 6`, `versionName = "6.0.0"`)
+- **Size**: `2.36 MB` (`2,475,080 bytes`)
+- **SHA-256**: `87d5f0cae20ce5ab53028d28a98562af670da2c523a4c3011a7bab96a0aec72b`
 
 ---
 
 ## ✨ Key Features
 
-### 1. Dual-Bar Website Layout, 1-Tap Bookmark & Lock Inspector
-- **Top Website Bar**: Shows the **Lock** icon, the **Website Title** (set by the website), a **1-Tap Bookmark Button** right next to the dropdown button, and a **Dropdown Link Button** (`▼`/`▲`) that opens a fall-down drawer with the full website link (and vanishes on re-click).
+### 1. Chrome-Style Centric Home & On-Demand Dual-Bar Website Layout
+- **Centric Home Screen**: Prominent centered Nova Browser app icon above a large `Nova Browser` title and middle search/URL omnibox bar. On the Home screen, the bottom bar stays minimal with only **Tab View (`[N]`)** and **3-Dot Menu**.
+- **Top Website Bar (On Demand)**: Shows the **Lock** icon, the **Website Title** (set by the website), a **1-Tap Bookmark Button** right next to the dropdown button, and a **Dropdown Link Button** (`▼`/`▲`) that opens a fall-down drawer with the full website link (and vanishes on re-click).
 - **Lock Inspector Sheet**: Clicking the Lock icon lets you inspect the **Page SSL/TLS Certificate**, view **Available Cookies** (`CookieManager`), and manage **Site Configuration** (showing all enabled settings & toggles).
-- **Bottom 7-Button Toolbar**: Dedicated bottom bar with **Back (Left Arrow)**, **Home**, **Inspect (DevTools)**, **Video Detector**, **Refresh/Stop**, **Tab View (`[N]`)**, and **3-Dot Menu**.
+- **Bottom Website Toolbar (Smooth Left-to-Right Slide)**: When a website opens, **Back (Left Arrow)**, **Home**, **Inspect (DevTools)**, **Video Detector**, and **Refresh/Stop** smoothly slide in from **Left to Right** alongside **Tab View (`[N]`)** and **3-Dot Menu**, and reverse-slide **Right to Left** when returning to the Home screen.
 
 ### 2. Multi-Tab & Private Incognito Browsing
 - **Pooled WebView Architecture**: Instant tab switching without reloading active pages.

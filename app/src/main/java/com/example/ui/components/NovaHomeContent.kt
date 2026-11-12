@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayCircleFilled
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.QuickShortcutEntity
 
@@ -85,9 +88,14 @@ fun NovaHomeContent(
     modifier: Modifier = Modifier
 ) {
     var homeSearchQuery by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
     val shortcutRows = remember(shortcuts) { shortcuts.chunked(4) }
     val incognitoPillBg by animateColorAsState(
-        targetValue = if (isIncognito) Color(0xFFD580FF).copy(alpha = 0.28f) else Color.White.copy(alpha = 0.14f),
+        targetValue = if (isIncognito) {
+            Color(0xFFD580FF).copy(alpha = 0.22f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
+        },
         animationSpec = tween(durationMillis = 160),
         label = "incognito_pill_bg"
     )
@@ -103,213 +111,241 @@ fun NovaHomeContent(
                 .fillMaxSize()
                 .widthIn(max = 640.dp)
                 .testTag("nova_home_screen"),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // 1. Lightweight Hero Banner Card
-            item(key = "hero_banner", contentType = "hero") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(168.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                            shape = RoundedCornerShape(24.dp)
-                        )
+            // 1. Top Status Bar Row (Ad-Block Shield Pill on Left + Incognito Toggle Pill on Right)
+            item(key = "top_status_row", contentType = "status_row") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_nova_hero_banner_1794331214681),
-                        contentDescription = "Nova Browser Hero Banner",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFF0B1021).copy(alpha = 0.35f),
-                                        Color(0xFF0B1021).copy(alpha = 0.88f)
-                                    )
-                                )
-                            )
-                    )
-
-                    // Top bar inside Hero: Brand + Incognito Pill
+                    // Left: Ad-Block Shield Status Pill
                     Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopCenter)
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                color = Color(0xFF00E5FF).copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(50)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFF00E5FF).copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(50)
+                            )
+                            .clickable { onOpenBlockedAds() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .testTag("home_blocked_ads_badge")
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                        shape = CircleShape
-                                    )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Shield,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                            Text(
-                                text = if (isIncognito) "NOVA PRIVATE" else "NOVA BROWSER",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(incognitoPillBg, RoundedCornerShape(50))
-                                .clickable { onToggleIncognito() }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                                .testTag("home_incognito_toggle")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.VisibilityOff,
-                                contentDescription = "Toggle Incognito Mode",
-                                tint = if (isIncognito) Color(0xFFF3C6FF) else Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (isIncognito) "Private" else "Incognito",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isIncognito) Color(0xFFF3C6FF) else Color.White
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Filled.Shield,
+                            contentDescription = null,
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isAdBlockEnabled) {
+                                "$totalAdsBlocked Ads Blocked"
+                            } else {
+                                "Ad-Shield Off"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                     }
 
-                    // Bottom stats inside Hero
+                    // Right: Incognito / Private Mode Toggle Pill
                     Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (isIncognito) {
-                                    "Zero-Trace Private Browsing"
+                            .clip(RoundedCornerShape(50))
+                            .background(incognitoPillBg, RoundedCornerShape(50))
+                            .border(
+                                width = 1.dp,
+                                color = if (isIncognito) {
+                                    Color(0xFFD580FF).copy(alpha = 0.5f)
                                 } else {
-                                    "Fast, Clean & Private Web"
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                 },
-                                style = MaterialTheme.typography.titleLarge,
-                                color = Color.White
+                                shape = RoundedCornerShape(50)
                             )
-                            Text(
-                                text = "Ad-Block Shield, Desktop Mode & Smart Video Saver",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFB9C6E4)
-                            )
-                        }
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF00E5FF).copy(alpha = 0.16f), RoundedCornerShape(12.dp))
-                                .border(
-                                    1.dp,
-                                    Color(0xFF00E5FF).copy(alpha = 0.4f),
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .clickable { onOpenBlockedAds() }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                .testTag("home_blocked_ads_badge")
-                        ) {
-                            Text(
-                                text = "$totalAdsBlocked",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF00E5FF)
-                            )
-                            Text(
-                                text = if (isAdBlockEnabled) "Ads Blocked • View" else "Shield Off",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White
-                            )
-                        }
+                            .clickable { onToggleIncognito() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .testTag("home_incognito_toggle")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.VisibilityOff,
+                            contentDescription = "Toggle Incognito Mode",
+                            tint = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = if (isIncognito) "Incognito On" else "Incognito",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }
 
-            // 2. Quick Search / Direct URL Input on Home
-            item(key = "home_search", contentType = "search") {
-                OutlinedTextField(
-                    value = homeSearchQuery,
-                    onValueChange = { homeSearchQuery = it },
-                    placeholder = {
-                        Text(
-                            text = "Search Google or type any website URL…",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    trailingIcon = {
-                        if (homeSearchQuery.isNotBlank()) {
-                            IconButton(
-                                onClick = {
-                                    onSearchOrLoadUrl(homeSearchQuery)
-                                    homeSearchQuery = ""
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.PlayCircleFilled,
-                                    contentDescription = "Go",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(18.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                    keyboardActions = KeyboardActions(
-                        onGo = {
-                            if (homeSearchQuery.isNotBlank()) {
-                                onSearchOrLoadUrl(homeSearchQuery)
-                                homeSearchQuery = ""
-                            }
-                        }
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
-                    ),
+            // 2. Chrome-Style Centric App Icon & Large Brand Identity + Middle Omnibox Search Bar
+            item(key = "centric_brand_and_search", contentType = "brand_search") {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("home_search_input")
-                )
+                        .padding(top = 10.dp, bottom = 4.dp)
+                ) {
+                    // Concentric Glowing App Icon Badge
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(88.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
+                                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f),
+                                        Color.Transparent
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(22.dp))
+                                .background( Color(0xFF0B1021), RoundedCornerShape(22.dp))
+                                .border(
+                                    width = 1.5.dp,
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xFF00E5FF),
+                                            Color(0xFF8C62FF)
+                                        )
+                                    ),
+                                    shape = RoundedCornerShape(22.dp)
+                                )
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_nova_launcher_fg_1794331213367),
+                                contentDescription = "Nova Browser Logo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(18.dp))
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Large Prominent App Name (Chrome/Google style placement)
+                    Text(
+                        text = if (isIncognito) "Nova Private" else "Nova Browser",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontSize = 32.sp,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = if (isIncognito) {
+                            "Zero-trace private browsing • History & cookies disabled"
+                        } else {
+                            "Fast, private & ad-free web browsing"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Prominent Middle Search / URL Omnibox
+                    OutlinedTextField(
+                        value = homeSearchQuery,
+                        onValueChange = { homeSearchQuery = it },
+                        placeholder = {
+                            Text(
+                                text = "Search Google or type URL…",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        },
+                        trailingIcon = {
+                            if (homeSearchQuery.isNotBlank()) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { homeSearchQuery = "" }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = "Clear",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            val q = homeSearchQuery
+                                            homeSearchQuery = ""
+                                            focusManager.clearFocus()
+                                            onSearchOrLoadUrl(q)
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.PlayCircleFilled,
+                                            contentDescription = "Go",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(28.dp),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                        keyboardActions = KeyboardActions(
+                            onGo = {
+                                if (homeSearchQuery.isNotBlank()) {
+                                    val q = homeSearchQuery
+                                    homeSearchQuery = ""
+                                    focusManager.clearFocus()
+                                    onSearchOrLoadUrl(q)
+                                }
+                            }
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("home_search_input")
+                    )
+                }
             }
 
             // 3. Hub Cards: Downloads, Bookmarks, History
