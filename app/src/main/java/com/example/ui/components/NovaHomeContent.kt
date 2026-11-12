@@ -107,10 +107,10 @@ fun NovaHomeContent(
     val focusManager = LocalFocusManager.current
     val shortcutRows = remember(shortcuts) { shortcuts.chunked(4) }
 
-    val incognitoOrange = Color(0xFFE65100)
+    val incognitoAccent = Color(0xFF00E5FF)
     val incognitoPillBg by animateColorAsState(
         targetValue = if (isIncognito) {
-            Color(0xFFFF6D00).copy(alpha = 0.22f)
+            Color(0xFF00E5FF).copy(alpha = 0.18f)
         } else {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
         },
@@ -120,9 +120,9 @@ fun NovaHomeContent(
 
     val adBadgeBg by animateColorAsState(
         targetValue = if (isIncognito) {
-            Color(0xFFFF8A3D).copy(alpha = 0.20f)
+            Color(0xFF00E5FF).copy(alpha = 0.14f)
         } else {
-            Color(0xFF00E5FF).copy(alpha = 0.12f)
+            Color(0xFFFF8A3D).copy(alpha = 0.20f)
         },
         animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
         label = "ad_badge_bg"
@@ -182,16 +182,16 @@ fun NovaHomeContent(
                                 .size(72.dp)
                                 .clip(RoundedCornerShape(22.dp))
                                 .background(
-                                    color = if (isIncognito) Color(0xFF3E1800) else Color(0xFF0B1021),
+                                    color = if (isIncognito) Color(0xFF0B1021) else Color(0xFF3E1800),
                                     shape = RoundedCornerShape(22.dp)
                                 )
                                 .border(
                                     width = 1.8.dp,
                                     brush = Brush.linearGradient(
                                         colors = if (isIncognito) {
-                                            listOf(Color(0xFFFF6D00), Color(0xFFFFAB40))
-                                        } else {
                                             listOf(Color(0xFF00E5FF), Color(0xFF8C62FF))
+                                        } else {
+                                            listOf(Color(0xFFFF6D00), Color(0xFFFFAB40))
                                         }
                                     ),
                                     shape = RoundedCornerShape(22.dp)
@@ -226,9 +226,9 @@ fun NovaHomeContent(
 
                     Text(
                         text = if (isIncognito) {
-                            "Light Orange Incognito • History & cookies disabled"
+                            "Dark Stealth Incognito • History & cookies disabled"
                         } else {
-                            "Fast, private & ad-free web browsing"
+                            "Warm Light Orange Theme • Fast, private & ad-free browsing"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -371,7 +371,7 @@ fun NovaHomeContent(
                                 .border(
                                     width = 1.dp,
                                     color = if (isIncognito) {
-                                        incognitoOrange.copy(alpha = 0.65f)
+                                        incognitoAccent.copy(alpha = 0.65f)
                                     } else {
                                         MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
                                     },
@@ -384,7 +384,7 @@ fun NovaHomeContent(
                             Icon(
                                 imageVector = Icons.Filled.VisibilityOff,
                                 contentDescription = "Toggle Incognito Mode",
-                                tint = if (isIncognito) incognitoOrange else MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = if (isIncognito) incognitoAccent else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.width(7.dp))
@@ -392,7 +392,7 @@ fun NovaHomeContent(
                                 text = if (isIncognito) "Incognito: ON" else "Incognito",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isIncognito) incognitoOrange else MaterialTheme.colorScheme.onSurface,
+                                color = if (isIncognito) incognitoAccent else MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -431,7 +431,7 @@ fun NovaHomeContent(
                         icon = Icons.Filled.History,
                         title = "History",
                         badge = "$historyCount visits",
-                        accentColor = if (isIncognito) Color(0xFFBF360C) else Color(0xFFFFB300),
+                        accentColor = if (isIncognito) Color(0xFFFFB300) else Color(0xFFBF360C),
                         onClick = onOpenHistory,
                         modifier = Modifier
                             .weight(1f)
@@ -764,6 +764,8 @@ private fun HomeHubActionCard(
     modifier: Modifier = Modifier
 ) {
     Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(18.dp))
@@ -773,12 +775,12 @@ private fun HomeHubActionCard(
                 shape = RoundedCornerShape(18.dp)
             )
             .clickable { onClick() }
-            .padding(12.dp)
+            .padding(vertical = 14.dp, horizontal = 8.dp)
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(34.dp)
+                .size(36.dp)
                 .background(accentColor.copy(alpha = 0.16f), CircleShape)
         ) {
             Icon(
@@ -794,14 +796,18 @@ private fun HomeHubActionCard(
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Text(
             text = badge,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

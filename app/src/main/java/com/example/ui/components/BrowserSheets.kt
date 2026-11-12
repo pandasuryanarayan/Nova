@@ -208,7 +208,7 @@ fun TabsSwitcherSheet(
                             Surface(
                                 shape = CircleShape,
                                 color = if (tab.isIncognito) {
-                                    Color(0xFFE65100).copy(alpha = 0.22f)
+                                    Color(0xFF00E5FF).copy(alpha = 0.20f)
                                 } else {
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                                 },
@@ -218,7 +218,7 @@ fun TabsSwitcherSheet(
                                     Icon(
                                         imageVector = if (tab.isIncognito) Icons.Filled.VisibilityOff else Icons.Filled.Tab,
                                         contentDescription = null,
-                                        tint = if (tab.isIncognito) Color(0xFFE65100) else MaterialTheme.colorScheme.primary,
+                                        tint = if (tab.isIncognito) Color(0xFF00E5FF) else MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -233,7 +233,7 @@ fun TabsSwitcherSheet(
                                             text = "PRIVATE • ",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFE65100)
+                                            color = Color(0xFF00E5FF)
                                         )
                                     }
                                     Text(

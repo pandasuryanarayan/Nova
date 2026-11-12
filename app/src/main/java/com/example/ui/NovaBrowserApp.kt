@@ -365,13 +365,13 @@ fun NovaBrowserApp(
                     }
                 }
 
-                // Smooth App-Wide Radial Wave Overlay when Incognito is Toggled ON (Light Orange) or OFF (Default)
+                // Smooth App-Wide Radial Wave Overlay when Incognito is Toggled ON (Dark Cyan) or OFF (Default Light Orange)
                 val waveProgress = incognitoWaveAnim.value
                 if (waveProgress > 0f) {
                     val waveColor = if (activeTab.isIncognito) {
-                        Color(0xFFFF8A3D)
-                    } else {
                         Color(0xFF00E5FF)
+                    } else {
+                        Color(0xFFFF8A3D)
                     }
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val maxRadius = size.maxDimension * 1.35f

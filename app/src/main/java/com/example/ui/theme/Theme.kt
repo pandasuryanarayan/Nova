@@ -11,28 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 
-private val NovaDarkColorScheme = darkColorScheme(
-    primary = NovaCyanPrimary,
-    onPrimary = Color(0xFF002026),
-    primaryContainer = NovaCyanContainer,
-    onPrimaryContainer = Color(0xFFA8F5FF),
-    secondary = NovaVioletSecondary,
-    onSecondary = Color.White,
-    secondaryContainer = NovaVioletContainer,
-    onSecondaryContainer = Color(0xFFE5DAFF),
-    tertiary = NovaEmeraldSafe,
-    background = NovaDarkBackground,
-    onBackground = NovaTextPrimaryDark,
-    surface = NovaDarkSurface,
-    onSurface = NovaTextPrimaryDark,
-    surfaceVariant = NovaDarkSurfaceVariant,
-    onSurfaceVariant = NovaTextSecondaryDark,
-    error = NovaCrimsonError,
-    outline = Color(0xFF2D3C6B)
-)
-
-// Light Orange Theme when Incognito is ON
-private val NovaIncognitoLightOrangeColorScheme = lightColorScheme(
+// Default Theme (Standard Mode): Warm Light Orange Theme
+private val NovaDefaultLightOrangeColorScheme = lightColorScheme(
     primary = IncognitoOrangePrimary,
     onPrimary = Color.White,
     primaryContainer = IncognitoOrangePrimaryContainer,
@@ -52,24 +32,25 @@ private val NovaIncognitoLightOrangeColorScheme = lightColorScheme(
     outline = IncognitoOrangeOutline
 )
 
-private val NovaLightColorScheme = lightColorScheme(
-    primary = NovaBluePrimaryLight,
-    onPrimary = Color.White,
-    primaryContainer = NovaBlueContainerLight,
-    onPrimaryContainer = Color(0xFF001F28),
-    secondary = NovaVioletSecondaryLight,
+// Incognito Theme (When Incognito is ON): Cosmic Obsidian & Electric Cyan/Violet
+private val NovaIncognitoDarkSapphireColorScheme = darkColorScheme(
+    primary = NovaCyanPrimary,
+    onPrimary = Color(0xFF002026),
+    primaryContainer = NovaCyanContainer,
+    onPrimaryContainer = Color(0xFFA8F5FF),
+    secondary = NovaVioletSecondary,
     onSecondary = Color.White,
-    secondaryContainer = NovaVioletContainerLight,
-    onSecondaryContainer = Color(0xFF1C0563),
-    tertiary = Color(0xFF00875A),
-    background = NovaLightBackground,
-    onBackground = NovaTextPrimaryLight,
-    surface = NovaLightSurface,
-    onSurface = NovaTextPrimaryLight,
-    surfaceVariant = NovaLightSurfaceVariant,
-    onSurfaceVariant = NovaTextSecondaryLight,
-    error = Color(0xFFD32F2F),
-    outline = Color(0xFFCBD5E1)
+    secondaryContainer = NovaVioletContainer,
+    onSecondaryContainer = Color(0xFFE5DAFF),
+    tertiary = NovaEmeraldSafe,
+    background = NovaDarkBackground,
+    onBackground = NovaTextPrimaryDark,
+    surface = NovaDarkSurface,
+    onSurface = NovaTextPrimaryDark,
+    surfaceVariant = NovaDarkSurfaceVariant,
+    onSurfaceVariant = NovaTextSecondaryDark,
+    error = NovaCrimsonError,
+    outline = Color(0xFF2D3C6B)
 )
 
 @Composable
@@ -121,10 +102,11 @@ fun NovaBrowserTheme(
     isIncognito: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val targetScheme = when {
-        isIncognito -> NovaIncognitoLightOrangeColorScheme
-        darkTheme -> NovaDarkColorScheme
-        else -> NovaLightColorScheme
+    // Light Orange is the Default Theme; Cosmic Dark Sapphire/Cyan is the Incognito Theme
+    val targetScheme = if (isIncognito) {
+        NovaIncognitoDarkSapphireColorScheme
+    } else {
+        NovaDefaultLightOrangeColorScheme
     }
 
     val animatedScheme = animateColorScheme(targetScheme)

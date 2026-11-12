@@ -16,8 +16,8 @@ android {
     applicationId = "com.suryatech.browser.nova"
     minSdk = 24
     targetSdk = 36
-    versionCode = 9
-    versionName = "6.3.0"
+    versionCode = 10
+    versionName = "6.4.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

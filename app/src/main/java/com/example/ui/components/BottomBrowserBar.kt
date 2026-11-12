@@ -80,9 +80,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.browser.BrowserUrlUtils
@@ -112,15 +114,25 @@ fun TopWebsiteHeaderBar(
 ) {
     var isUrlDropdownExpanded by remember(activeTab.id) { mutableStateOf(false) }
     var isEditingTopUrl by remember(activeTab.id) { mutableStateOf(false) }
-    var urlInputText by remember(activeTab.url) {
-        mutableStateOf(if (activeTab.url == NOVA_HOME_URL) "" else activeTab.url)
+    var urlInputFieldValue by remember(activeTab.url) {
+        val initText = if (activeTab.url == NOVA_HOME_URL) "" else activeTab.url
+        mutableStateOf(
+            TextFieldValue(
+                text = initText,
+                selection = TextRange(initText.length)
+            )
+        )
     }
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(isEditingTopUrl) {
         if (isEditingTopUrl) {
-            urlInputText = if (activeTab.url == NOVA_HOME_URL) "" else activeTab.url
+            val initText = if (activeTab.url == NOVA_HOME_URL) "" else activeTab.url
+            urlInputFieldValue = TextFieldValue(
+                text = initText,
+                selection = TextRange(initText.length)
+            )
             try {
                 focusRequester.requestFocus()
             } catch (_: Exception) {
@@ -179,8 +191,8 @@ fun TopWebsiteHeaderBar(
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 OutlinedTextField(
-                    value = urlInputText,
-                    onValueChange = { urlInputText = it },
+                    value = urlInputFieldValue,
+                    onValueChange = { urlInputFieldValue = it },
                     placeholder = {
                         Text(
                             text = "Search or type website URL…",
@@ -192,8 +204,8 @@ fun TopWebsiteHeaderBar(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(
                         onGo = {
-                            if (urlInputText.isNotBlank()) {
-                                val query = urlInputText
+                            val query = urlInputFieldValue.text
+                            if (query.isNotBlank()) {
                                 isEditingTopUrl = false
                                 isUrlDropdownExpanded = false
                                 focusManager.clearFocus()
@@ -203,8 +215,15 @@ fun TopWebsiteHeaderBar(
                     ),
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (urlInputText.isNotEmpty()) {
-                                IconButton(onClick = { urlInputText = "" }) {
+                            if (urlInputFieldValue.text.isNotEmpty()) {
+                                IconButton(
+                                    onClick = {
+                                        urlInputFieldValue = TextFieldValue(
+                                            text = "",
+                                            selection = TextRange.Zero
+                                        )
+                                    }
+                                ) {
                                     Icon(
                                         imageVector = Icons.Filled.Close,
                                         contentDescription = "Clear URL"
@@ -212,7 +231,7 @@ fun TopWebsiteHeaderBar(
                                 }
                                 IconButton(
                                     onClick = {
-                                        val query = urlInputText
+                                        val query = urlInputFieldValue.text
                                         isEditingTopUrl = false
                                         isUrlDropdownExpanded = false
                                         focusManager.clearFocus()

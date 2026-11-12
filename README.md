@@ -1,24 +1,24 @@
 # Nova Browser
 
-![Version](https://img.shields.io/badge/version-v6.3.0-00E5FF?style=flat-square)
+![Version](https://img.shields.io/badge/version-v6.4.0-E65100?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Android%207.0%2B%20(API%2024--36)-00E676?style=flat-square)
 ![APK Size](https://img.shields.io/badge/APK%20size-2.38%20MB%20(R8%20Signed)-8C62FF?style=flat-square)
 ![License](https://img.shields.io/badge/license-GNU%20GPL%20v3.0-blue?style=flat-square)
 
-**Nova Browser** (`com.suryatech.browser.nova`) is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**, engineered to run smoothly even on budget Android devices. It features a Chrome-style centric Home screen with real disk-cached website icons and a 3-dot Edit/Delete menu on every Quick Shortcut, a smooth app-wide Light Orange theme transition when Incognito is ON, a minimal Home bottom bar (Tab View & 3-Dot Menu only), and an on-demand 2-bar website layout (Top Website Title, Lock & 1-Tap Bookmark Bar with a compact Fall-Down URL Drawer featuring inline Copy/Edit/Share icon actions + Bottom 7-Action Toolbar with smooth Left-to-Right slide animation).
+**Nova Browser** (`com.suryatech.browser.nova`) is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**, engineered to run smoothly even on budget Android devices. It features a Warm Light Orange default theme, a smooth app-wide Cosmic Dark Cyan theme transition when Incognito is ON, a Chrome-style centric Home screen with centered Downloads/Bookmarks/History hub cards and real disk-cached website icons with a 3-dot Edit/Delete menu on every Quick Shortcut, a minimal Home bottom bar (Tab View & 3-Dot Menu only), and an on-demand 2-bar website layout (Top Website Title, Lock & 1-Tap Bookmark Bar with a compact Fall-Down URL Drawer featuring inline Copy/Edit/Share icon actions and standard end-of-URL cursor placement + Bottom 7-Action Toolbar with smooth Left-to-Right slide animation).
 
 ---
 
-## 📦 Download Signed Release APK (`v6.3.0`)
+## 📦 Download Signed Release APK (`v6.4.0`)
 
 The latest signed, R8-minified release APK is included directly in this repository and automatically published to **GitHub Releases**:
 
-- **Direct APK in Repo**: [`releases/v6.3.0/NovaBrowser-v6.3.0-release.apk`](releases/v6.3.0/NovaBrowser-v6.3.0-release.apk)
-- **Release Notes**: [`releases/v6.3.0/RELEASE_NOTES.md`](releases/v6.3.0/RELEASE_NOTES.md)
+- **Direct APK in Repo**: [`releases/v6.4.0/NovaBrowser-v6.4.0-release.apk`](releases/v6.4.0/NovaBrowser-v6.4.0-release.apk)
+- **Release Notes**: [`releases/v6.4.0/RELEASE_NOTES.md`](releases/v6.4.0/RELEASE_NOTES.md)
 - **Package ID**: `com.suryatech.browser.nova`
-- **Version Name / Code**: `v6.3.0` (`versionCode = 9`, `versionName = "6.3.0"`)
-- **Size**: `2.38 MB` (`2,491,464 bytes`)
-- **SHA-256**: `ddfcdb2da49014844e3a6408b3e6228cc21c92a320819a0c7211c7fb6ab3564c`
+- **Version Name / Code**: `v6.4.0` (`versionCode = 10`, `versionName = "6.4.0"`)
+- **Size**: `2.38 MB` (`2,491,468 bytes`)
+- **SHA-256**: `ed2276f3608564c8fcfe5a45615c615f72958477094d6c6be1cc6146d5e1dc0a`
 
 ---
 
