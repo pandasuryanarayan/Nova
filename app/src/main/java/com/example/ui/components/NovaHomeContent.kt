@@ -1,6 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -30,19 +32,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayCircleFilled
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,8 +63,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -65,6 +77,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.browser.rememberShortcutIcon
 import com.example.data.QuickShortcutEntity
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -85,19 +98,40 @@ fun NovaHomeContent(
     onToggleIncognito: () -> Unit,
     onAddShortcutClick: () -> Unit,
     onDeleteShortcut: (Long) -> Unit,
+    onEditShortcut: (QuickShortcutEntity, String, String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var homeSearchQuery by remember { mutableStateOf("") }
+    var editingShortcut by remember { mutableStateOf<QuickShortcutEntity?>(null) }
     val focusManager = LocalFocusManager.current
     val shortcutRows = remember(shortcuts) { shortcuts.chunked(4) }
+
+    val incognitoOrange = Color(0xFFE65100)
     val incognitoPillBg by animateColorAsState(
         targetValue = if (isIncognito) {
-            Color(0xFFD580FF).copy(alpha = 0.22f)
+            Color(0xFFFF6D00).copy(alpha = 0.22f)
         } else {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
         },
-        animationSpec = tween(durationMillis = 160),
+        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
         label = "incognito_pill_bg"
+    )
+
+    val adBadgeBg by animateColorAsState(
+        targetValue = if (isIncognito) {
+            Color(0xFFFF8A3D).copy(alpha = 0.20f)
+        } else {
+            Color(0xFF00E5FF).copy(alpha = 0.12f)
+        },
+        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
+        label = "ad_badge_bg"
+    )
+
+    val brandScale by animateFloatAsState(
+        targetValue = if (isIncognito) 1.04f else 1.0f,
+        animationSpec = tween(durationMillis = 420, easing = FastOutSlowInEasing),
+        label = "brand_scale"
     )
 
     Box(
@@ -127,11 +161,15 @@ fun NovaHomeContent(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(88.dp)
+                            .graphicsLayer {
+                                scaleX = brandScale
+                                scaleY = brandScale
+                            }
                             .background(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
-                                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f),
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+                                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
                                         Color.Transparent
                                     )
                                 ),
@@ -143,14 +181,18 @@ fun NovaHomeContent(
                             modifier = Modifier
                                 .size(72.dp)
                                 .clip(RoundedCornerShape(22.dp))
-                                .background(Color(0xFF0B1021), RoundedCornerShape(22.dp))
+                                .background(
+                                    color = if (isIncognito) Color(0xFF3E1800) else Color(0xFF0B1021),
+                                    shape = RoundedCornerShape(22.dp)
+                                )
                                 .border(
-                                    width = 1.5.dp,
+                                    width = 1.8.dp,
                                     brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            Color(0xFF00E5FF),
-                                            Color(0xFF8C62FF)
-                                        )
+                                        colors = if (isIncognito) {
+                                            listOf(Color(0xFFFF6D00), Color(0xFFFFAB40))
+                                        } else {
+                                            listOf(Color(0xFF00E5FF), Color(0xFF8C62FF))
+                                        }
                                     ),
                                     shape = RoundedCornerShape(22.dp)
                                 )
@@ -184,7 +226,7 @@ fun NovaHomeContent(
 
                     Text(
                         text = if (isIncognito) {
-                            "Zero-trace private browsing • History & cookies disabled"
+                            "Light Orange Incognito • History & cookies disabled"
                         } else {
                             "Fast, private & ad-free web browsing"
                         },
@@ -284,12 +326,12 @@ fun NovaHomeContent(
                                 .height(46.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(
-                                    color = Color(0xFF00E5FF).copy(alpha = 0.12f),
+                                    color = adBadgeBg,
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = Color(0xFF00E5FF).copy(alpha = 0.38f),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .clickable { onOpenBlockedAds() }
@@ -299,7 +341,7 @@ fun NovaHomeContent(
                             Icon(
                                 imageVector = Icons.Filled.Shield,
                                 contentDescription = null,
-                                tint = Color(0xFF00E5FF),
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.width(7.dp))
@@ -329,7 +371,7 @@ fun NovaHomeContent(
                                 .border(
                                     width = 1.dp,
                                     color = if (isIncognito) {
-                                        Color(0xFFD580FF).copy(alpha = 0.55f)
+                                        incognitoOrange.copy(alpha = 0.65f)
                                     } else {
                                         MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
                                     },
@@ -342,7 +384,7 @@ fun NovaHomeContent(
                             Icon(
                                 imageVector = Icons.Filled.VisibilityOff,
                                 contentDescription = "Toggle Incognito Mode",
-                                tint = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = if (isIncognito) incognitoOrange else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.width(7.dp))
@@ -350,7 +392,7 @@ fun NovaHomeContent(
                                 text = if (isIncognito) "Incognito: ON" else "Incognito",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isIncognito) Color(0xFFD580FF) else MaterialTheme.colorScheme.onSurface,
+                                color = if (isIncognito) incognitoOrange else MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -359,7 +401,7 @@ fun NovaHomeContent(
                 }
             }
 
-            // 3. Hub Cards: Downloads, Bookmarks, History
+            // 2. Hub Cards: Downloads, Bookmarks, History
             item(key = "hub_cards", contentType = "hub") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -389,7 +431,7 @@ fun NovaHomeContent(
                         icon = Icons.Filled.History,
                         title = "History",
                         badge = "$historyCount visits",
-                        accentColor = Color(0xFFFFB300),
+                        accentColor = if (isIncognito) Color(0xFFBF360C) else Color(0xFFFFB300),
                         onClick = onOpenHistory,
                         modifier = Modifier
                             .weight(1f)
@@ -398,7 +440,7 @@ fun NovaHomeContent(
                 }
             }
 
-            // 4. Quick Shortcuts Grid Header
+            // 3. Quick Shortcuts Grid Header
             item(key = "shortcuts_header", contentType = "header") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -436,7 +478,7 @@ fun NovaHomeContent(
                 }
             }
 
-            // 5. Lightweight Quick Shortcuts 4-Column Grid Rows
+            // 4. Quick Shortcuts 4-Column Grid Rows with Real Cached Icons + 3-Dot Edit/Delete Menu
             item(key = "shortcuts_grid", contentType = "grid") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     shortcutRows.forEach { rowItems ->
@@ -445,55 +487,14 @@ fun NovaHomeContent(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             rowItems.forEach { item ->
-                                val itemAccent = remember(item.accentColorHex) { Color(item.accentColorHex) }
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-                                        .border(
-                                            width = 1.dp,
-                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
-                                        .combinedClickable(
-                                            onClick = { onSearchOrLoadUrl(item.url) },
-                                            onLongClick = { onDeleteShortcut(item.id) }
-                                        )
-                                        .padding(vertical = 12.dp, horizontal = 6.dp)
-                                        .testTag("shortcut_card_${item.id}")
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .background(itemAccent.copy(alpha = 0.16f), CircleShape)
-                                    ) {
-                                        Text(
-                                            text = item.badgeText.take(4),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = itemAccent
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = item.title,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center
-                                    )
-                                    Text(
-                                        text = item.subtitle,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
+                                QuickShortcutTile(
+                                    item = item,
+                                    context = context,
+                                    onOpen = { onSearchOrLoadUrl(item.url) },
+                                    onEdit = { editingShortcut = item },
+                                    onDelete = { onDeleteShortcut(item.id) },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                             repeat(4 - rowItems.size) {
                                 Spacer(modifier = Modifier.weight(1f))
@@ -503,7 +504,7 @@ fun NovaHomeContent(
                 }
             }
 
-            // 6. Incognito Mode Notice Footer (if active)
+            // 5. Incognito Mode Notice Footer (if active)
             if (isIncognito) {
                 item(key = "incognito_footer", contentType = "footer") {
                     Row(
@@ -511,7 +512,12 @@ fun NovaHomeContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .padding(14.dp)
@@ -530,6 +536,219 @@ fun NovaHomeContent(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    // Edit Quick Shortcut Dialog
+    editingShortcut?.let { target ->
+        var editTitle by remember(target.id) { mutableStateOf(target.title) }
+        var editUrl by remember(target.id) { mutableStateOf(target.url) }
+
+        AlertDialog(
+            onDismissRequest = { editingShortcut = null },
+            title = { Text("Edit Quick Shortcut") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = editTitle,
+                        onValueChange = { editTitle = it },
+                        label = { Text("Site Title") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("edit_shortcut_title_input")
+                    )
+                    OutlinedTextField(
+                        value = editUrl,
+                        onValueChange = { editUrl = it },
+                        label = { Text("Website URL") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("edit_shortcut_url_input")
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editUrl.isNotBlank()) {
+                            onEditShortcut(target, editTitle, editUrl)
+                            editingShortcut = null
+                        }
+                    },
+                    modifier = Modifier.testTag("edit_shortcut_save_button")
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingShortcut = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun QuickShortcutTile(
+    item: QuickShortcutEntity,
+    context: android.content.Context,
+    onOpen: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val itemAccent = remember(item.accentColorHex) { Color(item.accentColorHex) }
+    val cachedIcon by rememberShortcutIcon(context = context, url = item.url)
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .combinedClickable(
+                onClick = onOpen,
+                onLongClick = { menuExpanded = true }
+            )
+            .testTag("shortcut_card_${item.id}")
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 14.dp, bottom = 10.dp, start = 6.dp, end = 6.dp)
+        ) {
+            // Website Real App Icon (Disk-Cached) with stylized fallback while loading
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        color = if (cachedIcon != null) {
+                            Color.White.copy(alpha = 0.92f)
+                        } else {
+                            itemAccent.copy(alpha = 0.16f)
+                        },
+                        shape = RoundedCornerShape(13.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(13.dp)
+                    )
+            ) {
+                val iconBitmap = cachedIcon
+                if (iconBitmap != null) {
+                    Image(
+                        bitmap = iconBitmap,
+                        contentDescription = "${item.title} Icon",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                    )
+                } else {
+                    Text(
+                        text = item.badgeText.take(4),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = itemAccent
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = item.subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // Top-Right 3-Dot Button on Every Shortcut (Pre-given & Custom) for Edit & Delete
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 2.dp, end = 2.dp)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .clickable { menuExpanded = true }
+                    .testTag("shortcut_menu_button_${item.id}")
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "Edit or Delete ${item.title}",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
+
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    onClick = {
+                        menuExpanded = false
+                        onEdit()
+                    },
+                    modifier = Modifier.testTag("shortcut_edit_option_${item.id}")
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "Delete",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    onClick = {
+                        menuExpanded = false
+                        onDelete()
+                    },
+                    modifier = Modifier.testTag("shortcut_delete_option_${item.id}")
+                )
             }
         }
     }
@@ -573,13 +792,16 @@ private fun HomeHubActionCard(
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            maxLines = 1
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Text(
             text = badge,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

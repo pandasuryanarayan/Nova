@@ -55,14 +55,20 @@ import com.example.ui.theme.NovaBrowserTheme
 import com.example.viewmodel.BrowserViewModel
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import com.example.ui.components.TopWebsiteHeaderBar
 
 @Composable
@@ -82,6 +88,20 @@ fun NovaBrowserApp(
         bookmarks.any { it.url == activeTab.url }
     }
     var cookieRefreshTick by remember { mutableIntStateOf(0) }
+    var previousIncognito by remember { mutableStateOf(activeTab.isIncognito) }
+    val incognitoWaveAnim = remember { Animatable(0f) }
+
+    LaunchedEffect(activeTab.isIncognito) {
+        if (activeTab.isIncognito != previousIncognito) {
+            previousIncognito = activeTab.isIncognito
+            incognitoWaveAnim.snapTo(0.01f)
+            incognitoWaveAnim.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 580, easing = FastOutSlowInEasing)
+            )
+            incognitoWaveAnim.snapTo(0f)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.toastEvents.collect { message ->
@@ -172,172 +192,203 @@ fun NovaBrowserApp(
                     .testTag("fullscreen_video_container")
             )
         } else {
-            Scaffold(
-                contentWindowInsets = WindowInsets.safeDrawing,
-                topBar = {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        // Top Bar shown whenever a website is opened: Lock + Website Title + 1-Tap Bookmark + Falldown Link Button
-                        AnimatedVisibility(
-                            visible = !activeTab.isHomePage,
-                            enter = expandVertically(animationSpec = tween(160)) + fadeIn(animationSpec = tween(140)),
-                            exit = shrinkVertically(animationSpec = tween(150)) + fadeOut(animationSpec = tween(120))
-                        ) {
-                            TopWebsiteHeaderBar(
+            Box(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets.safeDrawing,
+                    topBar = {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // Top Bar shown whenever a website is opened: Lock + Website Title + 1-Tap Bookmark + Falldown Link Button
+                            AnimatedVisibility(
+                                visible = !activeTab.isHomePage,
+                                enter = expandVertically(animationSpec = tween(160)) + fadeIn(animationSpec = tween(140)),
+                                exit = shrinkVertically(animationSpec = tween(150)) + fadeOut(animationSpec = tween(120))
+                            ) {
+                                TopWebsiteHeaderBar(
+                                    activeTab = activeTab,
+                                    isBookmarked = isBookmarked,
+                                    onSslIconClick = {
+                                        viewModel.setActiveSheet(ActiveSheet.SSL_INFO_DIALOG)
+                                    },
+                                    onToggleBookmarkClick = viewModel::toggleBookmarkForActiveTab,
+                                    onSubmitUrlOrSearch = viewModel::loadUrlOrSearch,
+                                    onCopyUrlClick = { url ->
+                                        copyTextToClipboard(context, "Website Link", url)
+                                        viewModel.emitToast("Website link copied to clipboard")
+                                    },
+                                    onShareUrlClick = { title, url ->
+                                        shareUrl(context, title, url)
+                                    }
+                                )
+                            }
+
+                            AnimatedVisibility(
+                                visible = uiState.isFindInPageVisible,
+                                enter = expandVertically(animationSpec = tween(150)) + fadeIn(animationSpec = tween(120)),
+                                exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(120))
+                            ) {
+                                FindInPageTopBar(
+                                    query = uiState.findQuery,
+                                    activeOrdinal = uiState.findActiveOrdinal,
+                                    totalMatches = uiState.findTotalMatches,
+                                    onQueryChange = viewModel::updateFindQuery,
+                                    onFindNext = { viewModel.findNext(true) },
+                                    onFindPrev = { viewModel.findNext(false) },
+                                    onClose = viewModel::closeFindInPage,
+                                    modifier = if (activeTab.isHomePage) Modifier.statusBarsPadding() else Modifier
+                                )
+                            }
+                        }
+                    },
+                    bottomBar = {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            AnimatedVisibility(
+                                visible = uiState.backgroundMedia.isActive,
+                                enter = expandVertically(animationSpec = tween(150)) + fadeIn(animationSpec = tween(120)),
+                                exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(120))
+                            ) {
+                                BackgroundMediaMiniBar(
+                                    mediaState = uiState.backgroundMedia,
+                                    onTogglePlayPause = viewModel::toggleBackgroundPlayPause,
+                                    onClose = viewModel::stopBackgroundPlayer
+                                )
+                            }
+
+                            BottomBrowserBar(
                                 activeTab = activeTab,
-                                isBookmarked = isBookmarked,
-                                onSslIconClick = {
-                                    viewModel.setActiveSheet(ActiveSheet.SSL_INFO_DIALOG)
-                                },
-                                onToggleBookmarkClick = viewModel::toggleBookmarkForActiveTab,
+                                tabsCount = uiState.tabs.size,
+                                isDevToolsVisible = uiState.devToolsState.isVisible,
+                                onBackClick = { viewModel.goBack() },
+                                onForwardClick = viewModel::goForward,
+                                onHomeClick = viewModel::goHome,
+                                onReloadOrStopClick = viewModel::reloadOrStop,
                                 onSubmitUrlOrSearch = viewModel::loadUrlOrSearch,
-                                onCopyUrlClick = { url ->
-                                    copyTextToClipboard(context, "Website Link", url)
-                                    viewModel.emitToast("Website link copied to clipboard")
-                                },
-                                onShareUrlClick = { title, url ->
-                                    shareUrl(context, title, url)
-                                }
-                            )
-                        }
-
-                        AnimatedVisibility(
-                            visible = uiState.isFindInPageVisible,
-                            enter = expandVertically(animationSpec = tween(150)) + fadeIn(animationSpec = tween(120)),
-                            exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(120))
-                        ) {
-                            FindInPageTopBar(
-                                query = uiState.findQuery,
-                                activeOrdinal = uiState.findActiveOrdinal,
-                                totalMatches = uiState.findTotalMatches,
-                                onQueryChange = viewModel::updateFindQuery,
-                                onFindNext = { viewModel.findNext(true) },
-                                onFindPrev = { viewModel.findNext(false) },
-                                onClose = viewModel::closeFindInPage,
-                                modifier = if (activeTab.isHomePage) Modifier.statusBarsPadding() else Modifier
-                            )
-                        }
-                    }
-                },
-                bottomBar = {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        AnimatedVisibility(
-                            visible = uiState.backgroundMedia.isActive,
-                            enter = expandVertically(animationSpec = tween(150)) + fadeIn(animationSpec = tween(120)),
-                            exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(120))
-                        ) {
-                            BackgroundMediaMiniBar(
-                                mediaState = uiState.backgroundMedia,
-                                onTogglePlayPause = viewModel::toggleBackgroundPlayPause,
-                                onClose = viewModel::stopBackgroundPlayer
-                            )
-                        }
-
-                        BottomBrowserBar(
-                            activeTab = activeTab,
-                            tabsCount = uiState.tabs.size,
-                            isDevToolsVisible = uiState.devToolsState.isVisible,
-                            onBackClick = { viewModel.goBack() },
-                            onForwardClick = viewModel::goForward,
-                            onHomeClick = viewModel::goHome,
-                            onReloadOrStopClick = viewModel::reloadOrStop,
-                            onSubmitUrlOrSearch = viewModel::loadUrlOrSearch,
-                            onSslIconClick = {
-                                if (!activeTab.isHomePage) {
-                                    viewModel.setActiveSheet(ActiveSheet.SSL_INFO_DIALOG)
-                                }
-                            },
-                            onToggleDevToolsClick = viewModel::toggleDevTools,
-                            onScanPageVideosClick = viewModel::scanVideosOnCurrentPage,
-                            onOpenTabsClick = { viewModel.setActiveSheet(ActiveSheet.TABS) },
-                            onOpenMenuClick = { viewModel.setActiveSheet(ActiveSheet.MENU) }
-                        )
-                    }
-                }
-            ) { innerPadding ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .background(MaterialTheme.colorScheme.background)
-                ) {
-                    Crossfade(
-                        targetState = activeTab.isHomePage,
-                        animationSpec = tween(durationMillis = 150),
-                        label = "home_webview_crossfade",
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) { isHome ->
-                        if (isHome) {
-                            NovaHomeContent(
-                                isIncognito = activeTab.isIncognito,
-                                isAdBlockEnabled = preferences.isAdBlockEnabled,
-                                totalAdsBlocked = preferences.totalAdsBlocked,
-                                downloadsCount = downloads.size,
-                                bookmarksCount = bookmarks.size,
-                                historyCount = history.size,
-                                shortcuts = shortcuts,
-                                onSearchOrLoadUrl = viewModel::loadUrlOrSearch,
-                                onOpenDownloads = { viewModel.setActiveSheet(ActiveSheet.DOWNLOADS) },
-                                onOpenBookmarks = { viewModel.setActiveSheet(ActiveSheet.BOOKMARKS) },
-                                onOpenHistory = { viewModel.setActiveSheet(ActiveSheet.HISTORY) },
-                                onOpenBlockedAds = { viewModel.setActiveSheet(ActiveSheet.BLOCKED_ADS) },
-                                onToggleIncognito = viewModel::toggleIncognitoMode,
-                                onAddShortcutClick = { viewModel.setActiveSheet(ActiveSheet.ADD_SHORTCUT_DIALOG) },
-                                onDeleteShortcut = viewModel::deleteQuickShortcut,
-                                modifier = if (!uiState.isFindInPageVisible) Modifier.statusBarsPadding() else Modifier
-                            )
-                        } else {
-                            AndroidView(
-                                factory = { ctx ->
-                                    FrameLayout(ctx).apply {
-                                        layoutParams = ViewGroup.LayoutParams(
-                                            ViewGroup.LayoutParams.MATCH_PARENT,
-                                            ViewGroup.LayoutParams.MATCH_PARENT
-                                        )
+                                onSslIconClick = {
+                                    if (!activeTab.isHomePage) {
+                                        viewModel.setActiveSheet(ActiveSheet.SSL_INFO_DIALOG)
                                     }
                                 },
-                                update = { container ->
-                                    val webView = viewModel.webViewPool.getOrCreateWebView(activeTab)
-                                    if (webView.parent != container) {
-                                        (webView.parent as? ViewGroup)?.removeView(webView)
-                                        container.removeAllViews()
-                                        container.addView(
-                                            webView,
-                                            FrameLayout.LayoutParams(
+                                onToggleDevToolsClick = viewModel::toggleDevTools,
+                                onScanPageVideosClick = viewModel::scanVideosOnCurrentPage,
+                                onOpenTabsClick = { viewModel.setActiveSheet(ActiveSheet.TABS) },
+                                onOpenMenuClick = { viewModel.setActiveSheet(ActiveSheet.MENU) }
+                            )
+                        }
+                    }
+                ) { innerPadding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .background(MaterialTheme.colorScheme.background)
+                    ) {
+                        Crossfade(
+                            targetState = activeTab.isHomePage,
+                            animationSpec = tween(durationMillis = 150),
+                            label = "home_webview_crossfade",
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                        ) { isHome ->
+                            if (isHome) {
+                                NovaHomeContent(
+                                    isIncognito = activeTab.isIncognito,
+                                    isAdBlockEnabled = preferences.isAdBlockEnabled,
+                                    totalAdsBlocked = preferences.totalAdsBlocked,
+                                    downloadsCount = downloads.size,
+                                    bookmarksCount = bookmarks.size,
+                                    historyCount = history.size,
+                                    shortcuts = shortcuts,
+                                    onSearchOrLoadUrl = viewModel::loadUrlOrSearch,
+                                    onOpenDownloads = { viewModel.setActiveSheet(ActiveSheet.DOWNLOADS) },
+                                    onOpenBookmarks = { viewModel.setActiveSheet(ActiveSheet.BOOKMARKS) },
+                                    onOpenHistory = { viewModel.setActiveSheet(ActiveSheet.HISTORY) },
+                                    onOpenBlockedAds = { viewModel.setActiveSheet(ActiveSheet.BLOCKED_ADS) },
+                                    onToggleIncognito = viewModel::toggleIncognitoMode,
+                                    onAddShortcutClick = { viewModel.setActiveSheet(ActiveSheet.ADD_SHORTCUT_DIALOG) },
+                                    onDeleteShortcut = viewModel::deleteQuickShortcut,
+                                    onEditShortcut = viewModel::updateQuickShortcut,
+                                    modifier = if (!uiState.isFindInPageVisible) Modifier.statusBarsPadding() else Modifier
+                                )
+                            } else {
+                                AndroidView(
+                                    factory = { ctx ->
+                                        FrameLayout(ctx).apply {
+                                            layoutParams = ViewGroup.LayoutParams(
                                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                                 ViewGroup.LayoutParams.MATCH_PARENT
                                             )
-                                        )
-                                    }
+                                        }
+                                    },
+                                    update = { container ->
+                                        val webView = viewModel.webViewPool.getOrCreateWebView(activeTab)
+                                        if (webView.parent != container) {
+                                            (webView.parent as? ViewGroup)?.removeView(webView)
+                                            container.removeAllViews()
+                                            container.addView(
+                                                webView,
+                                                FrameLayout.LayoutParams(
+                                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                                )
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .testTag("browser_webview_container")
+                                )
+                            }
+                        }
+
+                        // Desktop-Grade Split-Screen DevTools Panel (Elements, Sources, Console, Network ONLY)
+                        AnimatedVisibility(visible = uiState.devToolsState.isVisible && !activeTab.isHomePage) {
+                            DevToolsInspectorPanel(
+                                devToolsState = uiState.devToolsState,
+                                onSelectTab = viewModel::selectDevToolsTab,
+                                onToggleInspectElementPicker = viewModel::toggleInspectElementPicker,
+                                onRefreshDevTools = viewModel::refreshDevTools,
+                                onSelectDomNode = viewModel::selectDomNode,
+                                onApplyElementEdit = viewModel::applyElementEdit,
+                                onDeleteDomNode = viewModel::deleteDomNode,
+                                onSelectSourceFile = viewModel::selectSourceFile,
+                                onFetchRemoteSource = viewModel::fetchRemoteSource,
+                                onCopyText = { label, text ->
+                                    copyTextToClipboard(context, label, text)
+                                    viewModel.emitToast("$label copied to clipboard")
                                 },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .testTag("browser_webview_container")
+                                onExecuteConsoleJs = viewModel::executeConsoleJs,
+                                onClearConsole = viewModel::clearConsoleLogs,
+                                onClearNetwork = viewModel::clearNetworkEntries,
+                                onCloseDevTools = viewModel::closeDevTools
                             )
                         }
                     }
+                }
 
-                    // Desktop-Grade Split-Screen DevTools Panel (Elements, Sources, Console, Network ONLY)
-                    AnimatedVisibility(visible = uiState.devToolsState.isVisible && !activeTab.isHomePage) {
-                        DevToolsInspectorPanel(
-                            devToolsState = uiState.devToolsState,
-                            onSelectTab = viewModel::selectDevToolsTab,
-                            onToggleInspectElementPicker = viewModel::toggleInspectElementPicker,
-                            onRefreshDevTools = viewModel::refreshDevTools,
-                            onSelectDomNode = viewModel::selectDomNode,
-                            onApplyElementEdit = viewModel::applyElementEdit,
-                            onDeleteDomNode = viewModel::deleteDomNode,
-                            onSelectSourceFile = viewModel::selectSourceFile,
-                            onFetchRemoteSource = viewModel::fetchRemoteSource,
-                            onCopyText = { label, text ->
-                                copyTextToClipboard(context, label, text)
-                                viewModel.emitToast("$label copied to clipboard")
-                            },
-                            onExecuteConsoleJs = viewModel::executeConsoleJs,
-                            onClearConsole = viewModel::clearConsoleLogs,
-                            onClearNetwork = viewModel::clearNetworkEntries,
-                            onCloseDevTools = viewModel::closeDevTools
+                // Smooth App-Wide Radial Wave Overlay when Incognito is Toggled ON (Light Orange) or OFF (Default)
+                val waveProgress = incognitoWaveAnim.value
+                if (waveProgress > 0f) {
+                    val waveColor = if (activeTab.isIncognito) {
+                        Color(0xFFFF8A3D)
+                    } else {
+                        Color(0xFF00E5FF)
+                    }
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val maxRadius = size.maxDimension * 1.35f
+                        val currentRadius = (maxRadius * waveProgress).coerceAtLeast(1f)
+                        val alpha = (1f - waveProgress) * 0.42f
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    waveColor.copy(alpha = alpha * 0.45f),
+                                    waveColor.copy(alpha = alpha),
+                                    Color.Transparent
+                                ),
+                                center = Offset(size.width * 0.72f, size.height * 0.36f),
+                                radius = currentRadius
+                            ),
+                            radius = currentRadius,
+                            center = Offset(size.width * 0.72f, size.height * 0.36f)
                         )
                     }
                 }

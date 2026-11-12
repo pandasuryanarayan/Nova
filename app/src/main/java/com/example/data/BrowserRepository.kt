@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.browserDataStore by preferencesDataStore(name = "nova_browser_prefs")
@@ -27,6 +28,7 @@ class BrowserRepository(
         val AD_BLOCK_ENABLED = booleanPreferencesKey("ad_block_enabled")
         val DEFAULT_TEXT_ZOOM = intPreferencesKey("default_text_zoom")
         val TOTAL_ADS_BLOCKED = longPreferencesKey("total_ads_blocked")
+        val DEFAULT_SHORTCUTS_SEEDED = booleanPreferencesKey("default_shortcuts_seeded")
     }
 
     val preferencesFlow: Flow<BrowserPreferences> = context.browserDataStore.data.map { prefs ->
@@ -44,8 +46,13 @@ class BrowserRepository(
     val downloadsFlow: Flow<List<DownloadItemEntity>> = dao.getAllDownloads()
 
     suspend fun ensureDefaultShortcutsSeeded() {
-        if (dao.getShortcutsCount() == 0) {
-            dao.insertShortcuts(NovaDatabase.defaultShortcuts())
+        val prefs = context.browserDataStore.data.first()
+        val alreadySeeded = prefs[PrefKeys.DEFAULT_SHORTCUTS_SEEDED] ?: false
+        if (!alreadySeeded) {
+            if (dao.getShortcutsCount() == 0) {
+                dao.insertShortcuts(NovaDatabase.defaultShortcuts())
+            }
+            context.browserDataStore.edit { it[PrefKeys.DEFAULT_SHORTCUTS_SEEDED] = true }
         }
     }
 
@@ -104,6 +111,10 @@ class BrowserRepository(
                 sortOrder = 99
             )
         )
+    }
+
+    suspend fun updateShortcut(shortcut: QuickShortcutEntity) {
+        dao.updateShortcut(shortcut)
     }
 
     suspend fun deleteShortcut(id: Long) {

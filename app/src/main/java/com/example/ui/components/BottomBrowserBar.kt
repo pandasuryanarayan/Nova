@@ -472,7 +472,7 @@ fun TopWebsiteHeaderBar(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Change URL / Search", style = MaterialTheme.typography.labelMedium)
+                        Text("Edit", style = MaterialTheme.typography.labelMedium)
                     }
 
                     TextButton(

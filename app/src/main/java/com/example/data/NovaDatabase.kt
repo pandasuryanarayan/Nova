@@ -55,6 +55,9 @@ interface BrowserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShortcut(shortcut: QuickShortcutEntity): Long
 
+    @Update
+    suspend fun updateShortcut(shortcut: QuickShortcutEntity)
+
     @Query("DELETE FROM shortcuts WHERE id = :id")
     suspend fun deleteShortcutById(id: Long)
 

@@ -852,18 +852,30 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun toggleIncognitoMode() {
         val current = _uiState.value.activeTab
-        if (current.isIncognito) {
+        val nextIncognito = !current.isIncognito
+        if (current.isHomePage) {
+            updateTabById(current.id) {
+                it.copy(
+                    isIncognito = nextIncognito,
+                    title = if (nextIncognito) "Private Home" else "Nova Home"
+                )
+            }
+        } else if (current.isIncognito) {
             val normalTab = _uiState.value.tabs.firstOrNull { !it.isIncognito }
             if (normalTab != null) {
                 switchTab(normalTab.id)
             } else {
                 openNewTab(url = NOVA_HOME_URL, isIncognito = false)
             }
-            emitToast("Switched to Standard Browsing")
         } else {
-            openNewTab(url = NOVA_HOME_URL, isIncognito = true)
-            emitToast("Incognito Mode Activated")
+            val existingIncognito = _uiState.value.tabs.firstOrNull { it.isIncognito }
+            if (existingIncognito != null) {
+                switchTab(existingIncognito.id)
+            } else {
+                openNewTab(url = NOVA_HOME_URL, isIncognito = true)
+            }
         }
+        emitToast(if (nextIncognito) "Incognito Mode Activated" else "Standard Mode Restored")
     }
 
     // --- Navigation & Address Bar ---
@@ -1111,8 +1123,29 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun updateQuickShortcut(shortcut: QuickShortcutEntity, newTitle: String, rawUrl: String) {
+        val normalized = BrowserUrlUtils.normalizeInputToUrl(rawUrl)
+        val domain = BrowserUrlUtils.extractDomain(normalized)
+        val cleanTitle = newTitle.trim().ifBlank { domain }
+        val badge = cleanTitle.take(3).uppercase().ifBlank { "WEB" }
+        viewModelScope.launch {
+            repository.updateShortcut(
+                shortcut.copy(
+                    title = cleanTitle,
+                    url = normalized,
+                    subtitle = domain.ifBlank { shortcut.subtitle },
+                    badgeText = badge
+                )
+            )
+            emitToast("Updated $cleanTitle")
+        }
+    }
+
     fun deleteQuickShortcut(id: Long) {
-        viewModelScope.launch { repository.deleteShortcut(id) }
+        viewModelScope.launch {
+            repository.deleteShortcut(id)
+            emitToast("Shortcut removed")
+        }
     }
 
     // --- Long-Press Video Detection, Header Probing & Direct MP4 Download ---
