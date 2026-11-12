@@ -282,7 +282,17 @@ fun TopWebsiteHeaderBar(
                     .height(50.dp)
                     .padding(horizontal = 8.dp)
             ) {
-                // 1. Lock Icon Button (Certificate, Cookies & Site Config)
+                // 1. Lock Icon Button (Certificate, Cookies & Site Config) - Distinctive & clearly visible in both themes
+                val lockBgColor = if (activeTab.isSecureSsl) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                } else {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.16f)
+                }
+                val lockTint = if (activeTab.isSecureSsl) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
                 IconButton(
                     onClick = onSslIconClick,
                     modifier = Modifier
@@ -294,11 +304,7 @@ fun TopWebsiteHeaderBar(
                         modifier = Modifier
                             .size(34.dp)
                             .background(
-                                color = if (activeTab.isSecureSsl) {
-                                    Color(0xFF00E676).copy(alpha = 0.14f)
-                                } else {
-                                    Color(0xFFFFB300).copy(alpha = 0.16f)
-                                },
+                                color = lockBgColor,
                                 shape = CircleShape
                             )
                     ) {
@@ -309,12 +315,8 @@ fun TopWebsiteHeaderBar(
                                 Icons.Filled.Warning
                             },
                             contentDescription = "Site Security, Certificate, Cookies & Configuration",
-                            tint = if (activeTab.isSecureSsl) {
-                                Color(0xFF00E676)
-                            } else {
-                                Color(0xFFFFB300)
-                            },
-                            modifier = Modifier.size(18.dp)
+                            tint = lockTint,
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                 }
@@ -462,7 +464,7 @@ fun TopWebsiteHeaderBar(
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                                     shape = RoundedCornerShape(9.dp)
                                 )
                                 .clickable { onCopyUrlClick(activeTab.url) }
@@ -471,7 +473,7 @@ fun TopWebsiteHeaderBar(
                             Icon(
                                 imageVector = Icons.Filled.ContentCopy,
                                 contentDescription = "Copy Link",
-                                tint = MaterialTheme.colorScheme.onSurface,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -488,7 +490,7 @@ fun TopWebsiteHeaderBar(
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                                     shape = RoundedCornerShape(9.dp)
                                 )
                                 .clickable { isEditingTopUrl = true }
@@ -497,7 +499,7 @@ fun TopWebsiteHeaderBar(
                             Icon(
                                 imageVector = Icons.Filled.Edit,
                                 contentDescription = "Edit Link",
-                                tint = MaterialTheme.colorScheme.onSurface,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -514,7 +516,7 @@ fun TopWebsiteHeaderBar(
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                                     shape = RoundedCornerShape(9.dp)
                                 )
                                 .clickable { onShareUrlClick(websiteTitle, activeTab.url) }
@@ -523,7 +525,7 @@ fun TopWebsiteHeaderBar(
                             Icon(
                                 imageVector = Icons.Filled.Share,
                                 contentDescription = "Share Link",
-                                tint = MaterialTheme.colorScheme.onSurface,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -663,6 +665,11 @@ fun BottomBrowserBar(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
+                                tint = if (activeTab.canGoBack || !activeTab.isHomePage) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                },
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -689,48 +696,31 @@ fun BottomBrowserBar(
                                 .size(44.dp)
                                 .testTag("address_bar_devtools_button")
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .background(devToolsBg, RoundedCornerShape(12.dp))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Code,
-                                    contentDescription = "Inspect Page (DevTools)",
-                                    tint = if (isDevToolsVisible) {
-                                        Color(0xFF00E676)
-                                    } else {
-                                        MaterialTheme.colorScheme.secondary
-                                    },
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Filled.Code,
+                                contentDescription = "Inspect Page (DevTools)",
+                                tint = if (isDevToolsVisible) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
 
-                        // 4. Video Detector
+                        // 4. Video Detector (Normal icon presentation like other icons, no rounded box highlight)
                         IconButton(
                             onClick = onScanPageVideosClick,
                             modifier = Modifier
                                 .size(44.dp)
                                 .testTag("address_bar_video_detect_button")
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Videocam,
-                                    contentDescription = "Detect Videos on Page",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(21.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Filled.Videocam,
+                                contentDescription = "Detect Videos on Page",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
 
                         // 5. Refresh / Stop
@@ -747,6 +737,7 @@ fun BottomBrowserBar(
                                     Icons.Filled.Refresh
                                 },
                                 contentDescription = if (activeTab.isLoading) "Stop Loading" else "Refresh Page",
+                                tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -791,6 +782,7 @@ fun BottomBrowserBar(
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
                     contentDescription = "Browser Menu",
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(22.dp)
                 )
             }

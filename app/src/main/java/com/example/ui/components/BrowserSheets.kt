@@ -1248,20 +1248,27 @@ fun SslSecurityInfoDialog(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                val sslBadgeBg = if (tab.isSecureSsl) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                } else {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.16f)
+                }
+                val sslBadgeTint = if (tab.isSecureSsl) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
+
                 Surface(
                     shape = CircleShape,
-                    color = if (tab.isSecureSsl) {
-                        Color(0xFF00E676).copy(alpha = 0.16f)
-                    } else {
-                        Color(0xFFFFB300).copy(alpha = 0.18f)
-                    },
+                    color = sslBadgeBg,
                     modifier = Modifier.size(46.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (tab.isSecureSsl) Icons.Filled.Lock else Icons.Filled.Warning,
                             contentDescription = null,
-                            tint = if (tab.isSecureSsl) Color(0xFF00E676) else Color(0xFFFFB300),
+                            tint = sslBadgeTint,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -1274,7 +1281,7 @@ fun SslSecurityInfoDialog(
                         text = if (tab.isSecureSsl) "Connection is Secure" else "Connection Not Secure",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (tab.isSecureSsl) Color(0xFF00E676) else Color(0xFFFFB300)
+                        color = sslBadgeTint
                     )
                     Text(
                         text = tab.title.ifBlank { domain },

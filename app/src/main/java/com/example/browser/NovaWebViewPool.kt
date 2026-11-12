@@ -66,7 +66,9 @@ class NovaWebViewPool(
 
     private val defaultSystemMobileUserAgent: String by lazy {
         try {
-            WebSettings.getDefaultUserAgent(context).takeIf { it.isNotBlank() } ?: MOBILE_USER_AGENT
+            val raw = WebSettings.getDefaultUserAgent(context).takeIf { it.isNotBlank() } ?: MOBILE_USER_AGENT
+            // Remove 'Version/4.0' webview token so websites (especially Google) recognize the app as a standard full Chrome browser
+            raw.replace("Version/4.0 ", "")
         } catch (_: Exception) {
             MOBILE_USER_AGENT
         }
@@ -441,6 +443,14 @@ class NovaWebViewPool(
         settings.cacheMode = if (initialTab.isIncognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
         settings.userAgentString = if (initialTab.isDesktopMode) DESKTOP_USER_AGENT else defaultSystemMobileUserAgent
         settings.textZoom = initialTab.textZoom
+        try {
+            settings.safeBrowsingEnabled = true
+        } catch (_: Exception) {
+        }
+        try {
+            settings.setGeolocationEnabled(true)
+        } catch (_: Exception) {
+        }
 
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(!initialTab.isIncognito)

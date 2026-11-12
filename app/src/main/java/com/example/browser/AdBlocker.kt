@@ -79,6 +79,25 @@ object AdBlocker {
         val lowerUrl = url.lowercase(Locale.US)
         val pageDomain = BrowserUrlUtils.extractDomain(pageUrl.ifBlank { url })
 
+        // 0. Whitelist search engines, reCAPTCHA, and authentication endpoints to prevent bot challenge loops
+        if (host.contains("recaptcha") ||
+            host.contains("gstatic.com") ||
+            host == "google.com" ||
+            host.endsWith(".google.com") ||
+            host == "google.co.in" ||
+            host.endsWith(".google.co.in") ||
+            pageDomain.contains("google.com") ||
+            pageDomain.contains("google.co.")
+        ) {
+            // Only block explicit third-party ad networks on google pages, never Google verification or core search assets
+            if (host.contains("recaptcha") || host.contains("gstatic") || host.contains("accounts.google")) {
+                return null
+            }
+            if (pageDomain.contains("google.") && !host.contains("doubleclick") && !host.contains("syndication")) {
+                return null
+            }
+        }
+
         // 1. Check host suffix rules
         for ((blockedDomain, meta) in BLOCKED_HOST_RULES) {
             if (host == blockedDomain || host.endsWith(".$blockedDomain")) {
@@ -124,6 +143,11 @@ object AdBlocker {
     const val COSMETIC_AD_SHIELD_JS = """
         (function() {
           if (window.__novaAdShieldCosmeticInstalled) return;
+          // Never run cosmetic ad stripping on Google Search, accounts or reCAPTCHA to prevent breaking search integrity
+          var currentHost = window.location.hostname || '';
+          if (currentHost.indexOf('google.') !== -1 || currentHost.indexOf('recaptcha') !== -1) {
+            return;
+          }
           window.__novaAdShieldCosmeticInstalled = true;
           var reportedSelectors = {};
           var adSelectors = [
