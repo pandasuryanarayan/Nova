@@ -1,7 +1,10 @@
-name: Build & Publish Nova Browser Release APK
+name: Publish Nova Browser v6.6.0 Release & Tag
 
 on:
   push:
+    branches:
+      - main
+      - master
     tags:
       - 'v*'
   workflow_dispatch:
@@ -11,29 +14,35 @@ permissions:
 
 jobs:
   release-apk:
-    name: Build Signed Release APK (v6.6.0)
+    name: Tag & Publish Signed Release APK (v6.6.0)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+          fetch-depth: 0
 
-      - name: Build Signed Release APK
+      - name: Verify or Build Signed Release APK (v6.6.0)
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'android' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
         run: |
-          ./gradlew :app:assembleRelease || gradle :app:assembleRelease
           mkdir -p releases/v6.6.0
-          cp app/build/outputs/apk/release/app-release.apk releases/v6.6.0/NovaBrowser-v6.6.0-release.apk
+          if [ ! -f "releases/v6.6.0/NovaBrowser-v6.6.0-release.apk" ]; then
+            ./gradlew :app:assembleRelease || gradle :app:assembleRelease
+            cp app/build/outputs/apk/release/app-release.apk releases/v6.6.0/NovaBrowser-v6.6.0-release.apk
+          fi
           sha256sum releases/v6.6.0/NovaBrowser-v6.6.0-release.apk > releases/v6.6.0/NovaBrowser-v6.6.0-release.apk.sha256
+
+      - name: Create & Push Git Tag v6.6.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a v6.6.0 -m "Nova Browser v6.6.0 (versionCode 12)" -f
+          git push origin refs/tags/v6.6.0 --force
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
@@ -43,11 +52,15 @@ jobs:
             releases/v6.6.0/NovaBrowser-v6.6.0-release.apk
             releases/v6.6.0/NovaBrowser-v6.6.0-release.apk.sha256
 
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish GitHub Release v6.6.0
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v6.6.0
+          name: "Nova Browser v6.6.0"
           body_path: releases/v6.6.0/RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          make_latest: true
           files: |
             releases/v6.6.0/NovaBrowser-v6.6.0-release.apk
             releases/v6.6.0/NovaBrowser-v6.6.0-release.apk.sha256
