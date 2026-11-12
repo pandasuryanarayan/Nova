@@ -5,7 +5,7 @@
 ![APK Size](https://img.shields.io/badge/APK%20size-2.38%20MB%20(R8%20Signed)-8C62FF?style=flat-square)
 ![License](https://img.shields.io/badge/license-GNU%20GPL%20v3.0-blue?style=flat-square)
 
-**Nova Browser** (`com.suryatech.browser.nova`) is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**, engineered to run smoothly even on budget Android devices. It features a Warm Light Orange default theme, a smooth app-wide Cosmic Dark Cyan theme transition when Incognito is ON, high-contrast readable lock and toolbar icons, a normal unboxed video detector button, full Chrome mobile browser signature to prevent bot/CAPTCHA issues on Google searches, a Chrome-style centric Home screen with centered Downloads/Bookmarks/History hub cards, and an on-demand 2-bar website layout.
+**Nova Browser** (`com.suryatech.browser.nova`) is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**, engineered to run smoothly even on budget Android devices. It features high-contrast readable lock and toolbar icons, a normal unboxed video detector button, full Chrome mobile browser signature to prevent bot/CAPTCHA issues on Google searches, a Chrome-style centric Home screen with centered Downloads/Bookmarks/History hub cards, private incognito browsing, and an on-demand 2-bar website layout.
 
 ---
 

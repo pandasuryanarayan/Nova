@@ -8,8 +8,8 @@
 - **SHA-256**: `9b799176ef77955686bd6db27de1428e5c01211fc962d8438912718f8bc0a399`
 
 ## What's New in v6.5.0
-1. **Perfect Theme & Icon Consistency in Both Incognito & Non-Incognito Themes**:
-   - The **Lock Icon Button** now uses `MaterialTheme.colorScheme.primary` with a high-contrast container tint in both the **Default Warm Light Orange Theme** and the **Dark Incognito Theme**, rendering cleanly and clearly visible against both light and dark backgrounds.
+1. **Perfect Theme & Icon Consistency in Both Incognito & Standard Modes**:
+   - The **Lock Icon Button** now uses `MaterialTheme.colorScheme.primary` with a high-contrast container tint in both **Standard Mode** and **Incognito Mode**, rendering cleanly and clearly visible against both light and dark backgrounds.
    - All toolbar navigation and fall-down action icons (**Back**, **Home**, **Inspect**, **Video Detector**, **Refresh/Stop**, **Tab View**, **3-Dot Menu**, **Copy**, **Edit**, **Share**) now consistently derive from `MaterialTheme.colorScheme.onSurface` and `MaterialTheme.colorScheme.primary`.
 2. **Normal Video Detector Button**:
    - The **Video Detector (Camera) button** in the bottom website toolbar now renders normally like all other bottom bar icons, removing the highlighted rounded container box.

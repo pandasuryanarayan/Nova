@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 
-// Default Theme (Standard Mode): Warm Light Orange Theme
+// Default Theme (Standard Mode)
 private val NovaDefaultLightOrangeColorScheme = lightColorScheme(
     primary = IncognitoOrangePrimary,
     onPrimary = Color.White,

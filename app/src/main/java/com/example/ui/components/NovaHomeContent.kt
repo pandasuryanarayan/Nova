@@ -226,9 +226,9 @@ fun NovaHomeContent(
 
                     Text(
                         text = if (isIncognito) {
-                            "Dark Stealth Incognito • History & cookies disabled"
+                            "Private Browsing • History & cookies disabled"
                         } else {
-                            "Warm Light Orange Theme • Fast, private & ad-free browsing"
+                            "Fast, private & ad-free web browsing"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
