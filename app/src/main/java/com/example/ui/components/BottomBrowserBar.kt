@@ -1,6 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,6 +34,8 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
@@ -50,8 +54,6 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Tab
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,7 +61,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -87,17 +88,20 @@ import com.example.data.BrowserTab
 import com.example.data.NOVA_HOME_URL
 
 /**
- * Top Website Bar shown when any website is opened (`!activeTab.isHomePage`).
- * Displays ONLY:
+ * Lightweight Top Website Bar shown when any website is opened (`!activeTab.isHomePage`).
+ * Displays:
  * 1. Lock icon button (opens Certificate, Available Cookies & Site Configuration sheet)
  * 2. Website Title (set by website)
- * 3. Dropdown icon button that toggles a fall-down drawer showing the full website URL;
- *    re-clicking the dropdown icon vanishes the fall-down drawer.
+ * 3. 1-Tap Bookmark Toggle Icon Button (placed on the right side near the dropdown button)
+ * 4. Dropdown Icon Button that toggles a fall-down drawer showing the full website URL;
+ *    re-clicking the dropdown icon smoothly collapses and vanishes the fall-down drawer.
  */
 @Composable
 fun TopWebsiteHeaderBar(
     activeTab: BrowserTab,
+    isBookmarked: Boolean,
     onSslIconClick: () -> Unit,
+    onToggleBookmarkClick: () -> Unit,
     onSubmitUrlOrSearch: (String) -> Unit,
     onCopyUrlClick: (String) -> Unit,
     onShareUrlClick: (String, String) -> Unit,
@@ -121,336 +125,392 @@ fun TopWebsiteHeaderBar(
         }
     }
 
-    val websiteTitle = activeTab.title
-        .takeIf { it.isNotBlank() && it != NOVA_HOME_URL }
-        ?: BrowserUrlUtils.extractDomain(activeTab.url).ifBlank { activeTab.url }
+    val websiteTitle = remember(activeTab.title, activeTab.url) {
+        activeTab.title
+            .takeIf { it.isNotBlank() && it != NOVA_HOME_URL }
+            ?: BrowserUrlUtils.extractDomain(activeTab.url).ifBlank { activeTab.url }
+    }
 
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 10.dp,
+    val bookmarkBgColor by animateColorAsState(
+        targetValue = if (isBookmarked) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+        },
+        animationSpec = tween(durationMillis = 150),
+        label = "bookmark_bg"
+    )
+
+    val bookmarkTint by animateColorAsState(
+        targetValue = if (isBookmarked) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        animationSpec = tween(durationMillis = 150),
+        label = "bookmark_tint"
+    )
+
+    val dropdownBgColor by animateColorAsState(
+        targetValue = if (isUrlDropdownExpanded) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+        },
+        animationSpec = tween(durationMillis = 150),
+        label = "dropdown_bg"
+    )
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
             .testTag("top_website_header_bar")
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            if (isEditingTopUrl) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    OutlinedTextField(
-                        value = urlInputText,
-                        onValueChange = { urlInputText = it },
-                        placeholder = {
-                            Text(
-                                text = "Search or type website URL…",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                        keyboardActions = KeyboardActions(
-                            onGo = {
-                                if (urlInputText.isNotBlank()) {
-                                    val query = urlInputText
-                                    isEditingTopUrl = false
-                                    isUrlDropdownExpanded = false
-                                    focusManager.clearFocus()
-                                    onSubmitUrlOrSearch(query)
-                                }
+        if (isEditingTopUrl) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                OutlinedTextField(
+                    value = urlInputText,
+                    onValueChange = { urlInputText = it },
+                    placeholder = {
+                        Text(
+                            text = "Search or type website URL…",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(
+                        onGo = {
+                            if (urlInputText.isNotBlank()) {
+                                val query = urlInputText
+                                isEditingTopUrl = false
+                                isUrlDropdownExpanded = false
+                                focusManager.clearFocus()
+                                onSubmitUrlOrSearch(query)
                             }
-                        ),
-                        trailingIcon = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (urlInputText.isNotEmpty()) {
-                                    IconButton(onClick = { urlInputText = "" }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Close,
-                                            contentDescription = "Clear URL"
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            val query = urlInputText
-                                            isEditingTopUrl = false
-                                            isUrlDropdownExpanded = false
-                                            focusManager.clearFocus()
-                                            onSubmitUrlOrSearch(query)
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.Send,
-                                            contentDescription = "Go",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(focusRequester)
-                            .testTag("top_bar_url_edit_input")
-                    )
-
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    IconButton(
-                        onClick = {
-                            isEditingTopUrl = false
-                            focusManager.clearFocus()
                         }
+                    ),
+                    trailingIcon = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (urlInputText.isNotEmpty()) {
+                                IconButton(onClick = { urlInputText = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Clear URL"
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val query = urlInputText
+                                        isEditingTopUrl = false
+                                        isUrlDropdownExpanded = false
+                                        focusManager.clearFocus()
+                                        onSubmitUrlOrSearch(query)
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Go",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                        .testTag("top_bar_url_edit_input")
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                IconButton(
+                    onClick = {
+                        isEditingTopUrl = false
+                        focusManager.clearFocus()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Cancel URL Edit"
+                    )
+                }
+            }
+        } else {
+            // Top Bar Row: Lock button + Website Title + 1-Tap Bookmark Button + Dropdown Link Button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .padding(horizontal = 8.dp)
+            ) {
+                // 1. Lock Icon Button (Certificate, Cookies & Site Config)
+                IconButton(
+                    onClick = onSslIconClick,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .testTag("ssl_lock_button")
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .background(
+                                color = if (activeTab.isSecureSsl) {
+                                    Color(0xFF00E676).copy(alpha = 0.14f)
+                                } else {
+                                    Color(0xFFFFB300).copy(alpha = 0.16f)
+                                },
+                                shape = CircleShape
+                            )
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "Cancel URL Edit"
+                            imageVector = if (activeTab.isSecureSsl) {
+                                Icons.Filled.Lock
+                            } else {
+                                Icons.Filled.Warning
+                            },
+                            contentDescription = "Site Security, Certificate, Cookies & Configuration",
+                            tint = if (activeTab.isSecureSsl) {
+                                Color(0xFF00E676)
+                            } else {
+                                Color(0xFFFFB300)
+                            },
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
-            } else {
-                // Top Bar Row: ONLY Lock button + Website Title + Dropdown Icon Button
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                // 2. Website Title (set by website)
+                Box(
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable {
+                            isUrlDropdownExpanded = !isUrlDropdownExpanded
+                        }
+                        .padding(horizontal = 6.dp, vertical = 6.dp)
+                        .testTag("top_bar_website_title")
+                ) {
+                    Text(
+                        text = websiteTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // 3. 1-Tap Bookmark Toggle Button (placed on right side near the dropdown button)
+                IconButton(
+                    onClick = onToggleBookmarkClick,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .testTag("top_bar_bookmark_button")
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .background(bookmarkBgColor, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isBookmarked) {
+                                Icons.Filled.Bookmark
+                            } else {
+                                Icons.Filled.BookmarkBorder
+                            },
+                            contentDescription = if (isBookmarked) {
+                                "Remove Bookmark"
+                            } else {
+                                "Bookmark This Website"
+                            },
+                            tint = bookmarkTint,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(2.dp))
+
+                // 4. Dropdown Icon Button to show/hide full Website Link fall-down
+                IconButton(
+                    onClick = { isUrlDropdownExpanded = !isUrlDropdownExpanded },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .testTag("top_bar_url_dropdown_button")
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .background(dropdownBgColor, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isUrlDropdownExpanded) {
+                                Icons.Filled.KeyboardArrowUp
+                            } else {
+                                Icons.Filled.KeyboardArrowDown
+                            },
+                            contentDescription = if (isUrlDropdownExpanded) {
+                                "Hide Website Link"
+                            } else {
+                                "Show Website Link"
+                            },
+                            tint = if (isUrlDropdownExpanded) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Fall-down panel below Top Bar showing the full link of the website; vanishes on re-click
+        AnimatedVisibility(
+            visible = isUrlDropdownExpanded && !isEditingTopUrl,
+            enter = expandVertically(animationSpec = tween(160)) + fadeIn(animationSpec = tween(140)),
+            exit = shrinkVertically(animationSpec = tween(150)) + fadeOut(animationSpec = tween(120))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .testTag("top_bar_url_falldown_panel")
+            ) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.22f),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Text(
+                    text = "WEBSITE LINK",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.32f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    SelectionContainer {
+                        Text(
+                            text = activeTab.url,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .padding(horizontal = 8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    // 1. Lock Icon Button (Certificate, Cookies & Site Config)
-                    IconButton(
-                        onClick = onSslIconClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("ssl_lock_button")
+                    TextButton(
+                        onClick = { onCopyUrlClick(activeTab.url) },
+                        modifier = Modifier.testTag("falldown_copy_url_button")
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = if (activeTab.isSecureSsl) {
-                                Color(0xFF00E676).copy(alpha = 0.14f)
-                            } else {
-                                Color(0xFFFFB300).copy(alpha = 0.16f)
-                            },
-                            modifier = Modifier.size(34.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = if (activeTab.isSecureSsl) {
-                                        Icons.Filled.Lock
-                                    } else {
-                                        Icons.Filled.Warning
-                                    },
-                                    contentDescription = "Site Security, Certificate, Cookies & Configuration",
-                                    tint = if (activeTab.isSecureSsl) {
-                                        Color(0xFF00E676)
-                                    } else {
-                                        Color(0xFFFFB300)
-                                    },
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // 2. Website Title (set by website)
-                    Box(
-                        contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable {
-                                isUrlDropdownExpanded = !isUrlDropdownExpanded
-                            }
-                            .padding(horizontal = 6.dp, vertical = 6.dp)
-                            .testTag("top_bar_website_title")
-                    ) {
-                        Text(
-                            text = websiteTitle,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                        Icon(
+                            imageVector = Icons.Filled.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
                         )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Copy Link", style = MaterialTheme.typography.labelMedium)
                     }
 
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    // 3. Dropdown Icon Button to show/hide full Website Link fall-down
-                    IconButton(
-                        onClick = { isUrlDropdownExpanded = !isUrlDropdownExpanded },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("top_bar_url_dropdown_button")
+                    TextButton(
+                        onClick = { isEditingTopUrl = true },
+                        modifier = Modifier.testTag("falldown_edit_url_button")
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = if (isUrlDropdownExpanded) {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                            },
-                            modifier = Modifier.size(34.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = if (isUrlDropdownExpanded) {
-                                        Icons.Filled.KeyboardArrowUp
-                                    } else {
-                                        Icons.Filled.KeyboardArrowDown
-                                    },
-                                    contentDescription = if (isUrlDropdownExpanded) {
-                                        "Hide Website Link"
-                                    } else {
-                                        "Show Website Link"
-                                    },
-                                    tint = if (isUrlDropdownExpanded) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Change URL / Search", style = MaterialTheme.typography.labelMedium)
+                    }
+
+                    TextButton(
+                        onClick = { onShareUrlClick(websiteTitle, activeTab.url) },
+                        modifier = Modifier.testTag("falldown_share_url_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Share", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
+        }
 
-            // Fall-down panel below Top Bar showing the full link of the website; vanishes on re-click
-            AnimatedVisibility(
-                visible = isUrlDropdownExpanded && !isEditingTopUrl,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                        .testTag("top_bar_url_falldown_panel")
-                ) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
 
-                    Text(
-                        text = "WEBSITE LINK",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        SelectionContainer {
-                            Text(
-                                text = activeTab.url,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        TextButton(
-                            onClick = { onCopyUrlClick(activeTab.url) },
-                            modifier = Modifier.testTag("falldown_copy_url_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.ContentCopy,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copy Link", style = MaterialTheme.typography.labelMedium)
-                        }
-
-                        TextButton(
-                            onClick = {
-                                isEditingTopUrl = true
-                            },
-                            modifier = Modifier.testTag("falldown_edit_url_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Change URL / Search", style = MaterialTheme.typography.labelMedium)
-                        }
-
-                        TextButton(
-                            onClick = { onShareUrlClick(websiteTitle, activeTab.url) },
-                            modifier = Modifier.testTag("falldown_share_url_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Share,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Share", style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                }
-            }
-
-            // Loading progress bar along the bottom edge of the Top Bar
-            AnimatedVisibility(
-                visible = activeTab.isLoading,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                LinearProgressIndicator(
-                    progress = { (activeTab.progress / 100f).coerceIn(0.05f, 1f) },
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(3.dp)
-                )
-            }
+        // Loading progress bar along the bottom edge of the Top Bar
+        AnimatedVisibility(
+            visible = activeTab.isLoading,
+            enter = fadeIn(animationSpec = tween(120)) + expandVertically(animationSpec = tween(120)),
+            exit = fadeOut(animationSpec = tween(120)) + shrinkVertically(animationSpec = tween(120))
+        ) {
+            LinearProgressIndicator(
+                progress = { (activeTab.progress / 100f).coerceIn(0.05f, 1f) },
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.5.dp)
+            )
         }
     }
 }
 
 /**
- * Bottom Browser Bar:
- * - When a website is opened (`!activeTab.isHomePage`), renders a dedicated 7-button toolbar:
+ * Lightweight Bottom Browser Bar optimized for budget phones:
+ * - When a website is opened (`!activeTab.isHomePage`), renders the 7-button toolbar:
  *   Left Arrow (Back), Home, Inspect (DevTools), Video Detector, Refresh/Stop, Tab View, and 3-Dot Menu.
  * - When on the Home Page (`activeTab.isHomePage`), renders the wide Search/URL address bar pill
  *   alongside navigation and tab/menu actions.
@@ -489,360 +549,356 @@ fun BottomBrowserBar(
         }
     }
 
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-        shadowElevation = 14.dp,
+    val devToolsBg by animateColorAsState(
+        targetValue = if (isDevToolsVisible) Color(0xFF00E676).copy(alpha = 0.18f) else Color.Transparent,
+        animationSpec = tween(150),
+        label = "devtools_bg"
+    )
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
             .testTag("bottom_browser_bar")
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            if (isEditingUrl) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+        if (isEditingUrl) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                OutlinedTextField(
+                    value = urlInputText,
+                    onValueChange = { urlInputText = it },
+                    placeholder = {
+                        Text(
+                            text = "Search Google or type URL…",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(18.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(
+                        onGo = {
+                            if (urlInputText.isNotBlank()) {
+                                val query = urlInputText
+                                isEditingUrl = false
+                                focusManager.clearFocus()
+                                onSubmitUrlOrSearch(query)
+                            }
+                        }
+                    ),
+                    trailingIcon = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (urlInputText.isNotEmpty()) {
+                                IconButton(onClick = { urlInputText = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Clear Input"
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val query = urlInputText
+                                        isEditingUrl = false
+                                        focusManager.clearFocus()
+                                        onSubmitUrlOrSearch(query)
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Go",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                        .testTag("address_bar_edit_input")
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                IconButton(
+                    onClick = {
+                        isEditingUrl = false
+                        focusManager.clearFocus()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Cancel Editing"
+                    )
+                }
+            }
+        } else if (!activeTab.isHomePage) {
+            // Website Open Mode: Bottom Toolbar with Left Arrow, Home, Inspect, Video Detector, Refresh, Tab View, 3-Dot Button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                // 1. Left Arrow (Back)
+                IconButton(
+                    onClick = onBackClick,
+                    enabled = activeTab.canGoBack || !activeTab.isHomePage,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("nav_back_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // 2. Home
+                IconButton(
+                    onClick = onHomeClick,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("nav_home_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Home",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // 3. Inspect (DevTools)
+                IconButton(
+                    onClick = onToggleDevToolsClick,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("address_bar_devtools_button")
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(devToolsBg, RoundedCornerShape(12.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Code,
+                            contentDescription = "Inspect Page (DevTools)",
+                            tint = if (isDevToolsVisible) {
+                                Color(0xFF00E676)
+                            } else {
+                                MaterialTheme.colorScheme.secondary
+                            },
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                // 4. Video Detector
+                IconButton(
+                    onClick = onScanPageVideosClick,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("address_bar_video_detect_button")
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Videocam,
+                            contentDescription = "Detect Videos on Page",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(21.dp)
+                        )
+                    }
+                }
+
+                // 5. Refresh / Stop
+                IconButton(
+                    onClick = onReloadOrStopClick,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("reload_stop_button")
+                ) {
+                    Icon(
+                        imageVector = if (activeTab.isLoading) {
+                            Icons.Filled.Close
+                        } else {
+                            Icons.Filled.Refresh
+                        },
+                        contentDescription = if (activeTab.isLoading) "Stop Loading" else "Refresh Page",
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // 6. Tab View (Lightweight tonal button)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(13.dp))
+                        .clickable { onOpenTabsClick() }
+                        .testTag("tabs_fab_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Tab,
+                        contentDescription = "Open Tabs ($tabsCount)",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "$tabsCount",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+
+                // 7. 3-Dot Menu Button
+                IconButton(
+                    onClick = onOpenMenuClick,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("browser_menu_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "Browser Menu",
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        } else {
+            // Home Screen Mode: Wide Search Bar Pill + Navigation & Tab/Menu Buttons
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 7.dp)
+            ) {
+                IconButton(
+                    onClick = onBackClick,
+                    enabled = activeTab.canGoBack,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .testTag("nav_back_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onHomeClick,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .testTag("nav_home_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Home",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .weight(1f)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(22.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(22.dp)
+                        )
+                        .clickable { isEditingUrl = true }
+                        .padding(horizontal = 12.dp)
+                        .testTag("address_bar_pill")
                 ) {
-                    OutlinedTextField(
-                        value = urlInputText,
-                        onValueChange = { urlInputText = it },
-                        placeholder = {
-                            Text(
-                                text = "Search Google or type URL…",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(18.dp),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                        keyboardActions = KeyboardActions(
-                            onGo = {
-                                if (urlInputText.isNotBlank()) {
-                                    val query = urlInputText
-                                    isEditingUrl = false
-                                    focusManager.clearFocus()
-                                    onSubmitUrlOrSearch(query)
-                                }
-                            }
-                        ),
-                        trailingIcon = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (urlInputText.isNotEmpty()) {
-                                    IconButton(onClick = { urlInputText = "" }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Close,
-                                            contentDescription = "Clear Input"
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            val query = urlInputText
-                                            isEditingUrl = false
-                                            focusManager.clearFocus()
-                                            onSubmitUrlOrSearch(query)
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.Send,
-                                            contentDescription = "Go",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(focusRequester)
-                            .testTag("address_bar_edit_input")
+                    Icon(
+                        imageVector = Icons.Filled.Shield,
+                        contentDescription = "Privacy Shield",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
                     )
 
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                    IconButton(
-                        onClick = {
-                            isEditingUrl = false
-                            focusManager.clearFocus()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "Cancel Editing"
-                        )
-                    }
+                    Text(
+                        text = "Search Google or type URL…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-            } else if (!activeTab.isHomePage) {
-                // Website Open Mode: Bottom Toolbar with Left Arrow, Home, Inspect, Video Detector, Refresh, Tab View, 3-Dot Button
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(13.dp))
+                        .clickable { onOpenTabsClick() }
+                        .testTag("tabs_fab_button")
                 ) {
-                    // 1. Left Arrow (Back)
-                    IconButton(
-                        onClick = onBackClick,
-                        enabled = activeTab.canGoBack || !activeTab.isHomePage,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("nav_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-
-                    // 2. Home
-                    IconButton(
-                        onClick = onHomeClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("nav_home_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Home,
-                            contentDescription = "Home",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-
-                    // 3. Inspect (DevTools)
-                    IconButton(
-                        onClick = onToggleDevToolsClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("address_bar_devtools_button")
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isDevToolsVisible) {
-                                Color(0xFF00E676).copy(alpha = 0.18f)
-                            } else {
-                                Color.Transparent
-                            },
-                            modifier = Modifier.size(38.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Filled.Code,
-                                    contentDescription = "Inspect Page (DevTools)",
-                                    tint = if (isDevToolsVisible) {
-                                        Color(0xFF00E676)
-                                    } else {
-                                        MaterialTheme.colorScheme.secondary
-                                    },
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // 4. Video Detector
-                    IconButton(
-                        onClick = onScanPageVideosClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("address_bar_video_detect_button")
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                            modifier = Modifier.size(38.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Filled.Videocam,
-                                    contentDescription = "Detect Videos on Page",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(21.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // 5. Refresh / Stop
-                    IconButton(
-                        onClick = onReloadOrStopClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("reload_stop_button")
-                    ) {
-                        Icon(
-                            imageVector = if (activeTab.isLoading) {
-                                Icons.Filled.Close
-                            } else {
-                                Icons.Filled.Refresh
-                            },
-                            contentDescription = if (activeTab.isLoading) "Stop Loading" else "Refresh Page",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-
-                    // 6. Tab View
-                    FloatingActionButton(
-                        onClick = onOpenTabsClick,
-                        shape = RoundedCornerShape(14.dp),
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp),
-                        modifier = Modifier
-                            .size(42.dp)
-                            .testTag("tabs_fab_button")
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Filled.Tab,
-                                contentDescription = "Open Tabs ($tabsCount)",
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "$tabsCount",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-                    }
-
-                    // 7. 3-Dot Menu Button
-                    IconButton(
-                        onClick = onOpenMenuClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .testTag("browser_menu_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "Browser Menu",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.Tab,
+                        contentDescription = "Open Tabs ($tabsCount)",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "$tabsCount",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
-            } else {
-                // Home Screen Mode: Wide Search Bar Pill + Navigation & Tab/Menu Buttons
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+
+                IconButton(
+                    onClick = onOpenMenuClick,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                        .size(40.dp)
+                        .testTag("browser_menu_button")
                 ) {
-                    IconButton(
-                        onClick = onBackClick,
-                        enabled = activeTab.canGoBack,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .testTag("nav_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onHomeClick,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .testTag("nav_home_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Home,
-                            contentDescription = "Home",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(23.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.88f),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp)
-                            .clip(RoundedCornerShape(23.dp))
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
-                                shape = RoundedCornerShape(23.dp)
-                            )
-                            .clickable { isEditingUrl = true }
-                            .testTag("address_bar_pill")
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Shield,
-                                contentDescription = "Privacy Shield",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Text(
-                                text = "Search Google or type URL…",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    FloatingActionButton(
-                        onClick = onOpenTabsClick,
-                        shape = RoundedCornerShape(14.dp),
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .testTag("tabs_fab_button")
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Filled.Tab,
-                                contentDescription = "Open Tabs ($tabsCount)",
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "$tabsCount",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onOpenMenuClick,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .testTag("browser_menu_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "Browser Menu"
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "Browser Menu"
+                    )
                 }
             }
         }
@@ -860,61 +916,54 @@ fun FindInPageTopBar(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
             .testTag("find_in_page_bar")
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = { Text("Find in page…", style = MaterialTheme.typography.bodyMedium) },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            trailingIcon = {
+                if (query.isNotBlank()) {
+                    Text(
+                        text = "$activeOrdinal/$totalMatches",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
+            },
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                placeholder = { Text("Find in page…", style = MaterialTheme.typography.bodyMedium) },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                trailingIcon = {
-                    if (query.isNotBlank()) {
-                        Text(
-                            text = "$activeOrdinal/$totalMatches",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("find_in_page_input")
+                .weight(1f)
+                .testTag("find_in_page_input")
+        )
+        IconButton(onClick = onFindPrev) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowUp,
+                contentDescription = "Previous Match"
             )
-            IconButton(onClick = onFindPrev) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowUp,
-                    contentDescription = "Previous Match"
-                )
-            }
-            IconButton(onClick = onFindNext) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = "Next Match"
-                )
-            }
-            IconButton(
-                onClick = onClose,
-                modifier = Modifier.testTag("close_find_in_page_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = "Close Find in Page"
-                )
-            }
+        }
+        IconButton(onClick = onFindNext) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = "Next Match"
+            )
+        }
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier.testTag("close_find_in_page_button")
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Close Find in Page"
+            )
         }
     }
 }
@@ -926,64 +975,58 @@ fun BackgroundMediaMiniBar(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
             .testTag("background_media_mini_bar")
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(34.dp)
+                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f), CircleShape)
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
-                modifier = Modifier.size(34.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Filled.Headphones,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = mediaState.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "Background Audio • ${mediaState.domain}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                    maxLines = 1
-                )
-            }
-            IconButton(onClick = onTogglePlayPause) {
-                Icon(
-                    imageVector = if (mediaState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (mediaState.isPlaying) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = "Stop Background Playback",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+            Icon(
+                imageVector = Icons.Filled.Headphones,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = mediaState.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "Background Audio • ${mediaState.domain}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                maxLines = 1
+            )
+        }
+        IconButton(onClick = onTogglePlayPause) {
+            Icon(
+                imageVector = if (mediaState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = if (mediaState.isPlaying) "Pause" else "Play",
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+        IconButton(onClick = onClose) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Stop Background Playback",
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
         }
     }
 }

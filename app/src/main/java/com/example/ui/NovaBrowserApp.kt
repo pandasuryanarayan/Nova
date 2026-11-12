@@ -54,6 +54,12 @@ import com.example.ui.components.VideoLongPressBottomSheet
 import com.example.ui.theme.NovaBrowserTheme
 import com.example.viewmodel.BrowserViewModel
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -72,7 +78,9 @@ fun NovaBrowserApp(
     val downloads by viewModel.downloads.collectAsStateWithLifecycle()
 
     val activeTab = uiState.activeTab
-    val isBookmarked = bookmarks.any { it.url == activeTab.url }
+    val isBookmarked = remember(bookmarks, activeTab.url) {
+        bookmarks.any { it.url == activeTab.url }
+    }
     var cookieRefreshTick by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
@@ -168,13 +176,19 @@ fun NovaBrowserApp(
                 contentWindowInsets = WindowInsets.safeDrawing,
                 topBar = {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        // Top Bar shown whenever a website is opened: Lock + Website Title + Falldown Link Button
-                        AnimatedVisibility(visible = !activeTab.isHomePage) {
+                        // Top Bar shown whenever a website is opened: Lock + Website Title + 1-Tap Bookmark + Falldown Link Button
+                        AnimatedVisibility(
+                            visible = !activeTab.isHomePage,
+                            enter = expandVertically(animationSpec = tween(160)) + fadeIn(animationSpec = tween(140)),
+                            exit = shrinkVertically(animationSpec = tween(150)) + fadeOut(animationSpec = tween(120))
+                        ) {
                             TopWebsiteHeaderBar(
                                 activeTab = activeTab,
+                                isBookmarked = isBookmarked,
                                 onSslIconClick = {
                                     viewModel.setActiveSheet(ActiveSheet.SSL_INFO_DIALOG)
                                 },
+                                onToggleBookmarkClick = viewModel::toggleBookmarkForActiveTab,
                                 onSubmitUrlOrSearch = viewModel::loadUrlOrSearch,
                                 onCopyUrlClick = { url ->
                                     copyTextToClipboard(context, "Website Link", url)
@@ -186,7 +200,11 @@ fun NovaBrowserApp(
                             )
                         }
 
-                        AnimatedVisibility(visible = uiState.isFindInPageVisible) {
+                        AnimatedVisibility(
+                            visible = uiState.isFindInPageVisible,
+                            enter = expandVertically(animationSpec = tween(150)) + fadeIn(animationSpec = tween(120)),
+                            exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(120))
+                        ) {
                             FindInPageTopBar(
                                 query = uiState.findQuery,
                                 activeOrdinal = uiState.findActiveOrdinal,
@@ -202,7 +220,11 @@ fun NovaBrowserApp(
                 },
                 bottomBar = {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        AnimatedVisibility(visible = uiState.backgroundMedia.isActive) {
+                        AnimatedVisibility(
+                            visible = uiState.backgroundMedia.isActive,
+                            enter = expandVertically(animationSpec = tween(150)) + fadeIn(animationSpec = tween(120)),
+                            exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(120))
+                        ) {
                             BackgroundMediaMiniBar(
                                 mediaState = uiState.backgroundMedia,
                                 onTogglePlayPause = viewModel::toggleBackgroundPlayPause,
@@ -238,12 +260,15 @@ fun NovaBrowserApp(
                         .padding(innerPadding)
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    Box(
+                    Crossfade(
+                        targetState = activeTab.isHomePage,
+                        animationSpec = tween(durationMillis = 150),
+                        label = "home_webview_crossfade",
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                    ) {
-                        if (activeTab.isHomePage) {
+                    ) { isHome ->
+                        if (isHome) {
                             NovaHomeContent(
                                 isIncognito = activeTab.isIncognito,
                                 isAdBlockEnabled = preferences.isAdBlockEnabled,

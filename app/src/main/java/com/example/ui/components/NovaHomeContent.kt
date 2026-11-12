@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,14 +35,12 @@ import androidx.compose.material.icons.filled.PlayCircleFilled
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,7 +62,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.R
-import com.example.data.NOVA_VIDEO_LAB_URL
 import com.example.data.QuickShortcutEntity
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -86,6 +85,12 @@ fun NovaHomeContent(
     modifier: Modifier = Modifier
 ) {
     var homeSearchQuery by remember { mutableStateOf("") }
+    val shortcutRows = remember(shortcuts) { shortcuts.chunked(4) }
+    val incognitoPillBg by animateColorAsState(
+        targetValue = if (isIncognito) Color(0xFFD580FF).copy(alpha = 0.28f) else Color.White.copy(alpha = 0.14f),
+        animationSpec = tween(durationMillis = 160),
+        label = "incognito_pill_bg"
+    )
 
     Box(
         modifier = modifier
@@ -101,12 +106,12 @@ fun NovaHomeContent(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Hero Banner Card
-            item {
+            // 1. Lightweight Hero Banner Card
+            item(key = "hero_banner", contentType = "hero") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(176.dp)
+                        .height(168.dp)
                         .clip(RoundedCornerShape(24.dp))
                         .border(
                             width = 1.dp,
@@ -146,19 +151,21 @@ fun NovaHomeContent(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Shield,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(15.dp)
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                        shape = CircleShape
                                     )
-                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Shield,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(15.dp)
+                                )
                             }
                             Text(
                                 text = if (isIncognito) "NOVA PRIVATE" else "NOVA BROWSER",
@@ -168,36 +175,28 @@ fun NovaHomeContent(
                             )
                         }
 
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = if (isIncognito) {
-                                Color(0xFFD580FF).copy(alpha = 0.26f)
-                            } else {
-                                Color.White.copy(alpha = 0.14f)
-                            },
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
+                                .background(incognitoPillBg, RoundedCornerShape(50))
                                 .clickable { onToggleIncognito() }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
                                 .testTag("home_incognito_toggle")
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.VisibilityOff,
-                                    contentDescription = "Toggle Incognito Mode",
-                                    tint = if (isIncognito) Color(0xFFF3C6FF) else Color.White,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (isIncognito) "Private" else "Incognito",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isIncognito) Color(0xFFF3C6FF) else Color.White
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Filled.VisibilityOff,
+                                contentDescription = "Toggle Incognito Mode",
+                                tint = if (isIncognito) Color(0xFFF3C6FF) else Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isIncognito) "Private" else "Incognito",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isIncognito) Color(0xFFF3C6FF) else Color.White
+                            )
                         }
                     }
 
@@ -215,59 +214,55 @@ fun NovaHomeContent(
                                 text = if (isIncognito) {
                                     "Zero-Trace Private Browsing"
                                 } else {
-                                    "Ultra-Fast Web & Video Engine"
+                                    "Fast, Clean & Private Web"
                                 },
                                 style = MaterialTheme.typography.titleLarge,
                                 color = Color.White
                             )
                             Text(
-                                text = "Long-press any HTML5 video player to save direct MP4",
+                                text = "Ad-Block Shield, Desktop Mode & Smart Video Saver",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color(0xFFB9C6E4)
                             )
                         }
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFF00E5FF).copy(alpha = 0.16f),
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { onOpenBlockedAds() }
+                                .background(Color(0xFF00E5FF).copy(alpha = 0.16f), RoundedCornerShape(12.dp))
                                 .border(
                                     1.dp,
                                     Color(0xFF00E5FF).copy(alpha = 0.4f),
                                     RoundedCornerShape(12.dp)
                                 )
+                                .clickable { onOpenBlockedAds() }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                                 .testTag("home_blocked_ads_badge")
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = "$totalAdsBlocked",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF00E5FF)
-                                )
-                                Text(
-                                    text = if (isAdBlockEnabled) "Ads Blocked • View" else "Shield Off",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White
-                                )
-                            }
+                            Text(
+                                text = "$totalAdsBlocked",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00E5FF)
+                            )
+                            Text(
+                                text = if (isAdBlockEnabled) "Ads Blocked • View" else "Shield Off",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White
+                            )
                         }
                     }
                 }
             }
 
             // 2. Quick Search / Direct URL Input on Home
-            item {
+            item(key = "home_search", contentType = "search") {
                 OutlinedTextField(
                     value = homeSearchQuery,
                     onValueChange = { homeSearchQuery = it },
                     placeholder = {
                         Text(
-                            text = "Search Google or type any website / video URL…",
+                            text = "Search Google or type any website URL…",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
@@ -317,88 +312,8 @@ fun NovaHomeContent(
                 )
             }
 
-            // 3. Featured Long-Press Video Downloader Test Sites Banner
-            item {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 3.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Videocam,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = "Long-Press Video Downloader • Instant Test Sites",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Open any test site below and long-press on the video player to trigger the MP4 Downloader Sheet:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            VideoSiteQuickChip(
-                                title = "W3Schools Video",
-                                subtitle = "HTML5 <video>",
-                                accentColor = Color(0xFF00E676),
-                                onClick = {
-                                    onSearchOrLoadUrl("https://www.w3schools.com/html/html5_video.asp")
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("quick_test_w3schools")
-                            )
-                            VideoSiteQuickChip(
-                                title = "Sample Videos",
-                                subtitle = "Direct MP4s",
-                                accentColor = Color(0xFF00E5FF),
-                                onClick = {
-                                    onSearchOrLoadUrl("https://samplelib.com/sample-mp4.html")
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("quick_test_sample_videos")
-                            )
-                            VideoSiteQuickChip(
-                                title = "Multi-Quality Lab",
-                                subtitle = "1080p/Iframe/HLS",
-                                accentColor = Color(0xFF8C62FF),
-                                onClick = {
-                                    onSearchOrLoadUrl(NOVA_VIDEO_LAB_URL)
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("quick_test_video_lab")
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 4. Hub Cards: Downloads, Bookmarks, History
-            item {
+            // 3. Hub Cards: Downloads, Bookmarks, History
+            item(key = "hub_cards", contentType = "hub") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -436,8 +351,8 @@ fun NovaHomeContent(
                 }
             }
 
-            // 5. Quick Shortcuts Grid Header
-            item {
+            // 4. Quick Shortcuts Grid Header
+            item(key = "shortcuts_header", contentType = "header") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -448,99 +363,89 @@ fun NovaHomeContent(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(10.dp))
                             .clickable { onAddShortcutClick() }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
                             .testTag("add_shortcut_button")
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Add,
-                                contentDescription = "Add Shortcut",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Add Site",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add Shortcut",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Add Site",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
             }
 
-            // 6. Quick Shortcuts 4-Column Grid Rows
-            item {
-                val rows = shortcuts.chunked(4)
+            // 5. Lightweight Quick Shortcuts 4-Column Grid Rows
+            item(key = "shortcuts_grid", contentType = "grid") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    rows.forEach { rowItems ->
+                    shortcutRows.forEach { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             rowItems.forEach { item ->
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surface,
-                                    tonalElevation = 2.dp,
+                                val itemAccent = remember(item.accentColorHex) { Color(item.accentColorHex) }
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(16.dp))
+                                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                            shape = RoundedCornerShape(16.dp)
+                                        )
                                         .combinedClickable(
                                             onClick = { onSearchOrLoadUrl(item.url) },
                                             onLongClick = { onDeleteShortcut(item.id) }
                                         )
-                                        .border(
-                                            width = 1.dp,
-                                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
+                                        .padding(vertical = 12.dp, horizontal = 6.dp)
                                         .testTag("shortcut_card_${item.id}")
                                 ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier.padding(vertical = 12.dp, horizontal = 6.dp)
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(itemAccent.copy(alpha = 0.16f), CircleShape)
                                     ) {
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = Color(item.accentColorHex).copy(alpha = 0.18f),
-                                            modifier = Modifier.size(42.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = item.badgeText.take(4),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color(item.accentColorHex)
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = item.title,
-                                            style = MaterialTheme.typography.labelLarge,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center
-                                        )
-                                        Text(
-                                            text = item.subtitle,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center
+                                            text = item.badgeText.take(4),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = itemAccent
                                         )
                                     }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = item.title,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        text = item.subtitle,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
                                 }
                             }
                             repeat(4 - rowItems.size) {
@@ -551,75 +456,34 @@ fun NovaHomeContent(
                 }
             }
 
-            // 7. Incognito Mode Notice Footer (if active)
+            // 6. Incognito Mode Notice Footer (if active)
             if (isIncognito) {
-                item {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                        modifier = Modifier.fillMaxWidth()
+                item(key = "incognito_footer", contentType = "footer") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .padding(14.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(14.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Policy,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "Private Tab Active: Pages you view in this tab won't stick around in your browser history, cookie store, or search history.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Filled.Policy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Private Tab Active: Pages you view in this tab won't stick around in your browser history, cookie store, or search history.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun VideoSiteQuickChip(
-    title: String,
-    subtitle: String,
-    accentColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = accentColor.copy(alpha = 0.12f),
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
-            .border(
-                width = 1.dp,
-                color = accentColor.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(14.dp)
-            )
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                color = accentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
@@ -633,48 +497,42 @@ private fun HomeHubActionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+    Column(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .clickable { onClick() }
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(18.dp))
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(18.dp)
             )
+            .clickable { onClick() }
+            .padding(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(34.dp)
+                .background(accentColor.copy(alpha = 0.16f), CircleShape)
         ) {
-            Surface(
-                shape = CircleShape,
-                color = accentColor.copy(alpha = 0.16f),
-                modifier = Modifier.size(34.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = title,
-                        tint = accentColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1
-            )
-            Text(
-                text = badge,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = accentColor,
+                modifier = Modifier.size(18.dp)
             )
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 1
+        )
+        Text(
+            text = badge,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
     }
 }

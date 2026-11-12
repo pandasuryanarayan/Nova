@@ -1,30 +1,31 @@
 # Nova Browser
 
-![Version](https://img.shields.io/badge/version-v4.0.0-00E5FF?style=flat-square)
+![Version](https://img.shields.io/badge/version-v5.0.0-00E5FF?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Android%207.0%2B%20(API%2024--36)-00E676?style=flat-square)
 ![APK Size](https://img.shields.io/badge/APK%20size-3.05%20MB%20(R8%20Signed)-8C62FF?style=flat-square)
 ![License](https://img.shields.io/badge/license-GNU%20GPL%20v3.0-blue?style=flat-square)
 
-**Nova Browser** is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**. It features a clean 2-bar website layout (Top Website Title & Lock Bar with Fall-Down URL Drawer + Bottom 7-Action Toolbar), multi-tab & Incognito browsing, a real-time Ad-Block Shield with a detailed blocked-requests inspector log, true 1280px Desktop Site emulation, built-in Desktop DevTools (`Elements`, `Sources`, `Console`, `Network`), and a smart long-press MP4 video downloader powered by the Android System `DownloadManager`.
+**Nova Browser** (`com.suryatech.browser.nova`) is a fast, lightweight, privacy-focused Android web browser built with **Kotlin** and **Jetpack Compose (Material Design 3)**, engineered to run smoothly even on budget Android devices. It features a clean 2-bar website layout (Top Website Title, Lock & 1-Tap Bookmark Bar with Fall-Down URL Drawer + Bottom 7-Action Toolbar), multi-tab & Incognito browsing, a real-time Ad-Block Shield with a detailed blocked-requests inspector log, true 1280px Desktop Site emulation, built-in Desktop DevTools (`Elements`, `Sources`, `Console`, `Network`), and a smart long-press MP4 video downloader powered by the Android System `DownloadManager`.
 
 ---
 
-## 📦 Download Signed Release APK (`v4.0.0`)
+## 📦 Download Signed Release APK (`v5.0.0`)
 
 The latest signed, R8-minified release APK is included directly in this repository and automatically published to **GitHub Releases**:
 
-- **Direct APK in Repo**: [`releases/v4.0.0/NovaBrowser-v4.0.0-release.apk`](releases/v4.0.0/NovaBrowser-v4.0.0-release.apk)
-- **Release Notes**: [`releases/v4.0.0/RELEASE_NOTES.md`](releases/v4.0.0/RELEASE_NOTES.md)
-- **Version Name / Code**: `v4.0.0` (`versionCode = 4`, `versionName = "4.0.0"`)
-- **Size**: `3.05 MB` (`3,198,508 bytes`)
-- **SHA-256**: `01a881a17f99d3a61762051cefe0897b5346701d7d1cf91b47b74ac8428bcbfe`
+- **Direct APK in Repo**: [`releases/v5.0.0/NovaBrowser-v5.0.0-release.apk`](releases/v5.0.0/NovaBrowser-v5.0.0-release.apk)
+- **Release Notes**: [`releases/v5.0.0/RELEASE_NOTES.md`](releases/v5.0.0/RELEASE_NOTES.md)
+- **Package ID**: `com.suryatech.browser.nova`
+- **Version Name / Code**: `v5.0.0` (`versionCode = 5`, `versionName = "5.0.0"`)
+- **Size**: `3.05 MB` (`3,198,500 bytes`)
+- **SHA-256**: `ba98a4fb75fec3e68da204dca3e06a219100fdb950d5cbfdb3e05e45e8b9f094`
 
 ---
 
 ## ✨ Key Features
 
-### 1. Dual-Bar Website Layout & Lock Inspector
-- **Top Website Bar**: Shows ONLY the **Lock** icon, the **Website Title** (set by the website), and a **Dropdown Link Button** (`▼`/`▲`) that opens a fall-down drawer with the full website link (and vanishes on re-click).
+### 1. Dual-Bar Website Layout, 1-Tap Bookmark & Lock Inspector
+- **Top Website Bar**: Shows the **Lock** icon, the **Website Title** (set by the website), a **1-Tap Bookmark Button** right next to the dropdown button, and a **Dropdown Link Button** (`▼`/`▲`) that opens a fall-down drawer with the full website link (and vanishes on re-click).
 - **Lock Inspector Sheet**: Clicking the Lock icon lets you inspect the **Page SSL/TLS Certificate**, view **Available Cookies** (`CookieManager`), and manage **Site Configuration** (showing all enabled settings & toggles).
 - **Bottom 7-Button Toolbar**: Dedicated bottom bar with **Back (Left Arrow)**, **Home**, **Inspect (DevTools)**, **Video Detector**, **Refresh/Stop**, **Tab View (`[N]`)**, and **3-Dot Menu**.
 
@@ -55,7 +56,7 @@ The latest signed, R8-minified release APK is included directly in this reposito
 ## 🛠️ Tech Stack & Architecture
 
 - **Language**: 100% Kotlin
-- **UI Framework**: Jetpack Compose + Material Design 3 (Dynamic Dark/Light Theme, Edge-to-Edge WindowInsets)
+- **UI Framework**: Jetpack Compose + Material Design 3 (Lightweight flat tonal surfaces & 150ms animations for smooth 60/120fps budget phone performance)
 - **Architecture**: MVVM (`BrowserViewModel` + reactive `StateFlow` + `NovaWebViewPool`)
 - **Local Persistence**: Jetpack Room (`NovaDatabase`) & Jetpack DataStore Preferences (`BrowserPreferences`)
 - **Networking & Media**: OkHttp 4, Android `WebView`, Android System `DownloadManager`
@@ -68,11 +69,11 @@ The latest signed, R8-minified release APK is included directly in this reposito
 ```text
 ├── LICENSE                            # GNU General Public License v3.0 (GPL-3.0)
 ├── README.md                          # Project documentation
-├── releases/v4.0.0/
-│   ├── NovaBrowser-v4.0.0-release.apk # Signed v4.0.0 Release APK (3.05 MB)
-│   └── RELEASE_NOTES.md               # Release v4.0.0 changelog & checksums
+├── releases/v5.0.0/
+│   ├── NovaBrowser-v5.0.0-release.apk # Signed v5.0.0 Release APK (3.05 MB)
+│   └── RELEASE_NOTES.md               # Release v5.0.0 changelog & checksums
 ├── .github/workflows/
-│   └── release.yml                    # Auto-publishes GitHub Release v4.0.0 on push
+│   └── release.yml                    # Auto-publishes GitHub Release v5.0.0 on push
 └── app/src/main/java/com/example/
     ├── MainActivity.kt              # Edge-to-Edge Activity entry point
     ├── browser/

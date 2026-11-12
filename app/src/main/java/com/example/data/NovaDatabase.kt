@@ -88,7 +88,7 @@ interface BrowserDao {
         QuickShortcutEntity::class,
         DownloadItemEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class NovaDatabase : RoomDatabase() {
@@ -104,7 +104,7 @@ abstract class NovaDatabase : RoomDatabase() {
                     context.applicationContext,
                     NovaDatabase::class.java,
                     "nova_browser.db"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(true).build()
                 INSTANCE = instance
                 instance
             }
@@ -112,52 +112,28 @@ abstract class NovaDatabase : RoomDatabase() {
 
         fun defaultShortcuts(): List<QuickShortcutEntity> = listOf(
             QuickShortcutEntity(
-                title = "Video Test Lab",
-                url = NOVA_VIDEO_LAB_URL,
-                subtitle = "Multi-Quality MP4 & Stream Test",
-                badgeText = "MP4 LAB",
-                accentColorHex = 0xFF00E5FF,
+                title = "Google",
+                url = "https://www.google.com",
+                subtitle = "Search Engine",
+                badgeText = "G",
+                accentColorHex = 0xFF4285F4,
                 sortOrder = 1
             ),
             QuickShortcutEntity(
-                title = "W3Schools Video",
-                url = "https://www.w3schools.com/html/html5_video.asp",
-                subtitle = "HTML5 <video> Test Page",
-                badgeText = "W3C",
-                accentColorHex = 0xFF00E676,
+                title = "YouTube",
+                url = "https://m.youtube.com",
+                subtitle = "Videos & Creators",
+                badgeText = "YT",
+                accentColorHex = 0xFFFF5252,
                 sortOrder = 2
-            ),
-            QuickShortcutEntity(
-                title = "Sample Videos",
-                url = "https://samplelib.com/sample-mp4.html",
-                subtitle = "Direct MP4 Video Samples",
-                badgeText = "MP4",
-                accentColorHex = 0xFF8C62FF,
-                sortOrder = 3
-            ),
-            QuickShortcutEntity(
-                title = "Wikimedia Video",
-                url = "https://commons.wikimedia.org/wiki/Category:Videos",
-                subtitle = "Open Media Repository",
-                badgeText = "WIKI",
-                accentColorHex = 0xFFFFB300,
-                sortOrder = 4
-            ),
-            QuickShortcutEntity(
-                title = "Google Search",
-                url = "https://www.google.com",
-                subtitle = "Web & Video Search",
-                badgeText = "G",
-                accentColorHex = 0xFF4285F4,
-                sortOrder = 5
             ),
             QuickShortcutEntity(
                 title = "DuckDuckGo",
                 url = "https://duckduckgo.com",
-                subtitle = "Private Web Search",
+                subtitle = "Private Search",
                 badgeText = "DDG",
                 accentColorHex = 0xFFFF7043,
-                sortOrder = 6
+                sortOrder = 3
             ),
             QuickShortcutEntity(
                 title = "Wikipedia",
@@ -165,14 +141,38 @@ abstract class NovaDatabase : RoomDatabase() {
                 subtitle = "Free Encyclopedia",
                 badgeText = "W",
                 accentColorHex = 0xFF90A4AE,
+                sortOrder = 4
+            ),
+            QuickShortcutEntity(
+                title = "GitHub",
+                url = "https://github.com",
+                subtitle = "Code & Releases",
+                badgeText = "GH",
+                accentColorHex = 0xFF00E5FF,
+                sortOrder = 5
+            ),
+            QuickShortcutEntity(
+                title = "Reddit",
+                url = "https://www.reddit.com",
+                subtitle = "Communities",
+                badgeText = "RD",
+                accentColorHex = 0xFFFFB300,
+                sortOrder = 6
+            ),
+            QuickShortcutEntity(
+                title = "Archive.org",
+                url = "https://archive.org",
+                subtitle = "Digital Library",
+                badgeText = "IA",
+                accentColorHex = 0xFF00E676,
                 sortOrder = 7
             ),
             QuickShortcutEntity(
-                title = "Internet Archive",
-                url = "https://archive.org/details/movies",
-                subtitle = "Public Domain Films",
-                badgeText = "IA",
-                accentColorHex = 0xFF26C6DA,
+                title = "StackOverflow",
+                url = "https://stackoverflow.com",
+                subtitle = "Developer Q&A",
+                badgeText = "SO",
+                accentColorHex = 0xFF8C62FF,
                 sortOrder = 8
             )
         )

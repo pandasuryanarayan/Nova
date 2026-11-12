@@ -13,11 +13,11 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.novabrowser.xkvpzr"
+    applicationId = "com.suryatech.browser.nova"
     minSdk = 24
     targetSdk = 36
-    versionCode = 4
-    versionName = "4.0.0"
+    versionCode = 5
+    versionName = "5.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

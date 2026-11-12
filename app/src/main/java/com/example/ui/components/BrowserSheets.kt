@@ -79,7 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material3.FilterChip
 import androidx.compose.ui.text.font.FontFamily
 import com.example.browser.BrowserUrlUtils
@@ -787,16 +787,16 @@ fun BrowserMenuSheet(
                 .padding(bottom = 20.dp)
                 .testTag("browser_menu_sheet")
         ) {
-            // Quick Top Action Bar (Bookmark, Downloads, History, Share, Copy Link)
+            // Quick Top Action Bar (Bookmarks Manager, Downloads, History, Share, Copy Link)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 MenuQuickIconTile(
-                    icon = if (isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                    label = if (isBookmarked) "Saved" else "Bookmark",
-                    onClick = onToggleBookmark,
-                    testTag = "menu_bookmark_toggle"
+                    icon = Icons.Filled.Bookmark,
+                    label = "Bookmarks",
+                    onClick = onOpenBookmarks,
+                    testTag = "menu_bookmarks_button"
                 )
                 MenuQuickIconTile(
                     icon = Icons.Filled.Download,
@@ -826,85 +826,7 @@ fun BrowserMenuSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Highlight Row: Video Detector + Desktop DevTools Inspector
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { onScanPageVideos() }
-                        .testTag("menu_scan_videos_button")
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Videocam,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Detect Videos",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = "Download MP4",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.75f),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { onOpenDevTools() }
-                        .testTag("menu_inspect_devtools_button")
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.FindInPage,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Inspect (DevTools)",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Text(
-                                text = "DOM/Src/Console/Net",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Toggles: Ad-Block, Blocked Ads List Button, Desktop Mode, Dark Mode, Incognito Mode
             MenuSwitchRow(
@@ -936,7 +858,7 @@ fun BrowserMenuSheet(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                         Icon(
-                            imageVector = Icons.Filled.ListAlt,
+                            imageVector = Icons.AutoMirrored.Filled.ListAlt,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
