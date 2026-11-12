@@ -412,15 +412,108 @@ fun TopWebsiteHeaderBar(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                Text(
-                    text = "WEBSITE LINK",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                // Header Row: "Website Link" aligned on Left + 3 Individual Action Icons (Copy, Edit, Share) on Right
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp)
+                ) {
+                    Text(
+                        text = "Website Link",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // 1. Copy Link Icon Button
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(9.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                                    shape = RoundedCornerShape(9.dp)
+                                )
+                                .clickable { onCopyUrlClick(activeTab.url) }
+                                .testTag("falldown_copy_url_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ContentCopy,
+                                contentDescription = "Copy Link",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
 
+                        // 2. Edit URL Icon Button
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(9.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                                    shape = RoundedCornerShape(9.dp)
+                                )
+                                .clickable { isEditingTopUrl = true }
+                                .testTag("falldown_edit_url_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = "Edit Link",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        // 3. Share Link Icon Button
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(9.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.28f),
+                                    shape = RoundedCornerShape(9.dp)
+                                )
+                                .clickable { onShareUrlClick(websiteTitle, activeTab.url) }
+                                .testTag("falldown_share_url_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Share,
+                                contentDescription = "Share Link",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Full Website URL Box aligned cleanly with header row
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -439,53 +532,6 @@ fun TopWebsiteHeaderBar(
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = { onCopyUrlClick(activeTab.url) },
-                        modifier = Modifier.testTag("falldown_copy_url_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ContentCopy,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Copy Link", style = MaterialTheme.typography.labelMedium)
-                    }
-
-                    TextButton(
-                        onClick = { isEditingTopUrl = true },
-                        modifier = Modifier.testTag("falldown_edit_url_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Edit", style = MaterialTheme.typography.labelMedium)
-                    }
-
-                    TextButton(
-                        onClick = { onShareUrlClick(websiteTitle, activeTab.url) },
-                        modifier = Modifier.testTag("falldown_share_url_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Share,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
