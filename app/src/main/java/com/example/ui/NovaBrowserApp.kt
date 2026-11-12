@@ -293,6 +293,7 @@ fun NovaBrowserApp(
                                 NovaHomeContent(
                                     isIncognito = activeTab.isIncognito,
                                     isAdBlockEnabled = preferences.isAdBlockEnabled,
+                                    adBlockMode = preferences.adBlockMode,
                                     totalAdsBlocked = preferences.totalAdsBlocked,
                                     downloadsCount = downloads.size,
                                     bookmarksCount = bookmarks.size,
@@ -479,12 +480,14 @@ fun NovaBrowserApp(
                 BlockedAdsSheet(
                     blockedAds = uiState.blockedAdsLog,
                     isAdBlockEnabled = preferences.isAdBlockEnabled,
+                    adBlockMode = preferences.adBlockMode,
                     totalAdsBlocked = preferences.totalAdsBlocked,
                     activeTabId = uiState.activeTabId,
                     onToggleAdBlock = viewModel::toggleAdBlock,
+                    onSelectAdBlockMode = viewModel::selectAdBlockMode,
                     onCopyAdUrl = { adUrl ->
                         copyTextToClipboard(context, "Blocked Ad URL", adUrl)
-                        viewModel.emitToast("Blocked ad URL copied to clipboard")
+                        viewModel.emitToast("Copied to clipboard")
                     },
                     onClearLog = viewModel::clearBlockedAdsLog,
                     onDismiss = viewModel::dismissSheet
@@ -496,11 +499,13 @@ fun NovaBrowserApp(
                     activeTab = activeTab,
                     isBookmarked = isBookmarked,
                     isAdBlockEnabled = preferences.isAdBlockEnabled,
+                    adBlockMode = preferences.adBlockMode,
                     isDarkMode = preferences.isDarkMode,
                     totalAdsBlocked = preferences.totalAdsBlocked,
                     blockedAdsInSessionCount = uiState.blockedAdsLog.size,
                     onToggleBookmark = viewModel::toggleBookmarkForActiveTab,
                     onToggleAdBlock = viewModel::toggleAdBlock,
+                    onSelectAdBlockMode = viewModel::selectAdBlockMode,
                     onOpenBlockedAdsList = { viewModel.setActiveSheet(ActiveSheet.BLOCKED_ADS) },
                     onToggleDesktopMode = viewModel::toggleDesktopMode,
                     onToggleDarkMode = viewModel::toggleDarkMode,

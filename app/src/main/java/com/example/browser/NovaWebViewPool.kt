@@ -20,6 +20,7 @@ import android.webkit.WebSettings
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.example.data.AdBlockMode
 import com.example.data.BlockedAdEntry
 import com.example.data.BrowserTab
 import com.example.data.DetectedVideoInfo
@@ -58,6 +59,7 @@ class NovaWebViewPool(
     private val onDevToolsNetworkEntryJson: (tabId: String, json: String) -> Unit,
     private val onPageFinishedForDevTools: (tabId: String) -> Unit,
     private val isAdBlockEnabledProvider: () -> Boolean,
+    private val adBlockModeProvider: () -> AdBlockMode = { AdBlockMode.MINIMAL },
     private val isDarkModeEnabledProvider: () -> Boolean
 ) {
     private val webViews = mutableMapOf<String, WebView>()
@@ -504,7 +506,8 @@ class NovaWebViewPool(
                                 adDomain = obj.optString("adDomain", "dom-element"),
                                 pageDomain = obj.optString("pageDomain", "page"),
                                 category = obj.optString("category", "DOM Ad Container"),
-                                filterRule = obj.optString("filterRule", "##.adsbygoogle")
+                                filterRule = obj.optString("filterRule", "##.adsbygoogle"),
+                                modeTier = adBlockModeProvider().shortBadge
                             )
                             onAdBlocked(entry)
                         } catch (_: Exception) {
@@ -611,7 +614,8 @@ class NovaWebViewPool(
                     val matchedAd = AdBlocker.matchAdRequest(
                         tabId = tabId,
                         url = reqUrl,
-                        pageUrl = liveTab.url
+                        pageUrl = liveTab.url,
+                        mode = adBlockModeProvider()
                     )
                     if (matchedAd != null) {
                         mainHandler.post { onAdBlocked(matchedAd) }
@@ -833,9 +837,12 @@ class NovaWebViewPool(
             webView.evaluateJavascript(MOBILE_MODE_RESTORE_JS, null)
         }
 
-        // 2. Cosmetic DOM Ad Shield & Reporter
+        // 2. Cosmetic DOM Ad Shield & Reporter (Minimal / Pro / Max)
         if (isAdBlockEnabledProvider()) {
-            webView.evaluateJavascript(AdBlocker.COSMETIC_AD_SHIELD_JS, null)
+            webView.evaluateJavascript(
+                AdBlocker.buildCosmeticAdShieldJs(adBlockModeProvider()),
+                null
+            )
         }
 
         // 4. Long-Press Video Detector & DevTools Inspector

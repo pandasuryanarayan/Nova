@@ -7,10 +7,12 @@ import android.view.View
 import android.webkit.WebChromeClient
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.browser.AdBlocker
 import com.example.browser.BrowserUrlUtils
 import com.example.browser.NovaDownloadHelper
 import com.example.browser.NovaWebViewPool
 import com.example.data.ActiveSheet
+import com.example.data.AdBlockMode
 import com.example.data.BackgroundMediaState
 import com.example.data.BlockedAdEntry
 import com.example.data.BookmarkEntity
@@ -240,6 +242,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             downloadHelper.onWebViewDownloadError(downloadId, errorMessage)
         },
         isAdBlockEnabledProvider = { preferences.value.isAdBlockEnabled },
+        adBlockModeProvider = { preferences.value.adBlockMode },
         isDarkModeEnabledProvider = { preferences.value.isDarkMode }
     )
 
@@ -998,7 +1001,29 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val next = !preferences.value.isAdBlockEnabled
         viewModelScope.launch {
             repository.setAdBlockEnabled(next)
-            emitToast(if (next) "Ad-Block Shield Enabled" else "Ad-Block Shield Paused")
+            val mode = preferences.value.adBlockMode
+            emitToast(
+                if (next) {
+                    "Ad-Block Shield Enabled (${mode.shortBadge} • ${AdBlocker.getTotalRuleCount(mode)} rules)"
+                } else {
+                    "Ad-Block Shield Paused"
+                }
+            )
+        }
+    }
+
+    fun selectAdBlockMode(mode: AdBlockMode) {
+        viewModelScope.launch {
+            repository.setAdBlockMode(mode)
+            val active = _uiState.value.activeTab
+            if (!active.isHomePage) {
+                webViewPool.getWebView(active.id)?.evaluateJavascript(
+                    AdBlocker.buildCosmeticAdShieldJs(mode),
+                    null
+                )
+            }
+            val totalRules = AdBlocker.getTotalRuleCount(mode)
+            emitToast("${mode.displayName} Activated ($totalRules filter rules)")
         }
     }
 

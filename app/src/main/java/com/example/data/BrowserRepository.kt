@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -15,6 +16,7 @@ private val Context.browserDataStore by preferencesDataStore(name = "nova_browse
 data class BrowserPreferences(
     val isDarkMode: Boolean = true,
     val isAdBlockEnabled: Boolean = true,
+    val adBlockMode: AdBlockMode = AdBlockMode.MINIMAL,
     val defaultTextZoom: Int = 100,
     val totalAdsBlocked: Long = 0L
 )
@@ -26,6 +28,7 @@ class BrowserRepository(
     private object PrefKeys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val AD_BLOCK_ENABLED = booleanPreferencesKey("ad_block_enabled")
+        val AD_BLOCK_MODE = stringPreferencesKey("ad_block_mode")
         val DEFAULT_TEXT_ZOOM = intPreferencesKey("default_text_zoom")
         val TOTAL_ADS_BLOCKED = longPreferencesKey("total_ads_blocked")
         val DEFAULT_SHORTCUTS_SEEDED = booleanPreferencesKey("default_shortcuts_seeded")
@@ -35,6 +38,7 @@ class BrowserRepository(
         BrowserPreferences(
             isDarkMode = prefs[PrefKeys.DARK_MODE] ?: true,
             isAdBlockEnabled = prefs[PrefKeys.AD_BLOCK_ENABLED] ?: true,
+            adBlockMode = AdBlockMode.fromName(prefs[PrefKeys.AD_BLOCK_MODE]),
             defaultTextZoom = prefs[PrefKeys.DEFAULT_TEXT_ZOOM] ?: 100,
             totalAdsBlocked = prefs[PrefKeys.TOTAL_ADS_BLOCKED] ?: 0L
         )
@@ -62,6 +66,13 @@ class BrowserRepository(
 
     suspend fun setAdBlockEnabled(enabled: Boolean) {
         context.browserDataStore.edit { it[PrefKeys.AD_BLOCK_ENABLED] = enabled }
+    }
+
+    suspend fun setAdBlockMode(mode: AdBlockMode) {
+        context.browserDataStore.edit {
+            it[PrefKeys.AD_BLOCK_MODE] = mode.name
+            it[PrefKeys.AD_BLOCK_ENABLED] = true
+        }
     }
 
     suspend fun setDefaultTextZoom(zoom: Int) {

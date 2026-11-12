@@ -78,6 +78,34 @@ data class DownloadItemEntity(
         }
 }
 
+enum class AdBlockMode(
+    val displayName: String,
+    val shortBadge: String,
+    val subtitle: String
+) {
+    MINIMAL(
+        displayName = "Minimal (Default)",
+        shortBadge = "Minimal",
+        subtitle = "Essential 58 rules • Fast & lightweight ad shield"
+    ),
+    PRO(
+        displayName = "Pro Mode",
+        shortBadge = "Pro",
+        subtitle = "Expanded +145 rules • Deep ad networks, analytics & social pixels"
+    ),
+    MAX(
+        displayName = "Max Mode",
+        shortBadge = "Max",
+        subtitle = "All Pro rules + YouTube video, midroll & overlay ad blocker"
+    );
+
+    companion object {
+        fun fromName(name: String?): AdBlockMode {
+            return entries.find { it.name.equals(name, ignoreCase = true) } ?: MINIMAL
+        }
+    }
+}
+
 data class BlockedAdEntry(
     val id: String = UUID.randomUUID().toString(),
     val tabId: String,
@@ -86,6 +114,7 @@ data class BlockedAdEntry(
     val pageDomain: String,
     val category: String, // e.g. "Ad Script", "Tracker / Pixel", "Banner Frame", "DOM Ad Slot"
     val filterRule: String, // e.g. "||doubleclick.net^"
+    val modeTier: String = "MINIMAL",
     val timestamp: Long = System.currentTimeMillis()
 )
 

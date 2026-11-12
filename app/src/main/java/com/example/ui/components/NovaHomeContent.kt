@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.browser.rememberShortcutIcon
+import com.example.data.AdBlockMode
 import com.example.data.QuickShortcutEntity
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -85,6 +86,7 @@ import com.example.data.QuickShortcutEntity
 fun NovaHomeContent(
     isIncognito: Boolean,
     isAdBlockEnabled: Boolean,
+    adBlockMode: AdBlockMode = AdBlockMode.MINIMAL,
     totalAdsBlocked: Long,
     downloadsCount: Int,
     bookmarksCount: Int,
@@ -347,7 +349,7 @@ fun NovaHomeContent(
                             Spacer(modifier = Modifier.width(7.dp))
                             Text(
                                 text = if (isAdBlockEnabled) {
-                                    "$totalAdsBlocked Ads Blocked"
+                                    "$totalAdsBlocked Ads • ${adBlockMode.shortBadge}"
                                 } else {
                                     "Ad-Shield Off"
                                 },

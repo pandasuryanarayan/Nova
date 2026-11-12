@@ -752,11 +752,13 @@ fun BrowserMenuSheet(
     activeTab: BrowserTab,
     isBookmarked: Boolean,
     isAdBlockEnabled: Boolean,
+    adBlockMode: com.example.data.AdBlockMode = com.example.data.AdBlockMode.MINIMAL,
     isDarkMode: Boolean,
     totalAdsBlocked: Long,
     blockedAdsInSessionCount: Int,
     onToggleBookmark: () -> Unit,
     onToggleAdBlock: () -> Unit,
+    onSelectAdBlockMode: (com.example.data.AdBlockMode) -> Unit = {},
     onOpenBlockedAdsList: () -> Unit,
     onToggleDesktopMode: () -> Unit,
     onToggleDarkMode: () -> Unit,
@@ -829,14 +831,76 @@ fun BrowserMenuSheet(
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Toggles: Ad-Block, Blocked Ads List Button, Desktop Mode, Dark Mode, Incognito Mode
+            // Toggles: Ad-Block, 3-Tier AdBlock Mode Selector, Blocked Ads List Button, Desktop Mode, Dark Mode, Incognito Mode
             MenuSwitchRow(
                 icon = Icons.Filled.Shield,
-                title = "Ad-Block Shield ($totalAdsBlocked blocked)",
+                title = "Ad-Block Shield (${adBlockMode.shortBadge} • $totalAdsBlocked blocked)",
                 checked = isAdBlockEnabled,
                 onCheckedChange = { onToggleAdBlock() },
                 testTag = "menu_adblock_switch"
             )
+            if (isAdBlockEnabled) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    com.example.data.AdBlockMode.entries.forEach { mode ->
+                        val selected = adBlockMode == mode
+                        val ruleCount = com.example.browser.AdBlocker.getTotalRuleCount(mode)
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { onSelectAdBlockMode(mode) }
+                                .border(
+                                    width = 1.dp,
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                                    },
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .testTag("menu_adblock_mode_${mode.name.lowercase()}")
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (mode == com.example.data.AdBlockMode.MINIMAL) "${mode.shortBadge} (Default)" else mode.shortBadge,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "$ruleCount rules",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f)
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
@@ -867,13 +931,13 @@ fun BrowserMenuSheet(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Blocked Ads Log ($blockedAdsInSessionCount in session)",
+                                text = "Blocked Ads & Filter Modes ($blockedAdsInSessionCount in session)",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "Tap to see exact ad domains, URLs & filter rules blocked",
+                                text = "Switch Minimal / Pro / Max (YouTube) & inspect all active filter rules",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
@@ -884,7 +948,7 @@ fun BrowserMenuSheet(
                         color = MaterialTheme.colorScheme.primary
                     ) {
                         Text(
-                            text = "View List",
+                            text = "Configure",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -1945,25 +2009,33 @@ private fun SiteConfigStatusItem(
 fun BlockedAdsSheet(
     blockedAds: List<BlockedAdEntry>,
     isAdBlockEnabled: Boolean,
+    adBlockMode: com.example.data.AdBlockMode = com.example.data.AdBlockMode.MINIMAL,
     totalAdsBlocked: Long,
     activeTabId: String,
     onToggleAdBlock: () -> Unit,
+    onSelectAdBlockMode: (com.example.data.AdBlockMode) -> Unit = {},
     onCopyAdUrl: (String) -> Unit,
     onClearLog: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.US) }
-    var filterMode by remember { mutableStateOf("ALL") } // ALL, TAB, SCRIPT, TRACKER, DOM
+    var filterMode by remember { mutableStateOf("ALL") } // ALL, TAB, SCRIPT, TRACKER, RULES
 
     val filteredAds = remember(blockedAds, filterMode, activeTabId) {
         when (filterMode) {
             "TAB" -> blockedAds.filter { it.tabId == activeTabId }
             "SCRIPT" -> blockedAds.filter { it.category.contains("Ad", ignoreCase = true) && !it.category.contains("DOM", ignoreCase = true) }
             "TRACKER" -> blockedAds.filter { it.category.contains("Tracker", ignoreCase = true) || it.category.contains("Analytics", ignoreCase = true) || it.category.contains("Telemetry", ignoreCase = true) }
-            "DOM" -> blockedAds.filter { it.category.contains("DOM", ignoreCase = true) }
             else -> blockedAds
         }
+    }
+
+    val activeRulesCatalog = remember(adBlockMode) {
+        com.example.browser.AdBlocker.getRulesCatalogForMode(adBlockMode)
+    }
+    val activeCounts = remember(adBlockMode) {
+        com.example.browser.AdBlocker.getRuleCountsForMode(adBlockMode)
     }
 
     ModalBottomSheet(
@@ -1989,7 +2061,7 @@ fun BlockedAdsSheet(
                     Surface(
                         shape = CircleShape,
                         color = if (isAdBlockEnabled) {
-                            Color(0xFF00E5FF).copy(alpha = 0.18f)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                         } else {
                             MaterialTheme.colorScheme.surfaceVariant
                         },
@@ -1999,7 +2071,7 @@ fun BlockedAdsSheet(
                             Icon(
                                 imageVector = Icons.Filled.Shield,
                                 contentDescription = null,
-                                tint = if (isAdBlockEnabled) Color(0xFF00E5FF) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = if (isAdBlockEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -2007,11 +2079,11 @@ fun BlockedAdsSheet(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Blocked Ads & Trackers",
+                            text = "Ad-Blocker Shield (${adBlockMode.shortBadge})",
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
-                            text = "$totalAdsBlocked total blocked • ${blockedAds.size} captured in log",
+                            text = "$totalAdsBlocked total blocked • ${activeRulesCatalog.size} active rules",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -2019,7 +2091,7 @@ fun BlockedAdsSheet(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (blockedAds.isNotEmpty()) {
+                    if (blockedAds.isNotEmpty() && filterMode != "RULES") {
                         TextButton(
                             onClick = onClearLog,
                             modifier = Modifier.testTag("clear_blocked_ads_log_button")
@@ -2037,6 +2109,109 @@ fun BlockedAdsSheet(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            // 3-Tier Ad-Blocker Mode Selector Cards: Minimal (Default) | Pro | Max (YouTube)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                com.example.data.AdBlockMode.entries.forEach { mode ->
+                    val selected = adBlockMode == mode
+                    val totalRules = com.example.browser.AdBlocker.getTotalRuleCount(mode)
+                    val modeSubLabel = when (mode) {
+                        com.example.data.AdBlockMode.MINIMAL -> "Default • Fast"
+                        com.example.data.AdBlockMode.PRO -> "+131 Ad/Trackers"
+                        com.example.data.AdBlockMode.MAX -> "+YouTube Ads"
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { onSelectAdBlockMode(mode) }
+                            .border(
+                                width = if (selected) 1.6.dp else 1.dp,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                },
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                            .testTag("adblock_mode_card_${mode.name.lowercase()}")
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = mode.shortBadge,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    }
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.surface
+                                    }
+                                ) {
+                                    Text(
+                                        text = if (selected) "ON" else "OFF",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (selected) {
+                                            MaterialTheme.colorScheme.onPrimary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "$totalRules Filters",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = modeSubLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "${adBlockMode.displayName}: ${activeCounts.first} Host Filters • ${activeCounts.second} Path/Script Filters • ${activeCounts.third} Cosmetic DOM Filters",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Filter Chips Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -2051,23 +2226,107 @@ fun BlockedAdsSheet(
                 FilterChip(
                     selected = filterMode == "TAB",
                     onClick = { filterMode = "TAB" },
-                    label = { Text("This Tab ($tabCount)", style = MaterialTheme.typography.labelSmall) }
+                    label = { Text("Tab ($tabCount)", style = MaterialTheme.typography.labelSmall) }
                 )
                 FilterChip(
                     selected = filterMode == "SCRIPT",
                     onClick = { filterMode = "SCRIPT" },
-                    label = { Text("Ad Networks", style = MaterialTheme.typography.labelSmall) }
+                    label = { Text("Ads", style = MaterialTheme.typography.labelSmall) }
                 )
                 FilterChip(
                     selected = filterMode == "TRACKER",
                     onClick = { filterMode = "TRACKER" },
                     label = { Text("Trackers", style = MaterialTheme.typography.labelSmall) }
                 )
+                FilterChip(
+                    selected = filterMode == "RULES",
+                    onClick = { filterMode = "RULES" },
+                    label = { Text("Rules (${activeRulesCatalog.size})", style = MaterialTheme.typography.labelSmall) },
+                    modifier = Modifier.testTag("blocked_ads_rules_chip")
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            if (filteredAds.isEmpty()) {
+            if (filterMode == "RULES") {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 380.dp)
+                        .testTag("active_filter_rules_list"),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(activeRulesCatalog, key = { "${it.tier.name}_${it.rule}" }) { entry ->
+                        val tierColor = when (entry.tier) {
+                            com.example.data.AdBlockMode.MAX -> Color(0xFFFF5252)
+                            com.example.data.AdBlockMode.PRO -> Color(0xFFFF8A3D)
+                            else -> MaterialTheme.colorScheme.primary
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(
+                                    width = 1.dp,
+                                    color = tierColor.copy(alpha = 0.35f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(5.dp),
+                                            color = tierColor.copy(alpha = 0.18f)
+                                        ) {
+                                            Text(
+                                                text = entry.tier.shortBadge,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = tierColor,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                        Text(
+                                            text = entry.category,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Text(
+                                        text = entry.rule,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { onCopyAdUrl(entry.rule) },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ContentCopy,
+                                        contentDescription = "Copy Filter Rule",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (filteredAds.isEmpty()) {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
@@ -2086,7 +2345,7 @@ fun BlockedAdsSheet(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = if (isAdBlockEnabled) {
-                                "No Blocked Ads in Current Filter Yet"
+                                "${adBlockMode.displayName} Active (${activeRulesCatalog.size} Filters)"
                             } else {
                                 "Ad-Block Shield is Paused"
                             },
@@ -2094,7 +2353,7 @@ fun BlockedAdsSheet(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "As you browse websites, every intercepted ad script, video ad, analytics beacon, and DOM banner is logged here with its exact URL, domain, and matched filter rule (e.g. ||doubleclick.net^, ||googlesyndication.com^, ||taboola.com^).",
+                            text = "${adBlockMode.subtitle}. Tap 'Rules (${activeRulesCatalog.size})' above to inspect every active host, path, and cosmetic filter rule.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -2104,7 +2363,7 @@ fun BlockedAdsSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 430.dp),
+                        .heightIn(max = 380.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredAds, key = { it.id }) { item ->
