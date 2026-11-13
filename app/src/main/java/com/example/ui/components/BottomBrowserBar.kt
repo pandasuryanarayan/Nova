@@ -91,6 +91,7 @@ import com.example.browser.BrowserUrlUtils
 import com.example.data.BackgroundMediaState
 import com.example.data.BrowserTab
 import com.example.data.NOVA_HOME_URL
+import com.example.ui.i18n.novaStrings
 
 /**
  * Lightweight Top Website Bar shown when any website is opened (`!activeTab.isHomePage`).
@@ -195,7 +196,7 @@ fun TopWebsiteHeaderBar(
                     onValueChange = { urlInputFieldValue = it },
                     placeholder = {
                         Text(
-                            text = "Search or type website URL…",
+                            text = novaStrings.searchOrTypeUrlPlaceholder,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     },
@@ -812,7 +813,7 @@ fun FindInPageTopBar(
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            placeholder = { Text("Find in page…", style = MaterialTheme.typography.bodyMedium) },
+            placeholder = { Text(novaStrings.findInPageButton, style = MaterialTheme.typography.bodyMedium) },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             trailingIcon = {

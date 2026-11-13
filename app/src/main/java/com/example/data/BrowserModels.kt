@@ -78,6 +78,46 @@ data class DownloadItemEntity(
         }
 }
 
+enum class DownloadFilterTab {
+    ONGOING,
+    SUCCESS,
+    FAILURE
+}
+
+enum class AppLanguage(
+    val code: String,
+    val labelEn: String,
+    val labelHi: String,
+    val subLabel: String
+) {
+    SYSTEM(
+        code = "system",
+        labelEn = "System Language",
+        labelHi = "सिस्टम भाषा",
+        subLabel = "Auto"
+    ),
+    ENGLISH(
+        code = "en",
+        labelEn = "English",
+        labelHi = "English",
+        subLabel = "EN"
+    ),
+    HINDI(
+        code = "hi",
+        labelEn = "Hindi",
+        labelHi = "हिन्दी",
+        subLabel = "हिन्दी"
+    );
+
+    companion object {
+        fun fromCode(code: String?): AppLanguage {
+            return entries.find {
+                it.code.equals(code, ignoreCase = true) || it.name.equals(code, ignoreCase = true)
+            } ?: SYSTEM
+        }
+    }
+}
+
 enum class AdBlockMode(
     val displayName: String,
     val shortBadge: String,
@@ -91,7 +131,7 @@ enum class AdBlockMode(
     PRO(
         displayName = "Pro Mode",
         shortBadge = "Pro",
-        subtitle = "Expanded +145 rules • Deep ad networks, analytics & social pixels"
+        subtitle = "Expanded +131 rules • Deep ad networks, analytics & social pixels"
     ),
     MAX(
         displayName = "Max Mode",

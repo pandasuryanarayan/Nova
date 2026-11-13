@@ -13,6 +13,7 @@ import com.example.browser.NovaDownloadHelper
 import com.example.browser.NovaWebViewPool
 import com.example.data.ActiveSheet
 import com.example.data.AdBlockMode
+import com.example.data.AppLanguage
 import com.example.data.BackgroundMediaState
 import com.example.data.BlockedAdEntry
 import com.example.data.BookmarkEntity
@@ -1031,6 +1032,18 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val next = !preferences.value.isDarkMode
         viewModelScope.launch {
             repository.setDarkMode(next)
+        }
+    }
+
+    fun selectAppLanguage(language: AppLanguage) {
+        viewModelScope.launch {
+            repository.setAppLanguage(language)
+            val msg = when (language) {
+                AppLanguage.SYSTEM -> "Language set to System Default"
+                AppLanguage.ENGLISH -> "Language set to English"
+                AppLanguage.HINDI -> "भाषा हिन्दी में बदल दी गई है (Hindi)"
+            }
+            emitToast(msg)
         }
     }
 

@@ -80,6 +80,7 @@ import com.example.R
 import com.example.browser.rememberShortcutIcon
 import com.example.data.AdBlockMode
 import com.example.data.QuickShortcutEntity
+import com.example.ui.i18n.novaStrings
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -104,6 +105,7 @@ fun NovaHomeContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val strings = novaStrings
     var homeSearchQuery by remember { mutableStateOf("") }
     var editingShortcut by remember { mutableStateOf<QuickShortcutEntity?>(null) }
     val focusManager = LocalFocusManager.current
@@ -214,7 +216,7 @@ fun NovaHomeContent(
 
                     // Large Prominent App Name (Chrome/Google style placement)
                     Text(
-                        text = if (isIncognito) "Nova Private" else "Nova Browser",
+                        text = if (isIncognito) strings.appTitlePrivate else strings.appTitleStandard,
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontSize = 32.sp,
                             letterSpacing = (-0.5).sp
@@ -228,9 +230,9 @@ fun NovaHomeContent(
 
                     Text(
                         text = if (isIncognito) {
-                            "Private Browsing • History & cookies disabled"
+                            strings.appSubtitlePrivate
                         } else {
-                            "Fast, private & ad-free web browsing"
+                            strings.appSubtitleStandard
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -245,7 +247,7 @@ fun NovaHomeContent(
                         onValueChange = { homeSearchQuery = it },
                         placeholder = {
                             Text(
-                                text = "Search Google or type URL…",
+                                text = strings.searchPlaceholder,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -349,9 +351,9 @@ fun NovaHomeContent(
                             Spacer(modifier = Modifier.width(7.dp))
                             Text(
                                 text = if (isAdBlockEnabled) {
-                                    "$totalAdsBlocked Ads • ${adBlockMode.shortBadge}"
+                                    "$totalAdsBlocked ${strings.adsLabel} • ${adBlockMode.shortBadge}"
                                 } else {
-                                    "Ad-Shield Off"
+                                    strings.adShieldOff
                                 },
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
@@ -391,7 +393,7 @@ fun NovaHomeContent(
                             )
                             Spacer(modifier = Modifier.width(7.dp))
                             Text(
-                                text = if (isIncognito) "Incognito: ON" else "Incognito",
+                                text = if (isIncognito) strings.incognitoOn else strings.incognitoLabel,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isIncognito) incognitoAccent else MaterialTheme.colorScheme.onSurface,
@@ -411,8 +413,8 @@ fun NovaHomeContent(
                 ) {
                     HomeHubActionCard(
                         icon = Icons.Filled.Download,
-                        title = "Downloads",
-                        badge = "$downloadsCount files",
+                        title = strings.downloadsTitle,
+                        badge = "$downloadsCount ${strings.filesCountSuffix}",
                         accentColor = MaterialTheme.colorScheme.primary,
                         onClick = onOpenDownloads,
                         modifier = Modifier
@@ -421,8 +423,8 @@ fun NovaHomeContent(
                     )
                     HomeHubActionCard(
                         icon = Icons.Filled.Bookmarks,
-                        title = "Bookmarks",
-                        badge = "$bookmarksCount saved",
+                        title = strings.bookmarksTitle,
+                        badge = "$bookmarksCount ${strings.savedCountSuffix}",
                         accentColor = MaterialTheme.colorScheme.secondary,
                         onClick = onOpenBookmarks,
                         modifier = Modifier
@@ -431,8 +433,8 @@ fun NovaHomeContent(
                     )
                     HomeHubActionCard(
                         icon = Icons.Filled.History,
-                        title = "History",
-                        badge = "$historyCount visits",
+                        title = strings.historyTitle,
+                        badge = "$historyCount ${strings.visitsCountSuffix}",
                         accentColor = if (isIncognito) Color(0xFFFFB300) else Color(0xFFBF360C),
                         onClick = onOpenHistory,
                         modifier = Modifier
@@ -450,7 +452,7 @@ fun NovaHomeContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Quick Shortcuts",
+                        text = strings.quickShortcutsTitle,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -465,13 +467,13 @@ fun NovaHomeContent(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Add,
-                            contentDescription = "Add Shortcut",
+                            contentDescription = strings.addSiteButton,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Add Site",
+                            text = strings.addSiteButton,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -532,7 +534,7 @@ fun NovaHomeContent(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Private Tab Active: Pages you view in this tab won't stick around in your browser history, cookie store, or search history.",
+                            text = strings.privateTabNotice,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -549,13 +551,13 @@ fun NovaHomeContent(
 
         AlertDialog(
             onDismissRequest = { editingShortcut = null },
-            title = { Text("Edit Quick Shortcut") },
+            title = { Text(strings.editShortcutDialogTitle) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = editTitle,
                         onValueChange = { editTitle = it },
-                        label = { Text("Site Title") },
+                        label = { Text(strings.siteTitleLabel) },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -564,7 +566,7 @@ fun NovaHomeContent(
                     OutlinedTextField(
                         value = editUrl,
                         onValueChange = { editUrl = it },
-                        label = { Text("Website URL") },
+                        label = { Text(strings.websiteUrlLabel) },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -582,12 +584,12 @@ fun NovaHomeContent(
                     },
                     modifier = Modifier.testTag("edit_shortcut_save_button")
                 ) {
-                    Text("Save")
+                    Text(strings.saveButton)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { editingShortcut = null }) {
-                    Text("Cancel")
+                    Text(strings.cancelButton)
                 }
             }
         )
@@ -715,8 +717,9 @@ private fun QuickShortcutTile(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
+                val strings = novaStrings
                 DropdownMenuItem(
-                    text = { Text("Edit") },
+                    text = { Text(strings.editAction) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Filled.Edit,
@@ -733,7 +736,7 @@ private fun QuickShortcutTile(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = "Delete",
+                            text = strings.deleteAction,
                             color = MaterialTheme.colorScheme.error
                         )
                     },

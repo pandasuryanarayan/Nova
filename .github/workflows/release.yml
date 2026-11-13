@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   release-apk:
-    name: Build Signed Release APK (v6.6.0)
+    name: Build Signed Release APK (v6.7.0)
     runs-on: ubuntu-latest
 
     steps:
@@ -23,32 +23,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify or Build Signed Release APK (v6.6.0)
+      - name: Verify or Build Signed Release APK (v6.7.0)
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'android' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
         run: |
-          mkdir -p releases/v6.6.0
-          if [ ! -f "releases/v6.6.0/NovaBrowser-v6.6.0-release.apk" ]; then
+          mkdir -p releases/v6.7.0
+          if [ ! -f "releases/v6.7.0/NovaBrowser-v6.7.0-release.apk" ]; then
             ./gradlew :app:assembleRelease || gradle :app:assembleRelease
-            cp app/build/outputs/apk/release/app-release.apk releases/v6.6.0/NovaBrowser-v6.6.0-release.apk
+            cp app/build/outputs/apk/release/app-release.apk releases/v6.7.0/NovaBrowser-v6.7.0-release.apk
           fi
-          sha256sum releases/v6.6.0/NovaBrowser-v6.6.0-release.apk > releases/v6.6.0/NovaBrowser-v6.6.0-release.apk.sha256
+          sha256sum releases/v6.7.0/NovaBrowser-v6.7.0-release.apk > releases/v6.7.0/NovaBrowser-v6.7.0-release.apk.sha256
 
       - name: Match v6.5.0 Release Title & Heading Format
         id: release_meta
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DEFAULT_TITLE="Nova Browser v6.6.0 — Signed Release APK"
+          DEFAULT_TITLE="Nova Browser v6.7.0 — 3-Section Downloads, Multi-Language & Signed Release APK"
           V650_NAME=$(gh api "repos/${{ github.repository }}/releases/tags/v6.5.0" --jq '.name // ""' 2>/dev/null || true)
           V650_HEADING=$(gh api "repos/${{ github.repository }}/releases/tags/v6.5.0" --jq '.body // ""' 2>/dev/null | grep -m 1 '^#' || true)
 
           if [ -n "$V650_NAME" ]; then
-            MAPPED_TITLE=$(echo "$V650_NAME" | sed -e 's/6\.5\.0/6.6.0/g' -e 's/versionCode = 11/versionCode = 12/g' -e 's/versionCode 11/versionCode 12/g' -e 's/Build 11/Build 12/g')
+            MAPPED_TITLE=$(echo "$V650_NAME" | sed -e 's/6\.5\.0/6.7.0/g' -e 's/versionCode = 11/versionCode = 13/g' -e 's/versionCode 11/versionCode 13/g' -e 's/Build 11/Build 13/g')
             if echo "$MAPPED_TITLE" | grep -qiE 'theme|icon|captcha|lock|orange|stealth'; then
               PREFIX=$(echo "$MAPPED_TITLE" | sed -E 's/([—–:-]).*/\1/')
-              MAPPED_TITLE="${PREFIX} 3-Tier Ad-Blocker (Minimal, Pro & Max) & Signed Release APK"
+              MAPPED_TITLE="${PREFIX} 3-Section Downloads, Multi-Language & Signed Release APK"
             fi
             echo "title=$MAPPED_TITLE" >> "$GITHUB_OUTPUT"
           else
@@ -56,42 +56,42 @@ jobs:
           fi
 
           if [ -n "$V650_HEADING" ]; then
-            MAPPED_HEADING=$(echo "$V650_HEADING" | sed -e 's/6\.5\.0/6.6.0/g' -e 's/versionCode = 11/versionCode = 12/g' -e 's/versionCode 11/versionCode 12/g' -e 's/Build 11/Build 12/g')
+            MAPPED_HEADING=$(echo "$V650_HEADING" | sed -e 's/6\.5\.0/6.7.0/g' -e 's/versionCode = 11/versionCode = 13/g' -e 's/versionCode 11/versionCode 13/g' -e 's/Build 11/Build 13/g')
             if echo "$MAPPED_HEADING" | grep -qiE 'theme|icon|captcha|lock|orange|stealth'; then
               H_PREFIX=$(echo "$MAPPED_HEADING" | sed -E 's/([—–:-]).*/\1/')
-              MAPPED_HEADING="${H_PREFIX} 3-Tier Ad-Blocker (Minimal, Pro & Max) & Signed Release APK"
+              MAPPED_HEADING="${H_PREFIX} 3-Section Downloads, Multi-Language & Signed Release APK"
             fi
-            sed -i "1s|^#.*|${MAPPED_HEADING}|" releases/v6.6.0/RELEASE_NOTES.md
+            sed -i "1s|^#.*|${MAPPED_HEADING}|" releases/v6.7.0/RELEASE_NOTES.md
           fi
 
-      - name: Create & Push Git Tag v6.6.0
+      - name: Create & Push Git Tag v6.7.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a v6.6.0 -m "${{ steps.release_meta.outputs.title }}" -f
-          git push origin refs/tags/v6.6.0 --force
+          git tag -a v6.7.0 -m "${{ steps.release_meta.outputs.title }}" -f
+          git push origin refs/tags/v6.7.0 --force
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NovaBrowser-v6.6.0-release-apk
+          name: NovaBrowser-v6.7.0-release-apk
           path: |
-            releases/v6.6.0/NovaBrowser-v6.6.0-release.apk
-            releases/v6.6.0/NovaBrowser-v6.6.0-release.apk.sha256
+            releases/v6.7.0/NovaBrowser-v6.7.0-release.apk
+            releases/v6.7.0/NovaBrowser-v6.7.0-release.apk.sha256
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v6.6.0
+          tag_name: v6.7.0
           name: ${{ steps.release_meta.outputs.title }}
-          body_path: releases/v6.6.0/RELEASE_NOTES.md
+          body_path: releases/v6.7.0/RELEASE_NOTES.md
           draft: false
           prerelease: false
           make_latest: true
           files: |
-            releases/v6.6.0/NovaBrowser-v6.6.0-release.apk
-            releases/v6.6.0/NovaBrowser-v6.6.0-release.apk.sha256
+            releases/v6.7.0/NovaBrowser-v6.7.0-release.apk
+            releases/v6.7.0/NovaBrowser-v6.7.0-release.apk.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

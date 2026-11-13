@@ -80,17 +80,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material3.FilterChip
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.text.font.FontFamily
 import com.example.browser.BrowserUrlUtils
+import com.example.data.AppLanguage
 import com.example.data.BlockedAdEntry
 import com.example.data.BookmarkEntity
 import com.example.data.BrowserTab
+import com.example.data.DownloadFilterTab
 import com.example.data.DownloadItemEntity
 import com.example.data.DownloadStatus
 import com.example.data.HistoryEntity
+import com.example.ui.i18n.NovaStrings
+import com.example.ui.i18n.novaStrings
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -128,6 +139,7 @@ fun TabsSwitcherSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val strings = novaStrings
                     Icon(
                         imageVector = Icons.Filled.Tab,
                         contentDescription = null,
@@ -135,12 +147,13 @@ fun TabsSwitcherSheet(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Open Tabs (${tabs.size})",
+                        text = "${strings.openTabsTitle} (${tabs.size})",
                         style = MaterialTheme.typography.titleLarge
                     )
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val strings = novaStrings
                     OutlinedButton(
                         onClick = onNewIncognitoTab,
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -152,7 +165,7 @@ fun TabsSwitcherSheet(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Private", style = MaterialTheme.typography.labelLarge)
+                        Text(strings.privateTabButton, style = MaterialTheme.typography.labelLarge)
                     }
                     Button(
                         onClick = onNewNormalTab,
@@ -165,7 +178,7 @@ fun TabsSwitcherSheet(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("New Tab", style = MaterialTheme.typography.labelLarge)
+                        Text(strings.newTabButton, style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -295,6 +308,61 @@ fun DownloadsManagerSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val strings = novaStrings
+
+    val ongoingDownloads = remember(downloads) {
+        downloads.filter {
+            it.statusEnum == DownloadStatus.PENDING ||
+                it.statusEnum == DownloadStatus.RUNNING ||
+                it.statusEnum == DownloadStatus.PAUSED
+        }
+    }
+    val successDownloads = remember(downloads) {
+        downloads.filter { it.statusEnum == DownloadStatus.COMPLETED }
+    }
+    val failureDownloads = remember(downloads) {
+        downloads.filter { it.statusEnum == DownloadStatus.FAILED }
+    }
+
+    var selectedTab by remember {
+        mutableStateOf(
+            when {
+                ongoingDownloads.isNotEmpty() -> DownloadFilterTab.ONGOING
+                successDownloads.isNotEmpty() -> DownloadFilterTab.SUCCESS
+                failureDownloads.isNotEmpty() -> DownloadFilterTab.FAILURE
+                else -> DownloadFilterTab.ONGOING
+            }
+        )
+    }
+
+    var prevOngoingCount by remember { mutableIntStateOf(ongoingDownloads.size) }
+    var prevSuccessCount by remember { mutableIntStateOf(successDownloads.size) }
+    var prevFailureCount by remember { mutableIntStateOf(failureDownloads.size) }
+
+    // Automatically route to Ongoing when a download starts, Success when it finishes, or Failure when it fails
+    LaunchedEffect(ongoingDownloads.size, successDownloads.size, failureDownloads.size) {
+        when {
+            ongoingDownloads.size > prevOngoingCount -> {
+                selectedTab = DownloadFilterTab.ONGOING
+            }
+            successDownloads.size > prevSuccessCount && ongoingDownloads.isEmpty() -> {
+                selectedTab = DownloadFilterTab.SUCCESS
+            }
+            failureDownloads.size > prevFailureCount && ongoingDownloads.isEmpty() -> {
+                selectedTab = DownloadFilterTab.FAILURE
+            }
+        }
+        prevOngoingCount = ongoingDownloads.size
+        prevSuccessCount = successDownloads.size
+        prevFailureCount = failureDownloads.size
+    }
+
+    val activeSectionItems = when (selectedTab) {
+        DownloadFilterTab.ONGOING -> ongoingDownloads
+        DownloadFilterTab.SUCCESS -> successDownloads
+        DownloadFilterTab.FAILURE -> failureDownloads
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -323,11 +391,11 @@ fun DownloadsManagerSheet(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = "Downloads (${downloads.size})",
+                            text = "${strings.downloadsTitle} (${downloads.size})",
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
-                            text = "Folder: Download/NovaBrowser/Videos/",
+                            text = strings.downloadsFolderSubtitle,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -335,9 +403,120 @@ fun DownloadsManagerSheet(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 3 Download Section Tabs: Ongoing | Success | Failure
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val tabsMeta = listOf(
+                    Triple(
+                        DownloadFilterTab.ONGOING,
+                        strings.downloadTabOngoing,
+                        ongoingDownloads.size
+                    ),
+                    Triple(
+                        DownloadFilterTab.SUCCESS,
+                        strings.downloadTabSuccess,
+                        successDownloads.size
+                    ),
+                    Triple(
+                        DownloadFilterTab.FAILURE,
+                        strings.downloadTabFailure,
+                        failureDownloads.size
+                    )
+                )
+
+                tabsMeta.forEach { (tab, label, count) ->
+                    val isSelected = selectedTab == tab
+                    val accentColor = when (tab) {
+                        DownloadFilterTab.ONGOING -> MaterialTheme.colorScheme.primary
+                        DownloadFilterTab.SUCCESS -> Color(0xFF00C853)
+                        DownloadFilterTab.FAILURE -> MaterialTheme.colorScheme.error
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) {
+                            accentColor.copy(alpha = 0.18f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { selectedTab = tab }
+                            .border(
+                                width = if (isSelected) 1.5.dp else 1.dp,
+                                color = if (isSelected) {
+                                    accentColor
+                                } else {
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .testTag("download_tab_${tab.name.lowercase()}")
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "$count ${strings.filesCountSuffix}",
+                                style = MaterialTheme.typography.labelSmall,
+                                textAlign = TextAlign.Center,
+                                color = if (isSelected) {
+                                    accentColor
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                maxLines = 1,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
-            if (downloads.isEmpty()) {
+            if (activeSectionItems.isEmpty()) {
+                val (emptyIcon, emptyTitle, emptySubtitle) = when (selectedTab) {
+                    DownloadFilterTab.ONGOING -> Triple(
+                        Icons.Filled.Download,
+                        strings.noOngoingDownloadsTitle,
+                        strings.noOngoingDownloadsSubtitle
+                    )
+                    DownloadFilterTab.SUCCESS -> Triple(
+                        Icons.Filled.CheckCircle,
+                        strings.noSuccessDownloadsTitle,
+                        strings.noSuccessDownloadsSubtitle
+                    )
+                    DownloadFilterTab.FAILURE -> Triple(
+                        Icons.Filled.ErrorOutline,
+                        strings.noFailureDownloadsTitle,
+                        strings.noFailureDownloadsSubtitle
+                    )
+                }
+                val emptyTint = when (selectedTab) {
+                    DownloadFilterTab.ONGOING -> MaterialTheme.colorScheme.primary
+                    DownloadFilterTab.SUCCESS -> Color(0xFF00C853)
+                    DownloadFilterTab.FAILURE -> MaterialTheme.colorScheme.error
+                }
+
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
@@ -348,21 +527,23 @@ fun DownloadsManagerSheet(
                         modifier = Modifier.padding(28.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Videocam,
+                            imageVector = emptyIcon,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = emptyTint,
                             modifier = Modifier.size(38.dp)
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "No Downloaded Videos Yet",
-                            style = MaterialTheme.typography.titleMedium
+                            text = emptyTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Long-press on any HTML5 video player on any website to download direct MP4 files here.",
+                            text = emptySubtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -370,11 +551,16 @@ fun DownloadsManagerSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 450.dp),
+                        .heightIn(max = 420.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(downloads, key = { it.id }) { item ->
+                    items(activeSectionItems, key = { it.id }) { item ->
                         val status = item.statusEnum
+                        val borderColor = when (status) {
+                            DownloadStatus.COMPLETED -> Color(0xFF00C853).copy(alpha = 0.45f)
+                            DownloadStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.45f)
+                            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+                        }
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
@@ -382,7 +568,7 @@ fun DownloadsManagerSheet(
                                 .fillMaxWidth()
                                 .border(
                                     width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                                    color = borderColor,
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .testTag("download_item_${item.id}")
@@ -401,7 +587,7 @@ fun DownloadsManagerSheet(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = "${item.domain} • ${formatDownloadProgressText(item)}",
+                                            text = "${item.domain} • ${formatDownloadProgressText(item, strings)}",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -421,7 +607,7 @@ fun DownloadsManagerSheet(
                                                     )
                                                 }
                                             }
-                                            DownloadStatus.PAUSED, DownloadStatus.FAILED -> {
+                                            DownloadStatus.PAUSED -> {
                                                 IconButton(
                                                     onClick = { onResumeDownload(item) },
                                                     modifier = Modifier.testTag("resume_download_${item.id}")
@@ -433,6 +619,18 @@ fun DownloadsManagerSheet(
                                                     )
                                                 }
                                             }
+                                            DownloadStatus.FAILED -> {
+                                                IconButton(
+                                                    onClick = { onResumeDownload(item) },
+                                                    modifier = Modifier.testTag("retry_download_${item.id}")
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Refresh,
+                                                        contentDescription = "Retry Download",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            }
                                             DownloadStatus.COMPLETED -> {
                                                 IconButton(
                                                     onClick = { onOpenFile(item) },
@@ -440,8 +638,8 @@ fun DownloadsManagerSheet(
                                                 ) {
                                                     Icon(
                                                         imageVector = Icons.Filled.FolderOpen,
-                                                        contentDescription = "Open Video File",
-                                                        tint = MaterialTheme.colorScheme.tertiary
+                                                        contentDescription = "Open File",
+                                                        tint = Color(0xFF00C853)
                                                     )
                                                 }
                                             }
@@ -486,7 +684,7 @@ fun DownloadsManagerSheet(
                                     }
                                 }
 
-                                if (!item.errorReason.isNullOrBlank()) {
+                                if (!item.errorReason.isNullOrBlank() && status == DownloadStatus.FAILED) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
@@ -521,14 +719,14 @@ fun DownloadsManagerSheet(
     }
 }
 
-private fun formatDownloadProgressText(item: DownloadItemEntity): String {
+private fun formatDownloadProgressText(item: DownloadItemEntity, strings: NovaStrings): String {
     val downloadedStr = BrowserUrlUtils.formatBytes(item.downloadedBytes)
-    val totalStr = if (item.totalBytes > 0L) BrowserUrlUtils.formatBytes(item.totalBytes) else "Unknown size"
+    val totalStr = if (item.totalBytes > 0L) BrowserUrlUtils.formatBytes(item.totalBytes) else strings.unknownSize
     return when (item.statusEnum) {
-        DownloadStatus.COMPLETED -> "Completed • ${if (item.totalBytes > 0L) totalStr else downloadedStr}"
-        DownloadStatus.PAUSED -> "Paused • $downloadedStr / $totalStr"
-        DownloadStatus.FAILED -> "Failed • Tap Play to retry"
-        DownloadStatus.PENDING -> "Starting download…"
+        DownloadStatus.COMPLETED -> "${strings.downloadStatusCompleted} • ${if (item.totalBytes > 0L) totalStr else downloadedStr}"
+        DownloadStatus.PAUSED -> "${strings.downloadStatusPaused} • $downloadedStr / $totalStr"
+        DownloadStatus.FAILED -> strings.downloadStatusFailed
+        DownloadStatus.PENDING -> strings.downloadStatusStarting
         DownloadStatus.RUNNING -> "$downloadedStr / $totalStr (${(item.progressFraction * 100).toInt()}%)"
     }
 }
@@ -542,6 +740,7 @@ fun BookmarksSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val strings = novaStrings
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -564,7 +763,7 @@ fun BookmarksSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Bookmarks (${bookmarks.size})",
+                    text = "${strings.bookmarksTitle} (${bookmarks.size})",
                     style = MaterialTheme.typography.titleLarge
                 )
             }
@@ -572,7 +771,7 @@ fun BookmarksSheet(
 
             if (bookmarks.isEmpty()) {
                 Text(
-                    text = "No bookmarks saved yet. Tap the bookmark icon in the browser menu to save your favorite websites.",
+                    text = strings.noBookmarksYet,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 24.dp)
@@ -638,6 +837,7 @@ fun HistorySheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val strings = novaStrings
     val timeFormatter = remember { SimpleDateFormat("MMM d, HH:mm", Locale.US) }
 
     ModalBottomSheet(
@@ -667,7 +867,7 @@ fun HistorySheet(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Browsing History",
+                        text = strings.historyTitle,
                         style = MaterialTheme.typography.titleLarge
                     )
                 }
@@ -678,11 +878,11 @@ fun HistorySheet(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.DeleteSweep,
-                        contentDescription = "Clear Browsing Data",
+                        contentDescription = strings.clearDataButton,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Clear Data", style = MaterialTheme.typography.labelLarge)
+                    Text(strings.clearDataButton, style = MaterialTheme.typography.labelLarge)
                 }
             }
 
@@ -690,7 +890,7 @@ fun HistorySheet(
 
             if (history.isEmpty()) {
                 Text(
-                    text = "Your browsing history is clean.",
+                    text = strings.noHistoryYet,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 24.dp)
@@ -754,12 +954,14 @@ fun BrowserMenuSheet(
     isBookmarked: Boolean,
     isAdBlockEnabled: Boolean,
     adBlockMode: com.example.data.AdBlockMode = com.example.data.AdBlockMode.MINIMAL,
+    appLanguage: AppLanguage = AppLanguage.SYSTEM,
     isDarkMode: Boolean,
     totalAdsBlocked: Long,
     blockedAdsInSessionCount: Int,
     onToggleBookmark: () -> Unit,
     onToggleAdBlock: () -> Unit,
     onSelectAdBlockMode: (com.example.data.AdBlockMode) -> Unit = {},
+    onSelectAppLanguage: (AppLanguage) -> Unit = {},
     onOpenBlockedAdsList: () -> Unit,
     onToggleDesktopMode: () -> Unit,
     onToggleDarkMode: () -> Unit,
@@ -777,6 +979,7 @@ fun BrowserMenuSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val strings = novaStrings
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -786,6 +989,7 @@ fun BrowserMenuSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 20.dp)
@@ -798,31 +1002,31 @@ fun BrowserMenuSheet(
             ) {
                 MenuQuickIconTile(
                     icon = Icons.Filled.Bookmarks,
-                    label = "Bookmarks",
+                    label = strings.bookmarksTitle,
                     onClick = onOpenBookmarks,
                     testTag = "menu_bookmarks_button"
                 )
                 MenuQuickIconTile(
                     icon = Icons.Filled.Download,
-                    label = "Downloads",
+                    label = strings.downloadsTitle,
                     onClick = onOpenDownloads,
                     testTag = "menu_downloads_button"
                 )
                 MenuQuickIconTile(
                     icon = Icons.Filled.History,
-                    label = "History",
+                    label = strings.historyTitle,
                     onClick = onOpenHistory,
                     testTag = "menu_history_button"
                 )
                 MenuQuickIconTile(
                     icon = Icons.Filled.Share,
-                    label = "Share",
+                    label = strings.shareAction,
                     onClick = onSharePage,
                     testTag = "menu_share_button"
                 )
                 MenuQuickIconTile(
                     icon = Icons.Filled.ContentCopy,
-                    label = "Copy Link",
+                    label = strings.copyAction,
                     onClick = onCopyPageLink,
                     testTag = "menu_copy_link_button"
                 )
@@ -835,7 +1039,7 @@ fun BrowserMenuSheet(
             // Toggles: Ad-Block, 3-Tier AdBlock Mode Selector, Blocked Ads List Button, Desktop Mode, Dark Mode, Incognito Mode
             MenuSwitchRow(
                 icon = Icons.Filled.Shield,
-                title = "Ad-Block Shield (${adBlockMode.shortBadge} • $totalAdsBlocked blocked)",
+                title = "${strings.adBlockShieldMenuTitle} (${adBlockMode.shortBadge} • $totalAdsBlocked ${strings.blockedCountSuffix})",
                 checked = isAdBlockEnabled,
                 onCheckedChange = { onToggleAdBlock() },
                 testTag = "menu_adblock_switch"
@@ -892,7 +1096,7 @@ fun BrowserMenuSheet(
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 Text(
-                                    text = "$ruleCount rules",
+                                    text = "$ruleCount ${strings.rulesCountSuffix}",
                                     style = MaterialTheme.typography.labelSmall,
                                     textAlign = TextAlign.Center,
                                     color = if (selected) {
@@ -938,13 +1142,13 @@ fun BrowserMenuSheet(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Blocked Ads & Filter Modes ($blockedAdsInSessionCount in session)",
+                                text = "${strings.blockedAdsFilterModesTitle} ($blockedAdsInSessionCount ${strings.inSessionSuffix})",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "Switch Minimal / Pro / Max (YouTube) & inspect all active filter rules",
+                                text = strings.blockedAdsFilterModesSubtitle,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
@@ -955,7 +1159,7 @@ fun BrowserMenuSheet(
                         color = MaterialTheme.colorScheme.primary
                     ) {
                         Text(
-                            text = "Configure",
+                            text = strings.configureButton,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -966,27 +1170,123 @@ fun BrowserMenuSheet(
             }
             MenuSwitchRow(
                 icon = Icons.Filled.DesktopWindows,
-                title = if (activeTab.isDesktopMode) "Desktop Site Mode (Active • 1280px)" else "Desktop Site Mode",
+                title = if (activeTab.isDesktopMode) strings.desktopSiteModeActive else strings.desktopSiteMode,
                 checked = activeTab.isDesktopMode,
                 onCheckedChange = { onToggleDesktopMode() },
                 testTag = "menu_desktop_mode_switch"
             )
             MenuSwitchRow(
                 icon = Icons.Filled.DarkMode,
-                title = "Dark Mode Theme",
+                title = strings.darkModeTheme,
                 checked = isDarkMode,
                 onCheckedChange = { onToggleDarkMode() },
                 testTag = "menu_dark_mode_switch"
             )
             MenuSwitchRow(
                 icon = Icons.Filled.VisibilityOff,
-                title = "Incognito / Private Mode",
+                title = strings.incognitoPrivateMode,
                 checked = activeTab.isIncognito,
                 onCheckedChange = { onToggleIncognito() },
                 testTag = "menu_incognito_switch"
             )
 
+            Spacer(modifier = Modifier.height(6.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.20f))
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Language Section in 3-Dot Menu: System Language | English | Hindi
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Language,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = strings.languageSectionTitle,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLanguage.entries.forEach { lang ->
+                    val selected = appLanguage == lang
+                    val langTitle = when (lang) {
+                        AppLanguage.SYSTEM -> strings.languageSystemOption
+                        AppLanguage.ENGLISH -> strings.languageEnglishOption
+                        AppLanguage.HINDI -> strings.languageHindiOption
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onSelectAppLanguage(lang) }
+                            .border(
+                                width = 1.dp,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                                },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .testTag("menu_language_${lang.code}")
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp, vertical = 7.dp)
+                        ) {
+                            Text(
+                                text = langTitle,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text(
+                                text = lang.subLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                textAlign = TextAlign.Center,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                maxLines = 1,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
 
             // Text Zoom Control Row
             Row(
@@ -1005,7 +1305,7 @@ fun BrowserMenuSheet(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Text Zoom (${activeTab.textZoom}%)",
+                        text = "${strings.textZoomLabel} (${activeTab.textZoom}%)",
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -1028,7 +1328,7 @@ fun BrowserMenuSheet(
                         )
                     }
                     TextButton(onClick = { onUpdateTextZoom(100) }) {
-                        Text("Reset", style = MaterialTheme.typography.labelLarge)
+                        Text(strings.resetButton, style = MaterialTheme.typography.labelLarge)
                     }
                     IconButton(
                         onClick = { onUpdateTextZoom(activeTab.textZoom + 10) },
@@ -1051,7 +1351,7 @@ fun BrowserMenuSheet(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            // Action Rows: Find in Page, Bookmarks List, Clear Browsing Data
+            // Action Rows: Find in Page, Clear Browsing Data
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1069,7 +1369,7 @@ fun BrowserMenuSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Find in Page", style = MaterialTheme.typography.labelLarge)
+                    Text(strings.findInPageButton, style = MaterialTheme.typography.labelLarge)
                 }
 
                 OutlinedButton(
@@ -1087,7 +1387,7 @@ fun BrowserMenuSheet(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Clear Data",
+                        text = strings.clearDataButton,
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -1173,17 +1473,18 @@ fun ClearBrowsingDataDialog(
     onConfirmClear: (clearHistory: Boolean, clearCache: Boolean, clearCookies: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = novaStrings
     var clearHistory by remember { mutableStateOf(true) }
     var clearCache by remember { mutableStateOf(true) }
     var clearCookies by remember { mutableStateOf(true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Clear Browsing Data") },
+        title = { Text(strings.clearBrowsingDataTitle) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Choose which Nova Browser data to permanently remove from this device:",
+                    text = strings.clearBrowsingDataPrompt,
                     style = MaterialTheme.typography.bodySmall
                 )
                 Row(
@@ -1193,7 +1494,7 @@ fun ClearBrowsingDataDialog(
                         .clickable { clearHistory = !clearHistory }
                 ) {
                     Checkbox(checked = clearHistory, onCheckedChange = { clearHistory = it })
-                    Text("Browsing History", style = MaterialTheme.typography.bodyMedium)
+                    Text(strings.browsingHistoryOption, style = MaterialTheme.typography.bodyMedium)
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1202,7 +1503,7 @@ fun ClearBrowsingDataDialog(
                         .clickable { clearCache = !clearCache }
                 ) {
                     Checkbox(checked = clearCache, onCheckedChange = { clearCache = it })
-                    Text("Cached Images & Web Files", style = MaterialTheme.typography.bodyMedium)
+                    Text(strings.cachedImagesFilesOption, style = MaterialTheme.typography.bodyMedium)
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1211,7 +1512,7 @@ fun ClearBrowsingDataDialog(
                         .clickable { clearCookies = !clearCookies }
                 ) {
                     Checkbox(checked = clearCookies, onCheckedChange = { clearCookies = it })
-                    Text("Cookies & Site Storage", style = MaterialTheme.typography.bodyMedium)
+                    Text(strings.cookiesSiteDataOption, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
@@ -1220,12 +1521,12 @@ fun ClearBrowsingDataDialog(
                 onClick = { onConfirmClear(clearHistory, clearCache, clearCookies) },
                 modifier = Modifier.testTag("confirm_clear_data_button")
             ) {
-                Text("Clear Now")
+                Text(strings.clearDataButton)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancelButton)
             }
         }
     )
@@ -1236,25 +1537,26 @@ fun AddShortcutDialog(
     onConfirmAdd: (title: String, url: String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = novaStrings
     var title by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Quick Shortcut") },
+        title = { Text(strings.addShortcutDialogTitle) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Site Title") },
+                    label = { Text(strings.siteTitleLabel) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("Website URL (e.g. sample-videos.com)") },
+                    label = { Text(strings.websiteUrlLabel) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1268,12 +1570,12 @@ fun AddShortcutDialog(
                     }
                 }
             ) {
-                Text("Save")
+                Text(strings.saveButton)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancelButton)
             }
         }
     )

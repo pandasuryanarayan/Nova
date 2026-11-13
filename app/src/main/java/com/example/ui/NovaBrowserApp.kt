@@ -51,6 +51,7 @@ import com.example.ui.components.NovaHomeContent
 import com.example.ui.components.SslSecurityInfoDialog
 import com.example.ui.components.TabsSwitcherSheet
 import com.example.ui.components.VideoLongPressBottomSheet
+import com.example.ui.i18n.ProvideNovaStrings
 import com.example.ui.theme.NovaBrowserTheme
 import com.example.viewmodel.BrowserViewModel
 
@@ -157,6 +158,7 @@ fun NovaBrowserApp(
         viewModel.goBack()
     }
 
+    ProvideNovaStrings(appLanguage = preferences.appLanguage) {
     NovaBrowserTheme(
         darkTheme = preferences.isDarkMode,
         isIncognito = activeTab.isIncognito
@@ -500,12 +502,14 @@ fun NovaBrowserApp(
                     isBookmarked = isBookmarked,
                     isAdBlockEnabled = preferences.isAdBlockEnabled,
                     adBlockMode = preferences.adBlockMode,
+                    appLanguage = preferences.appLanguage,
                     isDarkMode = preferences.isDarkMode,
                     totalAdsBlocked = preferences.totalAdsBlocked,
                     blockedAdsInSessionCount = uiState.blockedAdsLog.size,
                     onToggleBookmark = viewModel::toggleBookmarkForActiveTab,
                     onToggleAdBlock = viewModel::toggleAdBlock,
                     onSelectAdBlockMode = viewModel::selectAdBlockMode,
+                    onSelectAppLanguage = viewModel::selectAppLanguage,
                     onOpenBlockedAdsList = { viewModel.setActiveSheet(ActiveSheet.BLOCKED_ADS) },
                     onToggleDesktopMode = viewModel::toggleDesktopMode,
                     onToggleDarkMode = viewModel::toggleDarkMode,
@@ -585,6 +589,7 @@ fun NovaBrowserApp(
 
             ActiveSheet.NONE -> Unit
         }
+    }
     }
 }
 

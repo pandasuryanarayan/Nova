@@ -536,7 +536,15 @@ class NovaDownloadHelper(
     }
 
     fun resumeDownload(item: DownloadItemEntity) {
-        startHybridDownloadJob(item)
+        scope.launch(Dispatchers.IO) {
+            val restarted = item.copy(
+                systemDownloadId = -1L,
+                status = DownloadStatus.RUNNING.name,
+                errorReason = null
+            )
+            repository.updateDownload(restarted)
+            startHybridDownloadJob(restarted)
+        }
     }
 
     /**

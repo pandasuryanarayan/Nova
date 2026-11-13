@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Nova Browser</string>
+    <string name="search_or_type_url">Google पर खोजें या URL टाइप करें…</string>
+    <string name="incognito_mode_active">गुप्त मोड • इतिहास और कुकीज़ सहेजे नहीं जाएंगे</string>
+    <string name="streaming_protected_toast">यह वीडियो स्ट्रीमिंग / सुरक्षित है और डाउनलोड नहीं किया जा सकता</string>
+    <string name="download_video_mp4">वीडियो डाउनलोड करें (MP4)</string>
+    <string name="copy_video_link">वीडियो लिंक कॉपी करें</string>
+    <string name="open_video_new_tab">नए टैब में वीडियो खोलें</string>
+    <string name="play_in_background">बैकग्राउंड में चलाएं</string>
+    <string name="tabs_title">खुले टैब</string>
+    <string name="bookmarks_title">बुकमार्क</string>
+    <string name="history_title">ब्राउज़िंग इतिहास</string>
+    <string name="downloads_title">डाउनलोड</string>
+    <string name="clear_browsing_data">ब्राउज़िंग डेटा साफ़ करें</string>
+    <string name="ad_blocker">ऐड-ब्लॉक शील्ड</string>
+    <string name="desktop_site">डेस्कटॉप मोड</string>
+    <string name="find_in_page">पेज में खोजें</string>
+    <string name="text_zoom">टेक्स्ट ज़ूम</string>
+    <string name="share_page">पेज शेयर करें</string>
+    <string name="copy_link">लिंक कॉपी करें</string>
+</resources>

@@ -4,23 +4,23 @@
 
 ### **Fast, Private, Ad-Free & Developer-Grade Open-Source Android Web Browser**
 
-[![Version](https://img.shields.io/badge/Release-v6.6.0%20(code%2012)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.6.0/NovaBrowser-v6.6.0-release.apk)
+[![Version](https://img.shields.io/badge/Release-v6.7.0%20(code%2013)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.7.0/NovaBrowser-v6.7.0-release.apk)
 [![Platform](https://img.shields.io/badge/Android-API%2024%E2%80%9336-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#building-from-source)
 [![Kotlin](https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](#tech-stack--architecture)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](#key-features)
 [![Ad-Blocker](https://img.shields.io/badge/Ad--Shield-3--Tier%20(Up%20to%20220%20Rules)-00C853?style=for-the-badge&logo=shield&logoColor=white)](#3-tier-cumulative-ad-blocker--tracker-shield)
-[![APK Size](https://img.shields.io/badge/APK%20Size-2.39%20MB%20(R8%20Shrunk)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v660)
+[![APK Size](https://img.shields.io/badge/APK%20Size-2.41%20MB%20(R8%20Shrunk)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v670)
 [![License](https://img.shields.io/badge/License-GNU%20GPL%20v3.0-D50000?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 
 <br/>
 
-[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-NovaBrowser--v6.6.0--release.apk-FF6D00?style=for-the-badge)](releases/v6.6.0/NovaBrowser-v6.6.0-release.apk)
-[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.6.0-263238?style=for-the-badge)](releases/v6.6.0/RELEASE_NOTES.md)
+[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-NovaBrowser--v6.7.0--release.apk-FF6D00?style=for-the-badge)](releases/v6.7.0/NovaBrowser-v6.7.0-release.apk)
+[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.7.0-263238?style=for-the-badge)](releases/v6.7.0/RELEASE_NOTES.md)
 [![CI Workflow](https://img.shields.io/badge/GitHub%20Actions-Release%20Pipeline-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/release.yml)
 
 ---
 
-**Package ID:** `com.suryatech.browser.nova` &nbsp;•&nbsp; **Version:** `6.6.0` (`versionCode = 12`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
+**Package ID:** `com.suryatech.browser.nova` &nbsp;•&nbsp; **Version:** `6.7.0` (`versionCode = 13`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
 
 </div>
 
@@ -33,30 +33,31 @@
 ![Minimal Ad-Block](https://img.shields.io/badge/%F0%9F%9B%A1%EF%B8%8F%20Minimal%20Mode-58%20Filters%20(Default%20ON)-00C853?style=flat-square)
 ![Pro Ad-Block](https://img.shields.io/badge/%F0%9F%94%A5%20Pro%20Mode-189%20Filters%20(Minimal%20%2B%20Pro)-FF6D00?style=flat-square)
 ![Max Ad-Block](https://img.shields.io/badge/%E2%9A%A1%20Max%20Mode-220%20Filters%20(%2B%20YouTube%20Ad--Skip)-D50000?style=flat-square)
+![Downloads](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Downloads-Ongoing%20%7C%20Success%20%7C%20Failure-00897B?style=flat-square)
+![Languages](https://img.shields.io/badge/%F0%9F%8C%90%20Languages-System%20%7C%20English%20%7C%20%E0%A4%B9%E0%A4%BF%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A5%80-6A1B9A?style=flat-square)
 ![Default Theme](https://img.shields.io/badge/%F0%9F%8E%A8%20Default%20Theme-Warm%20Light%20Orange-FF8A3D?style=flat-square)
 ![Incognito Theme](https://img.shields.io/badge/%F0%9F%95%B5%EF%B8%8F%20Incognito%20Mode-Dark%20Stealth%20Cyan%20%2B%20Radial%20Wave-00E5FF?style=flat-square)
 ![Anti-CAPTCHA](https://img.shields.io/badge/%F0%9F%94%92%20Google%20Search-Trusted%20Anti--CAPTCHA%20Headers-4285F4?style=flat-square)
 ![Favicon Cache](https://img.shields.io/badge/%F0%9F%96%BC%EF%B8%8F%20Shortcut%20Icons-On--Visit%2096x96%20WEBP%20Cache-8E24AA?style=flat-square)
 ![DevTools](https://img.shields.io/badge/%F0%9F%9B%A0%EF%B8%8F%20DevTools-Elements%20%7C%20Sources%20%7C%20Console%20%7C%20Network-37474F?style=flat-square)
 ![Video Sniffer](https://img.shields.io/badge/%F0%9F%8E%AC%20Video%20Sniffer-MP4%20%2F%20HLS%20%2B%20Background%20Audio-E91E63?style=flat-square)
-![Downloader](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Downloader-Segmented%20HTTP%20Range%20Pause%2FResume-00897B?style=flat-square)
 
 </div>
 
 ---
 
-## 📦 Signed Release APK (`v6.6.0`)
+## 📦 Signed Release APK (`v6.7.0`)
 
-A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.6.0/`](releases/v6.6.0/):
+A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.7.0/`](releases/v6.7.0/):
 
 | Property | Details |
 | :--- | :--- |
-| **APK File** | [`releases/v6.6.0/NovaBrowser-v6.6.0-release.apk`](releases/v6.6.0/NovaBrowser-v6.6.0-release.apk) |
-| **Release Notes** | [`releases/v6.6.0/RELEASE_NOTES.md`](releases/v6.6.0/RELEASE_NOTES.md) |
+| **APK File** | [`releases/v6.7.0/NovaBrowser-v6.7.0-release.apk`](releases/v6.7.0/NovaBrowser-v6.7.0-release.apk) |
+| **Release Notes** | [`releases/v6.7.0/RELEASE_NOTES.md`](releases/v6.7.0/RELEASE_NOTES.md) |
 | **Application ID** | `com.suryatech.browser.nova` |
-| **Version** | `6.6.0` (`versionCode = 12`) |
-| **APK Size** | `2,507,848 bytes` (**~2.39 MB**) |
-| **SHA-256 Checksum** | `4fd5ff6ecf7db906d1e32a38336fc286f0dc87c415d54693347f2168c9601b54` |
+| **Version** | `6.7.0` (`versionCode = 13`) |
+| **APK Size** | `2,524,632 bytes` (**~2.41 MB**) |
+| **SHA-256 Checksum** | `04af675fa55587b5bcc9139f863e190f3917da1f9d0893cb509ca276d5312f12` |
 | **Signing Certificate** | `CN=SuryaTech, OU=Mobile, O=SuryaTech, L=Bengaluru, ST=KA, C=IN` |
 | **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`) |
 
@@ -222,10 +223,19 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
 - Tapping the top URL bar opens a compact dropdown where the **SSL Security Badge** and **Website Link** align at an exact `16.dp` left margin, with icon-only **Copy**, **Edit**, and **Share** buttons on the right.
 - Tapping **Edit** focuses the inline URL field with the cursor placed at the **end of the URL** (`TextRange(url.length)`) so you can immediately backspace or append paths.
 
+### 📥 3-Section Downloads Manager (`Ongoing` • `Success` • `Failure`)
+- **Ongoing**: Newly started, active (`RUNNING` / `PENDING`), and `PAUSED` downloads appear in **Ongoing** with real-time progress and pause/resume controls.
+- **Success**: Finished downloads (`COMPLETED`) automatically move into **Success** for 1-tap playback/opening.
+- **Failure**: Failed downloads (`FAILED`) automatically move into **Failure** with error details and 1-tap **Retry** (returning the item back into **Ongoing**).
+
+### 🌐 Android Inbuilt System Language & 3-Dot Language Selector
+- **Automatic Device Language**: Defaults to **System** (`AppLanguage.SYSTEM`), reading Android's inbuilt configuration locale (`Resources.getSystem().configuration` + `locales_config.xml`) so the app automatically matches the device language (`English` or `हिन्दी`).
+- **3-Dot Menu Language Section**: Switch anytime between **System**, **English**, and **हिन्दी (Hindi)** directly inside the 3-dot browser menu without reloading active `WebView` tabs.
+
 ### 🛠️ Desktop-Grade Split-Screen DevTools, Video Sniffer & Downloader
 - **DevTools Panel**: Live **Elements** DOM tree inspector & editor, **Sources** viewer, **Console** JS REPL, and **Network** request profiler.
 - **Video Stream Sniffer & Background Player**: Detects `<video>`, `.mp4`, `.m3u8`, and `.webm` streams for 1-tap download or background audio playback.
-- **Multi-Threaded Segmented Downloader**: HTTP `Range` pause/resume support with Room-persisted download progress.
+- **Multi-Threaded Hybrid Downloader**: System `DownloadManager`, HTTP/2 OkHttp fallback, and WebView stream bridge with Room-persisted download state.
 
 ---
 
