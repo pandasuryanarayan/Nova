@@ -1,18 +1,37 @@
 package com.example.ui.theme
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
+import android.app.Activity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
-// Default Theme (Standard Mode)
-private val NovaDefaultLightOrangeColorScheme = lightColorScheme(
+data class NovaColorScheme(
+    val primary: Color,
+    val onPrimary: Color,
+    val primaryContainer: Color,
+    val onPrimaryContainer: Color,
+    val secondary: Color,
+    val onSecondary: Color,
+    val secondaryContainer: Color,
+    val onSecondaryContainer: Color,
+    val tertiary: Color,
+    val background: Color,
+    val onBackground: Color,
+    val surface: Color,
+    val onSurface: Color,
+    val surfaceVariant: Color,
+    val onSurfaceVariant: Color,
+    val error: Color,
+    val outline: Color
+)
+
+// Default Normal Light Theme: Warm Orange
+private val NovaDefaultLightOrangeColorScheme = NovaColorScheme(
     primary = IncognitoOrangePrimary,
     onPrimary = Color.White,
     primaryContainer = IncognitoOrangePrimaryContainer,
@@ -32,8 +51,29 @@ private val NovaDefaultLightOrangeColorScheme = lightColorScheme(
     outline = IncognitoOrangeOutline
 )
 
-// Incognito Theme (When Incognito is ON): Cosmic Obsidian & Electric Cyan/Violet
-private val NovaIncognitoDarkSapphireColorScheme = darkColorScheme(
+// Normal Dark Theme: Pure AMOLED Black & Nova Orange
+private val NovaAmoledDarkColorScheme = NovaColorScheme(
+    primary = Color(0xFFFF8A3D),
+    onPrimary = Color(0xFF1F0A00),
+    primaryContainer = Color(0xFF331808),
+    onPrimaryContainer = Color(0xFFFFD6B8),
+    secondary = Color(0xFFFF6D00),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF281205),
+    onSecondaryContainer = Color(0xFFFFD3B6),
+    tertiary = Color(0xFFFFAB40),
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFF5F5F7),
+    surface = Color(0xFF09090B),
+    onSurface = Color(0xFFF5F5F7),
+    surfaceVariant = Color(0xFF141418),
+    onSurfaceVariant = Color(0xFFA6A6B2),
+    error = NovaCrimsonError,
+    outline = Color(0xFF272730)
+)
+
+// Incognito Theme: Cosmic Obsidian & Electric Cyan/Violet
+private val NovaIncognitoDarkSapphireColorScheme = NovaColorScheme(
     primary = NovaCyanPrimary,
     onPrimary = Color(0xFF002026),
     primaryContainer = NovaCyanContainer,
@@ -53,67 +93,49 @@ private val NovaIncognitoDarkSapphireColorScheme = darkColorScheme(
     outline = Color(0xFF2D3C6B)
 )
 
-@Composable
-private fun animateColorScheme(target: ColorScheme): ColorScheme {
-    val spec = tween<Color>(durationMillis = 460, easing = FastOutSlowInEasing)
+val LocalNovaColorScheme = staticCompositionLocalOf { NovaDefaultLightOrangeColorScheme }
+val LocalNovaTypography = staticCompositionLocalOf { Typography }
+val LocalContentColor = staticCompositionLocalOf { Color.Black }
 
-    val primary by animateColorAsState(target.primary, spec, label = "primary")
-    val onPrimary by animateColorAsState(target.onPrimary, spec, label = "onPrimary")
-    val primaryContainer by animateColorAsState(target.primaryContainer, spec, label = "primaryContainer")
-    val onPrimaryContainer by animateColorAsState(target.onPrimaryContainer, spec, label = "onPrimaryContainer")
-    val secondary by animateColorAsState(target.secondary, spec, label = "secondary")
-    val onSecondary by animateColorAsState(target.onSecondary, spec, label = "onSecondary")
-    val secondaryContainer by animateColorAsState(target.secondaryContainer, spec, label = "secondaryContainer")
-    val onSecondaryContainer by animateColorAsState(target.onSecondaryContainer, spec, label = "onSecondaryContainer")
-    val tertiary by animateColorAsState(target.tertiary, spec, label = "tertiary")
-    val background by animateColorAsState(target.background, spec, label = "background")
-    val onBackground by animateColorAsState(target.onBackground, spec, label = "onBackground")
-    val surface by animateColorAsState(target.surface, spec, label = "surface")
-    val onSurface by animateColorAsState(target.onSurface, spec, label = "onSurface")
-    val surfaceVariant by animateColorAsState(target.surfaceVariant, spec, label = "surfaceVariant")
-    val onSurfaceVariant by animateColorAsState(target.onSurfaceVariant, spec, label = "onSurfaceVariant")
-    val error by animateColorAsState(target.error, spec, label = "error")
-    val outline by animateColorAsState(target.outline, spec, label = "outline")
+object MaterialTheme {
+    val colorScheme: NovaColorScheme
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalNovaColorScheme.current
 
-    return target.copy(
-        primary = primary,
-        onPrimary = onPrimary,
-        primaryContainer = primaryContainer,
-        onPrimaryContainer = onPrimaryContainer,
-        secondary = secondary,
-        onSecondary = onSecondary,
-        secondaryContainer = secondaryContainer,
-        onSecondaryContainer = onSecondaryContainer,
-        tertiary = tertiary,
-        background = background,
-        onBackground = onBackground,
-        surface = surface,
-        onSurface = onSurface,
-        surfaceVariant = surfaceVariant,
-        onSurfaceVariant = onSurfaceVariant,
-        error = error,
-        outline = outline
-    )
+    val typography: NovaTypography
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalNovaTypography.current
 }
 
 @Composable
 fun NovaBrowserTheme(
-    darkTheme: Boolean = true,
+    darkTheme: Boolean = false,
     isIncognito: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // Light Orange is the Default Theme; Cosmic Dark Sapphire/Cyan is the Incognito Theme
-    val targetScheme = if (isIncognito) {
-        NovaIncognitoDarkSapphireColorScheme
-    } else {
-        NovaDefaultLightOrangeColorScheme
+    val scheme = when {
+        isIncognito -> NovaIncognitoDarkSapphireColorScheme
+        darkTheme -> NovaAmoledDarkColorScheme
+        else -> NovaDefaultLightOrangeColorScheme
     }
 
-    val animatedScheme = animateColorScheme(targetScheme)
+    val view = LocalView.current
+    val useDarkStatusIcons = !isIncognito && !darkTheme
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = useDarkStatusIcons
+            insetsController.isAppearanceLightNavigationBars = useDarkStatusIcons
+        }
+    }
 
-    MaterialTheme(
-        colorScheme = animatedScheme,
-        typography = Typography,
+    CompositionLocalProvider(
+        LocalNovaColorScheme provides scheme,
+        LocalNovaTypography provides Typography,
+        LocalContentColor provides scheme.onBackground,
         content = content
     )
 }

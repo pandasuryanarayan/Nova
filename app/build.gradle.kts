@@ -3,7 +3,7 @@ import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesS
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
-  alias(libs.plugins.google.devtools.ksp)
+  // alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
 }
@@ -73,6 +73,9 @@ android {
     includeInBundle = true
   }
   packaging {
+    jniLibs {
+      excludes += setOf("**/libandroidx.graphics.path.so")
+    }
     resources {
       excludes += setOf(
         "META-INF/*.version",
@@ -82,9 +85,29 @@ android {
         "META-INF/*.kotlin_module",
         "META-INF/com.android.tools/**",
         "DebugProbesKt.bin",
-        "kotlin/**"
+        "kotlin/**",
+        "assets/dexopt/**"
       )
     }
+  }
+}
+
+configurations.configureEach {
+  exclude(group = "androidx.profileinstaller", module = "profileinstaller")
+}
+
+composeCompiler {
+  includeSourceInformation = false
+  includeTraceMarkers = false
+}
+
+kotlin {
+  compilerOptions {
+    freeCompilerArgs.addAll(
+      "-Xno-param-assertions",
+      "-Xno-call-assertions",
+      "-Xno-receiver-assertions"
+    )
   }
 }
 
@@ -109,9 +132,10 @@ dependencies {
   // implementation(libs.androidx.camera.core)
   // implementation(libs.androidx.camera.lifecycle)
   // implementation(libs.androidx.camera.view)
-  implementation(libs.androidx.compose.material.icons.core)
+  // implementation(libs.androidx.compose.material.icons.core)
   // implementation(libs.androidx.compose.material.icons.extended)
-  implementation(libs.androidx.compose.material3)
+  // implementation(libs.androidx.compose.material3)
+  implementation("androidx.compose.foundation:foundation")
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.graphics)
   // implementation(libs.androidx.compose.ui.tooling.preview)
@@ -119,10 +143,10 @@ dependencies {
   // implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
-  implementation(libs.androidx.lifecycle.viewmodel.compose)
+  // implementation(libs.androidx.lifecycle.viewmodel.compose)
   // implementation(libs.androidx.navigation.compose)
-  implementation(libs.androidx.room.ktx)
-  implementation(libs.androidx.room.runtime)
+  // implementation(libs.androidx.room.ktx)
+  // implementation(libs.androidx.room.runtime)
   // implementation(libs.coil.compose)
   // implementation(libs.converter.moshi)
   // implementation(libs.firebase.ai)
@@ -157,6 +181,6 @@ dependencies {
   androidTestImplementation(libs.androidx.runner)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
-  "ksp"(libs.androidx.room.compiler)
+  // "ksp"(libs.androidx.room.compiler)
   // "ksp"(libs.moshi.kotlin.codegen)
 }

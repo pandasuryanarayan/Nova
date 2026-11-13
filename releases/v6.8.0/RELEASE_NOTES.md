@@ -1,23 +1,26 @@
-# Nova Browser v6.8.0 — Ultra-Light (<1.5 MB) Signed Release APK, 3-Section Downloads & Multi-Language Support
+# Nova Browser v6.8.0 — Sub-1 MB (<1 MB) Signed Release APK, AMOLED Black Theme & Hindi/UI Polish
 
 ## Release Summary (`v6.8.0` • `versionCode = 14`)
 
 - **APK File:** `releases/v6.8.0/NovaBrowser-v6.8.0-release.apk`
 - **Package ID:** `com.suryatech.browser.nova`
-- **APK Download Size:** `1,466,192 bytes` (**1.40 MB** — strictly below `1.5 MB`)
-- **Installed Uncompressed Size:** `2,758,486 bytes` (**2.63 MB** — strictly below `5 MB`)
-- **SHA-256 Checksum:** `7f9764564422d47285747d95ab213dba5539e6112dad35e60930343c4e756f38`
+- **APK Download Size:** `986,223 bytes` (**0.94 MiB / 986.2 KB** — strictly below `1 MB`)
+- **Installed Uncompressed Size:** `1,915,465 bytes` (**1.83 MiB / 1.92 MB** — strictly below `5 MB`)
+- **SHA-256 Checksum:** `716913511d87d472cf70861884093429d8a211ff80e560cc926aac4290760ff1`
 
-## Key Optimizations & Features in v6.8.0
+## What's New & Fixed in v6.8.0
 
-1. **Ultra-Lightweight APK (< 1.5 MB) & Installed Footprint (< 5 MB) with Original Nova Icon**:
-   - Restored the original `v6.7.0` Nova Browser logo across the adaptive launcher (`ic_launcher_foreground.xml` + `#091025` background), all 5 legacy mipmap densities (`mdpi`–`xxxhdpi`, square & round), and the Nova Home badge (`NovaHomeContent.kt`).
-   - Replaced bundled `.ttf` font binaries with native Android system `SansSerif` and `Monospace` typography.
-   - Replaced `OkHttp`, `Coil`, `DataStore Preferences`, and `material-icons-extended` with native Android `HttpURLConnection` / `HttpsURLConnection`, `BitmapFactory`, `SharedPreferences` + `StateFlow`, and compact SVG path vector icons.
-   - Configured aggressive R8 full-mode shrinking, repackaging, and resource/metadata exclusions with zero feature loss.
-2. **3-Section Downloads Manager (`Ongoing` • `Success` • `Failure`)**:
-   - Real-time segmented filter tabs in the Downloads sheet automatically categorize active downloads under **Ongoing**, completed downloads under **Success**, and failed transfers under **Failure** with one-tap retry.
-3. **Android Inbuilt Language & 3-Dot Language Switcher (`System` • `English` • `हिन्दी`)**:
-   - Automatically follows device locale by default (`System Language`) and includes an instant Language switcher (`System`, `English`, `Hindi`) inside the 3-dot Control Center menu.
-4. **3-Tier Cumulative Ad-Blocker (`Minimal` 58 • `Pro` 189 • `Max` 220 Rules)**:
-   - Preserves all 220 network, path, cosmetic DOM, and YouTube ad-skipping rules, plus full DevTools (`Elements`, `Sources`, `Console`, `Network`), Video Sniffer, Background Audio Player, SSL/Cookie Inspector, and Incognito mode.
+1. **Sub-1 MB Signed Release APK (`986,223 bytes`) & `< 5 MB` Installed Size with Original `v6.7.0` Nova Icon**:
+   - Preserved the restored `v6.7.0` Nova Browser launcher icon (`img_nova_launcher_fg.jpg` + all legacy `mdpi`–`xxxhdpi` mipmaps) and Nova Home badge untouched.
+   - Replaced heavy `material3`, `Room`, `OkHttp`, `Coil`, `DataStore`, and `material-icons-extended` bloat with lightweight Compose Foundation primitives, native Android `EditText` (`NovaEditText`), indexed vector icon cache (`NovaIcons`), compact rule tables (`AdBlocker`), and full R8 shrinking/repackaging with **zero feature loss**.
+2. **True AMOLED Black Dark Theme in Normal Mode**:
+   - Pure `#000000` AMOLED background with `#050507` / `#101014` dark sheets in Normal Mode dark theme (Light Mode remains default; Incognito keeps Cosmic Obsidian).
+3. **Hindi & English Localization Refinements**:
+   - Bottom bar 3-dot vertical button reads **सेटिंग्स** in Hindi (`SETTINGS` in English).
+   - Bottom bar Saved tab renamed to **BOOKMARK** (**बुकमार्क** in Hindi).
+   - Ad-Shield tier names in Hindi set to **न्यूनतम** (Minimal), **अधिक** (Pro), and **अधिकतम** (Max), with **RULES** / **नियम** counts displayed on all three tiers (`Minimal`, `Pro`, and `Max`).
+4. **Cleaner Control Center & Bookmarks UI**:
+   - Removed the redundant 3-dot/tune badge next to the **Control center** header.
+   - Removed the unnecessary *"Long press to add..."* hint banner inside the Bookmarks sheet.
+5. **Complete Browser Suite Intact**:
+   - Includes **3-Section Downloads Manager** (`Ongoing` • `Success` • `Failure`), **3-Language Switcher** (`System` • `English` • `हिन्दी`), **3-Tier Ad-Blocker** (`58` Minimal / `189` Pro / `220` Max rules), **DevTools** (`Elements`, `Sources`, `Console`, `Network`), Video Sniffer, Background Audio Player, SSL/Cookie Inspector, and Incognito mode.

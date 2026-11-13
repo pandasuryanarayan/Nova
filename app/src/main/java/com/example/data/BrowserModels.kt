@@ -1,33 +1,28 @@
 package com.example.data
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import java.util.UUID
 
 const val NOVA_HOME_URL = "nova://home"
 const val NOVA_VIDEO_LAB_URL = "nova://video-lab"
 
-@Entity(tableName = "bookmarks")
 data class BookmarkEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val id: Long = 0,
     val title: String,
     val url: String,
     val domain: String,
     val createdAt: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "history")
 data class HistoryEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val id: Long = 0,
     val title: String,
     val url: String,
     val domain: String,
     val visitedAt: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "shortcuts")
 data class QuickShortcutEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val id: Long = 0,
     val title: String,
     val url: String,
     val subtitle: String,
@@ -44,9 +39,8 @@ enum class DownloadStatus {
     FAILED
 }
 
-@Entity(tableName = "downloads")
 data class DownloadItemEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val id: Long = 0,
     val systemDownloadId: Long = -1L,
     val fileName: String,
     val url: String,

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class BrowserPreferences(
-    val isDarkMode: Boolean = true,
+    val isDarkMode: Boolean = false,
     val isAdBlockEnabled: Boolean = true,
     val adBlockMode: AdBlockMode = AdBlockMode.MINIMAL,
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
@@ -33,7 +33,7 @@ class BrowserRepository(
     }
 
     private fun readPreferences(): BrowserPreferences = BrowserPreferences(
-        isDarkMode = prefs.getBoolean(PrefKeys.DARK_MODE, true),
+        isDarkMode = prefs.getBoolean(PrefKeys.DARK_MODE, false),
         isAdBlockEnabled = prefs.getBoolean(PrefKeys.AD_BLOCK_ENABLED, true),
         adBlockMode = AdBlockMode.fromName(prefs.getString(PrefKeys.AD_BLOCK_MODE, null)),
         appLanguage = AppLanguage.fromCode(prefs.getString(PrefKeys.APP_LANGUAGE, null)),

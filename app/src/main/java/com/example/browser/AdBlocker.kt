@@ -15,238 +15,267 @@ data class AdFilterRuleItem(
 
 object AdBlocker {
 
+    private fun hostMap(raw: String): Map<String, Pair<String, String>> =
+        linkedMapOf<String, Pair<String, String>>().apply {
+            for (line in raw.lines()) {
+                val sep = line.indexOf('|')
+                if (sep > 0) {
+                    val host = line.substring(0, sep)
+                    val cat = line.substring(sep + 1)
+                    put(host, cat to "||$host^")
+                }
+            }
+        }
+
+    private fun pathList(raw: String): List<Pair<String, Pair<String, String>>> =
+        raw.lines().mapNotNull { line ->
+            val p1 = line.indexOf('|')
+            val p2 = if (p1 > 0) line.indexOf('|', p1 + 1) else -1
+            if (p1 > 0 && p2 > p1) {
+                line.substring(0, p1) to (line.substring(p1 + 1, p2) to line.substring(p2 + 1))
+            } else null
+        }
+
+    private fun selectorList(raw: String): List<String> =
+        raw.lines().filter { it.isNotEmpty() }
+
     // =========================================================================
     // 1. MINIMAL MODE RULES (Enabled by Default — 58 Total Rules)
     // =========================================================================
 
-    val MINIMAL_HOST_RULES: Map<String, Pair<String, String>> = linkedMapOf(
-        "doubleclick.net" to ("Ad Network Script" to "||doubleclick.net^"),
-        "googlesyndication.com" to ("AdSense / Banner Ad" to "||googlesyndication.com^"),
-        "googleadservices.com" to ("Conversion Ad Tracker" to "||googleadservices.com^"),
-        "adservice.google.com" to ("Ad Personalization" to "||adservice.google.com^"),
-        "google-analytics.com" to ("Analytics Tracker" to "||google-analytics.com^"),
-        "googletagmanager.com" to ("Tag Manager Tracker" to "||googletagmanager.com^"),
-        "adnxs.com" to ("AppNexus Ad Exchange" to "||adnxs.com^"),
-        "taboola.com" to ("Sponsored Content Ad" to "||taboola.com^"),
-        "outbrain.com" to ("Sponsored Feed Ad" to "||outbrain.com^"),
-        "criteo.com" to ("Retargeting Ad" to "||criteo.com^"),
-        "criteo.net" to ("Retargeting Banner" to "||criteo.net^"),
-        "scorecardresearch.com" to ("Behavioral Tracker" to "||scorecardresearch.com^"),
-        "adsafeprotected.com" to ("Ad Verification Script" to "||adsafeprotected.com^"),
-        "moatads.com" to ("Ad Telemetry Script" to "||moatads.com^"),
-        "rubiconproject.com" to ("Programmatic Ad Bid" to "||rubiconproject.com^"),
-        "pubmatic.com" to ("Header Bidding Ad" to "||pubmatic.com^"),
-        "openx.net" to ("OpenX Ad Server" to "||openx.net^"),
-        "popads.net" to ("Pop-Under Ad Script" to "||popads.net^"),
-        "popcash.net" to ("Pop-Up Ad Script" to "||popcash.net^"),
-        "propellerads.com" to ("Push / Pop Ad" to "||propellerads.com^"),
-        "adform.net" to ("Display Ad Banner" to "||adform.net^"),
-        "amazon-adsystem.com" to ("Amazon Ad Beacon" to "||amazon-adsystem.com^"),
-        "advertising.com" to ("Display Ad Network" to "||advertising.com^"),
-        "quantserve.com" to ("Audience Tracker" to "||quantserve.com^"),
-        "zedo.com" to ("Interstitial Ad" to "||zedo.com^"),
-        "casalemedia.com" to ("Index Exchange Ad" to "||casalemedia.com^"),
-        "smartadserver.com" to ("SmartAd Banner" to "||smartadserver.com^"),
-        "2mdn.net" to ("Rich Media Ad Asset" to "||2mdn.net^"),
-        "adcolony.com" to ("Video Pre-Roll Ad" to "||adcolony.com^"),
-        "adsrvr.org" to ("TheTradeDesk Ad" to "||adsrvr.org^"),
-        "teads.tv" to ("Outstream Video Ad" to "||teads.tv^"),
-        "triplelift.com" to ("Native Ad Placement" to "||triplelift.com^"),
-        "sharethrough.com" to ("Native Ad Exchange" to "||sharethrough.com^"),
-        "media.net" to ("Contextual Ad Unit" to "||media.net^"),
-        "mgid.com" to ("Native Widget Ad" to "||mgid.com^"),
-        "revcontent.com" to ("Sponsored Widget Ad" to "||revcontent.com^"),
-        "exoclick.com" to ("Banner / Pop Ad" to "||exoclick.com^"),
-        "hotjar.com" to ("Session Recording Tracker" to "||hotjar.com^"),
-        "clarity.ms" to ("Telemetry Tracker" to "||clarity.ms^"),
-        "connect.facebook.net" to ("Social Pixel Tracker" to "||connect.facebook.net^")
+    val MINIMAL_HOST_RULES: Map<String, Pair<String, String>> = hostMap(
+        """
+doubleclick.net|Ad Network Script
+googlesyndication.com|AdSense / Banner Ad
+googleadservices.com|Conversion Ad Tracker
+adservice.google.com|Ad Personalization
+google-analytics.com|Analytics Tracker
+googletagmanager.com|Tag Manager Tracker
+adnxs.com|AppNexus Ad Exchange
+taboola.com|Sponsored Content Ad
+outbrain.com|Sponsored Feed Ad
+criteo.com|Retargeting Ad
+criteo.net|Retargeting Banner
+scorecardresearch.com|Behavioral Tracker
+adsafeprotected.com|Ad Verification Script
+moatads.com|Ad Telemetry Script
+rubiconproject.com|Programmatic Ad Bid
+pubmatic.com|Header Bidding Ad
+openx.net|OpenX Ad Server
+popads.net|Pop-Under Ad Script
+popcash.net|Pop-Up Ad Script
+propellerads.com|Push / Pop Ad
+adform.net|Display Ad Banner
+amazon-adsystem.com|Amazon Ad Beacon
+advertising.com|Display Ad Network
+quantserve.com|Audience Tracker
+zedo.com|Interstitial Ad
+casalemedia.com|Index Exchange Ad
+smartadserver.com|SmartAd Banner
+2mdn.net|Rich Media Ad Asset
+adcolony.com|Video Pre-Roll Ad
+adsrvr.org|TheTradeDesk Ad
+teads.tv|Outstream Video Ad
+triplelift.com|Native Ad Placement
+sharethrough.com|Native Ad Exchange
+media.net|Contextual Ad Unit
+mgid.com|Native Widget Ad
+revcontent.com|Sponsored Widget Ad
+exoclick.com|Banner / Pop Ad
+hotjar.com|Session Recording Tracker
+clarity.ms|Telemetry Tracker
+connect.facebook.net|Social Pixel Tracker
+        """.trimIndent()
     )
 
-    val MINIMAL_PATH_PATTERNS: List<Pair<String, Pair<String, String>>> = listOf(
-        "/pagead/" to ("AdSense Script" to "/pagead/*"),
-        "/ads/ga-audiences" to ("Audience Pixel" to "/ads/ga-audiences*"),
-        "/adserver/" to ("Ad Server Frame" to "/adserver/*"),
-        "/adframe" to ("Banner Ad Iframe" to "/adframe*"),
-        "/ads.js" to ("Ad Loader Script" to "*/ads.js"),
-        "/prebid" to ("Header Bidding Script" to "*/prebid*.js"),
-        "/gpt.js" to ("Google Publisher Tags" to "*/gpt.js"),
-        "/adsbygoogle.js" to ("AdSense Auto-Ads" to "*/adsbygoogle.js")
+    val MINIMAL_PATH_PATTERNS: List<Pair<String, Pair<String, String>>> = pathList(
+        """
+/pagead/|AdSense Script|/pagead/*
+/ads/ga-audiences|Audience Pixel|/ads/ga-audiences*
+/adserver/|Ad Server Frame|/adserver/*
+/adframe|Banner Ad Iframe|/adframe*
+/ads.js|Ad Loader Script|*/ads.js
+/prebid|Header Bidding Script|*/prebid*.js
+/gpt.js|Google Publisher Tags|*/gpt.js
+/adsbygoogle.js|AdSense Auto-Ads|*/adsbygoogle.js
+        """.trimIndent()
     )
 
-    val MINIMAL_DOM_SELECTORS: List<String> = listOf(
-        "ins.adsbygoogle",
-        "[id^=\"div-gpt-ad\"]",
-        "[id^=\"google_ads_iframe\"]",
-        "iframe[src*=\"doubleclick.net\"]",
-        "iframe[src*=\"googlesyndication.com\"]",
-        "iframe[id*=\"google_ads\"]",
-        "[class*=\"ad-banner\"]",
-        "[class*=\"ad-slot\"]",
-        "[data-ad-client]",
-        "[data-ad-slot]"
+    val MINIMAL_DOM_SELECTORS: List<String> = selectorList(
+        """
+ins.adsbygoogle
+[id^="div-gpt-ad"]
+[id^="google_ads_iframe"]
+iframe[src*="doubleclick.net"]
+iframe[src*="googlesyndication.com"]
+iframe[id*="google_ads"]
+[class*="ad-banner"]
+[class*="ad-slot"]
+[data-ad-client]
+[data-ad-slot]
+        """.trimIndent()
     )
 
     // =========================================================================
     // 2. PRO MODE EXPANDED RULES (Disabled by Default — User Can Turn ON)
     // =========================================================================
 
-    val PRO_HOST_RULES: Map<String, Pair<String, String>> = linkedMapOf(
-        // Expanded Ad Networks
-        "adnxs-simple.com" to ("Ad Exchange Network" to "||adnxs-simple.com^"),
-        "adsafeprotected.com" to ("Ad Verification Script" to "||adsafeprotected.com^"),
-        "adroll.com" to ("Retargeting Ad Network" to "||adroll.com^"),
-        "adzerk.net" to ("Native Ad Server" to "||adzerk.net^"),
-        "appier.net" to ("AI Ad Retargeting" to "||appier.net^"),
-        "bidswitch.net" to ("Programmatic Bid Switch" to "||bidswitch.net^"),
-        "bidding.cam" to ("Header Bidding Network" to "||bidding.cam^"),
-        "brealtime.com" to ("Real-Time Ad Exchange" to "||brealtime.com^"),
-        "brighteroption.com" to ("Ad Tracking Network" to "||brighteroption.com^"),
-        "bannerflow.com" to ("Display Banner Cloud" to "||bannerflow.com^"),
-        "buysellads.com" to ("Display Ad Marketplace" to "||buysellads.com^"),
-        "chromeads.com" to ("Promotional Ad Script" to "||chromeads.com^"),
-        "conversantmedia.com" to ("Personalized Ad Media" to "||conversantmedia.com^"),
-        "criteo.com" to ("Retargeting Ad" to "||criteo.com^"),
-        "deltax.ai" to ("Ad Attribution Tracker" to "||deltax.ai^"),
-        "dlx.addirect.com" to ("Direct Ad Exchange" to "||dlx.addirect.com^"),
-        "eclickads.net" to ("Click Ad Network" to "||eclickads.net^"),
-        "engagebdr.com" to ("Programmatic Video/Display" to "||engagebdr.com^"),
-        "epom.com" to ("Epom Ad Server" to "||epom.com^"),
-        "exponential.com" to ("Rich Media Ad Network" to "||exponential.com^"),
-        "fimserve.com" to ("Ad Serving Engine" to "||fimserve.com^"),
-        "flow-ad-blocker.com" to ("Anti-Adblock / Ad Script" to "||flow-ad-blocker.com^"),
-        "free-counter.co.uk" to ("Tracking Pixel Counter" to "||free-counter.co.uk^"),
-        "fuel451.com" to ("Ad Campaign Tracker" to "||fuel451.com^"),
-        "gan.doubleclick.net" to ("Google Affiliate Ad" to "||gan.doubleclick.net^"),
-        "getintent.com" to ("Programmatic DSP Ad" to "||getintent.com^"),
-        "go-serve.com" to ("Ad Redirect Server" to "||go-serve.com^"),
-        "go2link.net" to ("Affiliate Ad Redirect" to "||go2link.net^"),
-        "grapeshot.co.uk" to ("Contextual Ad Targeting" to "||grapeshot.co.uk^"),
-        "halogennetwork.com" to ("Display Ad Network" to "||halogennetwork.com^"),
-        "hi.adnetpub.com" to ("Publisher Ad Network" to "||hi.adnetpub.com^"),
-        "hit.sharehuts.com" to ("Pop / Redirect Tracker" to "||hit.sharehuts.com^"),
-        "imads.intellitxt.com" to ("In-Text Keyword Ad" to "||imads.intellitxt.com^"),
-        "indexww.com" to ("Index Exchange Header Bid" to "||indexww.com^"),
-        "infolinks.com" to ("In-Text / Fold Ad" to "||infolinks.com^"),
-        "inhouse.adsharp.net" to ("AdSharp Ad Server" to "||inhouse.adsharp.net^"),
-        "jemax.com" to ("Ad Network Script" to "||jemax.com^"),
-        "kontera.com" to ("In-Text Ad Link" to "||kontera.com^"),
-        "liadm.com" to ("LiveIntent Identity Tracker" to "||liadm.com^"),
-        "live-adtech.com" to ("AdTech Delivery Host" to "||live-adtech.com^"),
-        "lockerdome.com" to ("Native Widget Ad" to "||lockerdome.com^"),
-        "ljmp.com" to ("Ad Redirect Tracker" to "||ljmp.com^"),
-        "moatads.com" to ("Ad Telemetry Script" to "||moatads.com^"),
-        "native-adblock.com" to ("Native Ad Injector" to "||native-adblock.com^"),
-        "nextaday.com" to ("Pop / Banner Ad" to "||nextaday.com^"),
-        "on.clkads.com" to ("ClickAds Pop Network" to "||on.clkads.com^"),
-        "onesignal.com" to ("Push Notification Ad" to "||onesignal.com^"),
-        "openx.net" to ("OpenX Ad Server" to "||openx.net^"),
-        "ox-d.com" to ("OpenX Bid Exchange" to "||ox-d.com^"),
-        "pagefair.com" to ("Ad Recovery Script" to "||pagefair.com^"),
-        "performatix.com" to ("Performance Ad Tracker" to "||performatix.com^"),
-        "pgdt.com" to ("Ad Data Beacon" to "||pgdt.com^"),
-        "popads.net" to ("Pop-Under Ad Script" to "||popads.net^"),
-        "popads.org" to ("Pop-Under Ad Mirror" to "||popads.org^"),
-        "popcash.net" to ("Pop-Up Ad Script" to "||popcash.net^"),
-        "popmyads.com" to ("Pop-Under Ad Network" to "||popmyads.com^"),
-        "propellerads.com" to ("Push / Pop Ad" to "||propellerads.com^"),
-        "pushnami.com" to ("Web Push Ad Network" to "||pushnami.com^"),
-        "pushcrew.com" to ("Push Campaign Tracker" to "||pushcrew.com^"),
-        "reallygoodarticles.com" to ("Sponsored Content Redirect" to "||reallygoodarticles.com^"),
-        "revcontent.com" to ("Sponsored Widget Ad" to "||revcontent.com^"),
-        "rlcdn.com" to ("RapLeaf / TowerData Pixel" to "||rlcdn.com^"),
-        "ronomaeheuh.com" to ("Pop / Malware Ad Host" to "||ronomaeheuh.com^"),
-        "rtb-1.eekkqaa.com" to ("RTB Bid Injector" to "||rtb-1.eekkqaa.com^"),
-        "rtbpop.com" to ("RTB Pop-Under Ad" to "||rtbpop.com^"),
-        "smartadserver.com" to ("SmartAd Banner" to "||smartadserver.com^"),
-        "smaato.net" to ("Mobile Ad Exchange" to "||smaato.net^"),
-        "sonobi.com" to ("JetStream Header Bidding" to "||sonobi.com^"),
-        "spotxchange.com" to ("Video Ad Exchange" to "||spotxchange.com^"),
-        "steelhousemedia.com" to ("Retargeting Ad Campaign" to "||steelhousemedia.com^"),
-        "stroimfitness.ru" to ("Spam Ad Redirect" to "||stroimfitness.ru^"),
-        "syndication.exoclick.com" to ("ExoClick Ad Syndication" to "||syndication.exoclick.com^"),
-        "teads.tv" to ("Outstream Video Ad" to "||teads.tv^"),
-        "texthit-service.com" to ("In-Text Ad Service" to "||texthit-service.com^"),
-        "trafficjunky.com" to ("Banner Ad Network" to "||trafficjunky.com^"),
-        "trafficjunky.net" to ("Banner Ad Delivery" to "||trafficjunky.net^"),
-        "traffichunt.com" to ("Ad Exchange Network" to "||traffichunt.com^"),
-        "tradetracker.net" to ("Affiliate Ad Tracker" to "||tradetracker.net^"),
-        "valueclick.com" to ("Display Ad Network" to "||valueclick.com^"),
-        "videoplaza.com" to ("Video Ad Server" to "||videoplaza.com^"),
-        "vistapanel.net" to ("Injected Hosting Ad" to "||vistapanel.net^"),
-        "waveadvertising.com" to ("Wave Display Ad" to "||waveadvertising.com^"),
-        "xd.rafgp.com" to ("Pop / Redirect Script" to "||xd.rafgp.com^"),
-        "yieldmo.com" to ("Mobile Format Ad" to "||yieldmo.com^"),
-        "yieldlab.net" to ("Programmatic Yield Ad" to "||yieldlab.net^"),
-        "zedo.com" to ("Interstitial Ad" to "||zedo.com^"),
-        "zestymedia.com" to ("Display Ad Server" to "||zestymedia.com^"),
-
-        // Analytics / Telemetry Expansion
-        "analytics.google.com" to ("Google Analytics Endpoint" to "||analytics.google.com^"),
-        "region1.google-analytics.com" to ("Regional GA Telemetry" to "||region1.google-analytics.com^"),
-        "stats.g.doubleclick.net" to ("DoubleClick Stats Beacon" to "||stats.g.doubleclick.net^"),
-        "mixpanel.com" to ("Mixpanel Product Telemetry" to "||mixpanel.com^"),
-        "segment.io" to ("Segment Customer Data Pixel" to "||segment.io^"),
-        "amplitude.com" to ("Amplitude Event Tracker" to "||amplitude.com^"),
-        "heapanalytics.com" to ("Heap Session Analytics" to "||heapanalytics.com^"),
-        "fullstory.com" to ("FullStory Session Replay" to "||fullstory.com^"),
-        "matomo.cloud" to ("Matomo Cloud Analytics" to "||matomo.cloud^"),
-        "statcounter.com" to ("StatCounter Web Tracker" to "||statcounter.com^"),
-        "clicky.com" to ("Clicky Web Analytics" to "||clicky.com^"),
-        "chartbeat.com" to ("Chartbeat Content Telemetry" to "||chartbeat.com^"),
-        "parsely.com" to ("Parse.ly Audience Tracker" to "||parsely.com^"),
-        "crashlytics.com" to ("Crash Telemetry Reporter" to "||crashlytics.com^"),
-        "sentry.io" to ("Sentry Telemetry Beacon" to "||sentry.io^"),
-        "bugsnag.com" to ("Bugsnag Telemetry Tracker" to "||bugsnag.com^"),
-
-        // Facebook / Meta & Tracking Pixels
-        "facebook.net" to ("Meta Tracking Network" to "||facebook.net^"),
-        "connect.facebook.net" to ("Meta Pixel SDK" to "||connect.facebook.net^"),
-        "analytics.tiktok.com" to ("TikTok Pixel Tracker" to "||analytics.tiktok.com^"),
-        "ads.linkedin.com" to ("LinkedIn Ad Tracker" to "||ads.linkedin.com^"),
-        "px.ads.linkedin.com" to ("LinkedIn Insight Pixel" to "||px.ads.linkedin.com^"),
-        "bat.bing.com" to ("Bing UET Ad Conversion" to "||bat.bing.com^"),
-        "snap.licdn.com" to ("LinkedIn Snap Pixel" to "||snap.licdn.com^"),
-        "tr.snapchat.com" to ("Snapchat Conversion Pixel" to "||tr.snapchat.com^"),
-        "ads.twitter.com" to ("X / Twitter Ad Tracker" to "||ads.twitter.com^"),
-        "static.ads-twitter.com" to ("X / Twitter Universal Tag" to "||static.ads-twitter.com^")
+    val PRO_HOST_RULES: Map<String, Pair<String, String>> = hostMap(
+        """
+adnxs-simple.com|Ad Exchange Network
+adsafeprotected.com|Ad Verification Script
+adroll.com|Retargeting Ad Network
+adzerk.net|Native Ad Server
+appier.net|AI Ad Retargeting
+bidswitch.net|Programmatic Bid Switch
+bidding.cam|Header Bidding Network
+brealtime.com|Real-Time Ad Exchange
+brighteroption.com|Ad Tracking Network
+bannerflow.com|Display Banner Cloud
+buysellads.com|Display Ad Marketplace
+chromeads.com|Promotional Ad Script
+conversantmedia.com|Personalized Ad Media
+criteo.com|Retargeting Ad
+deltax.ai|Ad Attribution Tracker
+dlx.addirect.com|Direct Ad Exchange
+eclickads.net|Click Ad Network
+engagebdr.com|Programmatic Video/Display
+epom.com|Epom Ad Server
+exponential.com|Rich Media Ad Network
+fimserve.com|Ad Serving Engine
+flow-ad-blocker.com|Anti-Adblock / Ad Script
+free-counter.co.uk|Tracking Pixel Counter
+fuel451.com|Ad Campaign Tracker
+gan.doubleclick.net|Google Affiliate Ad
+getintent.com|Programmatic DSP Ad
+go-serve.com|Ad Redirect Server
+go2link.net|Affiliate Ad Redirect
+grapeshot.co.uk|Contextual Ad Targeting
+halogennetwork.com|Display Ad Network
+hi.adnetpub.com|Publisher Ad Network
+hit.sharehuts.com|Pop / Redirect Tracker
+imads.intellitxt.com|In-Text Keyword Ad
+indexww.com|Index Exchange Header Bid
+infolinks.com|In-Text / Fold Ad
+inhouse.adsharp.net|AdSharp Ad Server
+jemax.com|Ad Network Script
+kontera.com|In-Text Ad Link
+liadm.com|LiveIntent Identity Tracker
+live-adtech.com|AdTech Delivery Host
+lockerdome.com|Native Widget Ad
+ljmp.com|Ad Redirect Tracker
+moatads.com|Ad Telemetry Script
+native-adblock.com|Native Ad Injector
+nextaday.com|Pop / Banner Ad
+on.clkads.com|ClickAds Pop Network
+onesignal.com|Push Notification Ad
+openx.net|OpenX Ad Server
+ox-d.com|OpenX Bid Exchange
+pagefair.com|Ad Recovery Script
+performatix.com|Performance Ad Tracker
+pgdt.com|Ad Data Beacon
+popads.net|Pop-Under Ad Script
+popads.org|Pop-Under Ad Mirror
+popcash.net|Pop-Up Ad Script
+popmyads.com|Pop-Under Ad Network
+propellerads.com|Push / Pop Ad
+pushnami.com|Web Push Ad Network
+pushcrew.com|Push Campaign Tracker
+reallygoodarticles.com|Sponsored Content Redirect
+revcontent.com|Sponsored Widget Ad
+rlcdn.com|RapLeaf / TowerData Pixel
+ronomaeheuh.com|Pop / Malware Ad Host
+rtb-1.eekkqaa.com|RTB Bid Injector
+rtbpop.com|RTB Pop-Under Ad
+smartadserver.com|SmartAd Banner
+smaato.net|Mobile Ad Exchange
+sonobi.com|JetStream Header Bidding
+spotxchange.com|Video Ad Exchange
+steelhousemedia.com|Retargeting Ad Campaign
+stroimfitness.ru|Spam Ad Redirect
+syndication.exoclick.com|ExoClick Ad Syndication
+teads.tv|Outstream Video Ad
+texthit-service.com|In-Text Ad Service
+trafficjunky.com|Banner Ad Network
+trafficjunky.net|Banner Ad Delivery
+traffichunt.com|Ad Exchange Network
+tradetracker.net|Affiliate Ad Tracker
+valueclick.com|Display Ad Network
+videoplaza.com|Video Ad Server
+vistapanel.net|Injected Hosting Ad
+waveadvertising.com|Wave Display Ad
+xd.rafgp.com|Pop / Redirect Script
+yieldmo.com|Mobile Format Ad
+yieldlab.net|Programmatic Yield Ad
+zedo.com|Interstitial Ad
+zestymedia.com|Display Ad Server
+analytics.google.com|Google Analytics Endpoint
+region1.google-analytics.com|Regional GA Telemetry
+stats.g.doubleclick.net|DoubleClick Stats Beacon
+mixpanel.com|Mixpanel Product Telemetry
+segment.io|Segment Customer Data Pixel
+amplitude.com|Amplitude Event Tracker
+heapanalytics.com|Heap Session Analytics
+fullstory.com|FullStory Session Replay
+matomo.cloud|Matomo Cloud Analytics
+statcounter.com|StatCounter Web Tracker
+clicky.com|Clicky Web Analytics
+chartbeat.com|Chartbeat Content Telemetry
+parsely.com|Parse.ly Audience Tracker
+crashlytics.com|Crash Telemetry Reporter
+sentry.io|Sentry Telemetry Beacon
+bugsnag.com|Bugsnag Telemetry Tracker
+facebook.net|Meta Tracking Network
+connect.facebook.net|Meta Pixel SDK
+analytics.tiktok.com|TikTok Pixel Tracker
+ads.linkedin.com|LinkedIn Ad Tracker
+px.ads.linkedin.com|LinkedIn Insight Pixel
+bat.bing.com|Bing UET Ad Conversion
+snap.licdn.com|LinkedIn Snap Pixel
+tr.snapchat.com|Snapchat Conversion Pixel
+ads.twitter.com|X / Twitter Ad Tracker
+static.ads-twitter.com|X / Twitter Universal Tag
+        """.trimIndent()
     )
 
-    val PRO_PATH_PATTERNS: List<Pair<String, Pair<String, String>>> = listOf(
-        "facebook.com/tr" to ("Meta Tracking Pixel" to "||facebook.com/tr*"),
-        "/pagead2/" to ("Google PageAd2 Script" to "*/pagead2/*"),
-        "/banner_ad" to ("Banner Ad Asset" to "*/banner_ad*"),
-        "/bannerad" to ("BannerAd Asset" to "*/bannerad*"),
-        "/banner-ads" to ("Banner-Ads Asset" to "*/banner-ads*"),
-        "/adserver/" to ("AdServer Endpoint" to "*/adserver/*"),
-        "/ad-server/" to ("Ad-Server Endpoint" to "*/ad-server/*"),
-        "/adserv/" to ("AdServ Endpoint" to "*/adserv/*"),
-        "/adframe/" to ("AdFrame Path" to "*/adframe/*"),
-        "/adframe.js" to ("AdFrame Script" to "*/adframe.js"),
-        "/adframe.php" to ("AdFrame PHP Frame" to "*/adframe.php"),
-        "/adcall/" to ("AdCall Request" to "*/adcall/*"),
-        "/adrouter/" to ("AdRouter Endpoint" to "*/adrouter/*"),
-        "/adproxy/" to ("AdProxy Endpoint" to "*/adproxy/*"),
-        "/afr.php" to ("AdButler Frame" to "*/afr.php*"),
-        "/delivery/ajs.php" to ("Revive Adserver JS" to "*/delivery/ajs.php*"),
-        "/delivery/lg.php" to ("Revive Adserver Log" to "*/delivery/lg.php*"),
-        "/ad.js" to ("Generic Ad Script" to "*/ad.js"),
-        "/ad2.js" to ("Secondary Ad Script" to "*/ad2.js"),
-        "/advert.js" to ("Advert Script" to "*/advert.js"),
-        "/advertisement.js" to ("Advertisement Script" to "*/advertisement.js"),
-        "/openx/www/delivery/" to ("OpenX Delivery Path" to "*/openx/www/delivery/*"),
-        "/api/adserver/" to ("AdServer API" to "*/api/adserver/*"),
-        "/sdk/ads/" to ("Mobile Ads SDK Path" to "*/sdk/ads/*"),
-        "/popunder" to ("Pop-Under Script" to "*/popunder*"),
-        "/pop-under" to ("Pop-Under Loader" to "*/pop-under*"),
-        "/popup.js" to ("Pop-Up Script" to "*/popup.js"),
-        "/apstag.js" to ("Amazon TAM Header Bid" to "*/apstag.js"),
-        "/gpt.js" to ("Google Publisher Tags" to "*/gpt.js"),
-        "/googletag.js" to ("GoogleTag Ad Loader" to "*/googletag.js"),
-        "/adsbygoogle.js" to ("AdSense Auto-Ads" to "*/adsbygoogle.js"),
-        "/show_ads.js" to ("Legacy AdSense Loader" to "*/show_ads.js"),
-        "/mediavine.js" to ("Mediavine Ad Script" to "*/mediavine.js"),
-        "/adthrive.js" to ("AdThrive / Raptive Script" to "*/adthrive.js"),
-        "/siteground-banner.js" to ("SiteGround Promo Banner" to "*/siteground-banner.js")
+    val PRO_PATH_PATTERNS: List<Pair<String, Pair<String, String>>> = pathList(
+        """
+facebook.com/tr|Meta Tracking Pixel|||facebook.com/tr*
+/pagead2/|Google PageAd2 Script|*/pagead2/*
+/banner_ad|Banner Ad Asset|*/banner_ad*
+/bannerad|BannerAd Asset|*/bannerad*
+/banner-ads|Banner-Ads Asset|*/banner-ads*
+/adserver/|AdServer Endpoint|*/adserver/*
+/ad-server/|Ad-Server Endpoint|*/ad-server/*
+/adserv/|AdServ Endpoint|*/adserv/*
+/adframe/|AdFrame Path|*/adframe/*
+/adframe.js|AdFrame Script|*/adframe.js
+/adframe.php|AdFrame PHP Frame|*/adframe.php
+/adcall/|AdCall Request|*/adcall/*
+/adrouter/|AdRouter Endpoint|*/adrouter/*
+/adproxy/|AdProxy Endpoint|*/adproxy/*
+/afr.php|AdButler Frame|*/afr.php*
+/delivery/ajs.php|Revive Adserver JS|*/delivery/ajs.php*
+/delivery/lg.php|Revive Adserver Log|*/delivery/lg.php*
+/ad.js|Generic Ad Script|*/ad.js
+/ad2.js|Secondary Ad Script|*/ad2.js
+/advert.js|Advert Script|*/advert.js
+/advertisement.js|Advertisement Script|*/advertisement.js
+/openx/www/delivery/|OpenX Delivery Path|*/openx/www/delivery/*
+/api/adserver/|AdServer API|*/api/adserver/*
+/sdk/ads/|Mobile Ads SDK Path|*/sdk/ads/*
+/popunder|Pop-Under Script|*/popunder*
+/pop-under|Pop-Under Loader|*/pop-under*
+/popup.js|Pop-Up Script|*/popup.js
+/apstag.js|Amazon TAM Header Bid|*/apstag.js
+/gpt.js|Google Publisher Tags|*/gpt.js
+/googletag.js|GoogleTag Ad Loader|*/googletag.js
+/adsbygoogle.js|AdSense Auto-Ads|*/adsbygoogle.js
+/show_ads.js|Legacy AdSense Loader|*/show_ads.js
+/mediavine.js|Mediavine Ad Script|*/mediavine.js
+/adthrive.js|AdThrive / Raptive Script|*/adthrive.js
+/siteground-banner.js|SiteGround Promo Banner|*/siteground-banner.js
+        """.trimIndent()
     )
 
     private val PRO_REGEX_PATTERNS: List<Pair<Regex, Pair<String, String>>> = listOf(
@@ -257,63 +286,103 @@ object AdBlocker {
         Regex("""/tag\.min\.js.*mediavine""", RegexOption.IGNORE_CASE) to ("Mediavine Tag Loader" to "*/tag.min.js*mediavine")
     )
 
-    val PRO_DOM_SELECTORS: List<String> = listOf(
-        ".ad", ".ads", ".adv", ".advert", ".adverts", ".advertisement",
-        ".ad-container", ".ad-wrapper", ".ad-unit", ".ad-box", ".ad-holder", ".ad-label",
-        "[id*=\"google_ads\"]", "[id*=\"taboola\"]", "[id*=\"outbrain\"]", "[id*=\"mgid\"]",
-        "[class*=\"sponsored\"]", "[class*=\"Sponsored\"]", "[data-ad]", "[data-ads]",
-        "[data-ad-unit]", "[data-ad-slot]", "[data-ad-client]", "[data-google-query-id]",
-        "amp-ad", "amp-embed", ".adcode", ".adsbox", ".ad-badge", ".text-ads",
-        "a[href*=\"doubleclick.net\"]", "a[href*=\"/adclick\"]",
-        "ins.adsbygoogle", "ins[data-ad-slot]",
-        ".widget-taboola", ".OUTBRAIN", ".ob-widget", ".trc_rbox", ".trc_rbox_div",
-        "iframe[src*=\"taboola\"]", "iframe[src*=\"outbrain\"]", "iframe[src*=\"mgid\"]"
+    val PRO_DOM_SELECTORS: List<String> = selectorList(
+        """
+.ad
+.ads
+.adv
+.advert
+.adverts
+.advertisement
+.ad-container
+.ad-wrapper
+.ad-unit
+.ad-box
+.ad-holder
+.ad-label
+[id*="google_ads"]
+[id*="taboola"]
+[id*="outbrain"]
+[id*="mgid"]
+[class*="sponsored"]
+[class*="Sponsored"]
+[data-ad]
+[data-ads]
+[data-ad-unit]
+[data-ad-slot]
+[data-ad-client]
+[data-google-query-id]
+amp-ad
+amp-embed
+.adcode
+.adsbox
+.ad-badge
+.text-ads
+a[href*="doubleclick.net"]
+a[href*="/adclick"]
+ins.adsbygoogle
+ins[data-ad-slot]
+.widget-taboola
+.OUTBRAIN
+.ob-widget
+.trc_rbox
+.trc_rbox_div
+iframe[src*="taboola"]
+iframe[src*="outbrain"]
+iframe[src*="mgid"]
+        """.trimIndent()
     )
 
     // =========================================================================
     // 3. MAX MODE YOUTUBE & STREAMING RULES (Includes Minimal + Pro + YouTube)
     // =========================================================================
 
-    val MAX_YOUTUBE_HOST_RULES: Map<String, Pair<String, String>> = linkedMapOf(
-        "youtube.cleverads.vn" to ("YouTube CleverAds Host" to "||youtube.cleverads.vn^"),
-        "pagead2.googlesyndication.com" to ("YouTube / Google PageAd2" to "||pagead2.googlesyndication.com^"),
-        "googleads.g.doubleclick.net" to ("YouTube DoubleClick Video Ad" to "||googleads.g.doubleclick.net^"),
-        "tpc.googlesyndication.com" to ("YouTube Syndication Ad Frame" to "||tpc.googlesyndication.com^"),
-        "securepubads.g.doubleclick.net" to ("YouTube SecurePubAds" to "||securepubads.g.doubleclick.net^"),
-        "pubads.g.doubleclick.net" to ("YouTube PubAds Server" to "||pubads.g.doubleclick.net^"),
-        "adservice.google.com" to ("YouTube AdService" to "||adservice.google.com^")
+    val MAX_YOUTUBE_HOST_RULES: Map<String, Pair<String, String>> = hostMap(
+        """
+youtube.cleverads.vn|YouTube CleverAds Host
+pagead2.googlesyndication.com|YouTube / Google PageAd2
+googleads.g.doubleclick.net|YouTube DoubleClick Video Ad
+tpc.googlesyndication.com|YouTube Syndication Ad Frame
+securepubads.g.doubleclick.net|YouTube SecurePubAds
+pubads.g.doubleclick.net|YouTube PubAds Server
+adservice.google.com|YouTube AdService
+        """.trimIndent()
     )
 
-    val MAX_YOUTUBE_PATH_PATTERNS: List<Pair<String, Pair<String, String>>> = listOf(
-        "youtube.com/api/stats/ads" to ("YouTube Ad Stats Beacon" to "youtube.com/api/stats/ads*"),
-        "youtube.com/pagead/" to ("YouTube PageAd Endpoint" to "youtube.com/pagead/*"),
-        "youtube.com/ptracking" to ("YouTube Ad Ptracking" to "youtube.com/ptracking*"),
-        "youtube.com/pcs/activeview" to ("YouTube ActiveView Ad Ping" to "youtube.com/pcs/activeview*"),
-        "youtube.com/get_midroll_info" to ("YouTube Midroll Ad Info" to "youtube.com/get_midroll_info*"),
-        "/youtubei/v1/log_event" to ("YouTube Telemetry Log Event" to "/youtubei/v1/log_event*"),
-        "doubleclick.net/instream/ad_status" to ("DoubleClick Instream Ad Status" to "doubleclick.net/instream/ad_status*"),
-        "pagead2.googlesyndication.com/pagead/" to ("PageAd2 Syndication Path" to "pagead2.googlesyndication.com/pagead/*"),
-        "ytimg.com/ads-" to ("YouTube Static Ad Asset" to "ytimg.com/ads-*"),
-        "googlevideo.com/videogoodput" to ("GoogleVideo Ad Goodput Verify" to "googlevideo.com/videogoodput*")
+    val MAX_YOUTUBE_PATH_PATTERNS: List<Pair<String, Pair<String, String>>> = pathList(
+        """
+youtube.com/api/stats/ads|YouTube Ad Stats Beacon|youtube.com/api/stats/ads*
+youtube.com/pagead/|YouTube PageAd Endpoint|youtube.com/pagead/*
+youtube.com/ptracking|YouTube Ad Ptracking|youtube.com/ptracking*
+youtube.com/pcs/activeview|YouTube ActiveView Ad Ping|youtube.com/pcs/activeview*
+youtube.com/get_midroll_info|YouTube Midroll Ad Info|youtube.com/get_midroll_info*
+/youtubei/v1/log_event|YouTube Telemetry Log Event|/youtubei/v1/log_event*
+doubleclick.net/instream/ad_status|DoubleClick Instream Ad Status|doubleclick.net/instream/ad_status*
+pagead2.googlesyndication.com/pagead/|PageAd2 Syndication Path|pagead2.googlesyndication.com/pagead/*
+ytimg.com/ads-|YouTube Static Ad Asset|ytimg.com/ads-*
+googlevideo.com/videogoodput|GoogleVideo Ad Goodput Verify|googlevideo.com/videogoodput*
+        """.trimIndent()
     )
 
-    val MAX_YOUTUBE_DOM_SELECTORS: List<String> = listOf(
-        ".ytp-ad-module",
-        ".ytp-ad-overlay-container",
-        ".ytp-ad-text-overlay",
-        ".ytp-ad-image-overlay",
-        ".ytp-ad-message-container",
-        ".ytp-ad-player-overlay",
-        ".ytd-display-ad-renderer",
-        ".ytd-promoted-sparkles-web-renderer",
-        ".ytd-promoted-video-renderer",
-        "ytd-ad-slot-renderer",
-        "ytd-in-feed-ad-layout-renderer",
-        "ytd-compact-promoted-video-renderer",
-        "#masthead-ad",
-        "#player-ads",
-        "#background-promo-renderer",
-        "ytd-rich-item-renderer:has(ytd-display-ad-renderer)"
+    val MAX_YOUTUBE_DOM_SELECTORS: List<String> = selectorList(
+        """
+.ytp-ad-module
+.ytp-ad-overlay-container
+.ytp-ad-text-overlay
+.ytp-ad-image-overlay
+.ytp-ad-message-container
+.ytp-ad-player-overlay
+.ytd-display-ad-renderer
+.ytd-promoted-sparkles-web-renderer
+.ytd-promoted-video-renderer
+ytd-ad-slot-renderer
+ytd-in-feed-ad-layout-renderer
+ytd-compact-promoted-video-renderer
+#masthead-ad
+#player-ads
+#background-promo-renderer
+ytd-rich-item-renderer:has(ytd-display-ad-renderer)
+        """.trimIndent()
     )
 
     // =========================================================================
@@ -408,6 +477,23 @@ object AdBlocker {
         return matchAdRequest("", url, "", mode) != null
     }
 
+    private fun hit(
+        tabId: String,
+        url: String,
+        host: String,
+        pageDomain: String,
+        meta: Pair<String, String>,
+        mode: AdBlockMode
+    ) = BlockedAdEntry(
+        tabId = tabId,
+        adUrl = url.take(260),
+        adDomain = host,
+        pageDomain = pageDomain,
+        category = meta.first,
+        filterRule = meta.second,
+        modeTier = mode.shortBadge
+    )
+
     fun matchAdRequest(
         tabId: String,
         url: String,
@@ -423,8 +509,6 @@ object AdBlocker {
         val lowerUrl = url.lowercase(Locale.US)
         val pageDomain = BrowserUrlUtils.extractDomain(pageUrl.ifBlank { url })
 
-        // 0. Never block reCAPTCHA, Google Account Auth, or first-party Google Search results/static assets
-        //    so Google Search never triggers CAPTCHA / bot challenges.
         if (host.contains("recaptcha") ||
             host == "accounts.google.com" ||
             host == "www.gstatic.com" ||
@@ -440,114 +524,52 @@ object AdBlocker {
         ) {
             return null
         }
-        // Never block actual YouTube video media streams (googlevideo.com/videoplayback)
         if (host.endsWith("googlevideo.com") && !lowerUrl.contains("videogoodput")) {
             return null
         }
 
-        // 1. Check MAX Mode YouTube Rules first when mode == MAX
         if (mode == AdBlockMode.MAX) {
             for ((blockedHost, meta) in MAX_YOUTUBE_HOST_RULES) {
                 if (host == blockedHost || host.endsWith(".$blockedHost")) {
-                    return BlockedAdEntry(
-                        tabId = tabId,
-                        adUrl = url.take(260),
-                        adDomain = host,
-                        pageDomain = pageDomain,
-                        category = meta.first,
-                        filterRule = meta.second,
-                        modeTier = AdBlockMode.MAX.shortBadge
-                    )
+                    return hit(tabId, url, host, pageDomain, meta, AdBlockMode.MAX)
                 }
             }
             for ((pattern, meta) in MAX_YOUTUBE_PATH_PATTERNS) {
                 if (lowerUrl.contains(pattern)) {
-                    return BlockedAdEntry(
-                        tabId = tabId,
-                        adUrl = url.take(260),
-                        adDomain = host,
-                        pageDomain = pageDomain,
-                        category = meta.first,
-                        filterRule = meta.second,
-                        modeTier = AdBlockMode.MAX.shortBadge
-                    )
+                    return hit(tabId, url, host, pageDomain, meta, AdBlockMode.MAX)
                 }
             }
         }
 
-        // 2. Check MINIMAL Host Rules (Active in MINIMAL, PRO, and MAX)
         for ((blockedDomain, meta) in MINIMAL_HOST_RULES) {
             if (host == blockedDomain || host.endsWith(".$blockedDomain")) {
-                return BlockedAdEntry(
-                    tabId = tabId,
-                    adUrl = url.take(260),
-                    adDomain = host,
-                    pageDomain = pageDomain,
-                    category = meta.first,
-                    filterRule = meta.second,
-                    modeTier = AdBlockMode.MINIMAL.shortBadge
-                )
+                return hit(tabId, url, host, pageDomain, meta, AdBlockMode.MINIMAL)
             }
         }
 
-        // 3. Check PRO Host Rules when mode is PRO or MAX
         if (mode == AdBlockMode.PRO || mode == AdBlockMode.MAX) {
             for ((blockedDomain, meta) in PRO_HOST_RULES) {
                 if (host == blockedDomain || host.endsWith(".$blockedDomain")) {
-                    return BlockedAdEntry(
-                        tabId = tabId,
-                        adUrl = url.take(260),
-                        adDomain = host,
-                        pageDomain = pageDomain,
-                        category = meta.first,
-                        filterRule = meta.second,
-                        modeTier = AdBlockMode.PRO.shortBadge
-                    )
+                    return hit(tabId, url, host, pageDomain, meta, AdBlockMode.PRO)
                 }
             }
         }
 
-        // 4. Check MINIMAL Path / Script Rules (Active in MINIMAL, PRO, and MAX)
         for ((pattern, meta) in MINIMAL_PATH_PATTERNS) {
             if (lowerUrl.contains(pattern)) {
-                return BlockedAdEntry(
-                    tabId = tabId,
-                    adUrl = url.take(260),
-                    adDomain = host,
-                    pageDomain = pageDomain,
-                    category = meta.first,
-                    filterRule = meta.second,
-                    modeTier = AdBlockMode.MINIMAL.shortBadge
-                )
+                return hit(tabId, url, host, pageDomain, meta, AdBlockMode.MINIMAL)
             }
         }
 
-        // 5. Check PRO Path & Regex Rules when mode is PRO or MAX
         if (mode == AdBlockMode.PRO || mode == AdBlockMode.MAX) {
             for ((pattern, meta) in PRO_PATH_PATTERNS) {
                 if (lowerUrl.contains(pattern)) {
-                    return BlockedAdEntry(
-                        tabId = tabId,
-                        adUrl = url.take(260),
-                        adDomain = host,
-                        pageDomain = pageDomain,
-                        category = meta.first,
-                        filterRule = meta.second,
-                        modeTier = AdBlockMode.PRO.shortBadge
-                    )
+                    return hit(tabId, url, host, pageDomain, meta, AdBlockMode.PRO)
                 }
             }
             for ((regex, meta) in PRO_REGEX_PATTERNS) {
                 if (regex.containsMatchIn(lowerUrl)) {
-                    return BlockedAdEntry(
-                        tabId = tabId,
-                        adUrl = url.take(260),
-                        adDomain = host,
-                        pageDomain = pageDomain,
-                        category = meta.first,
-                        filterRule = meta.second,
-                        modeTier = AdBlockMode.PRO.shortBadge
-                    )
+                    return hit(tabId, url, host, pageDomain, meta, AdBlockMode.PRO)
                 }
             }
         }
