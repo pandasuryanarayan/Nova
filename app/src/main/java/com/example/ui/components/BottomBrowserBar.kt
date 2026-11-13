@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,29 +35,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Tab
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,7 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,7 +54,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextRange
@@ -87,20 +66,17 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.browser.BrowserUrlUtils
 import com.example.data.BackgroundMediaState
 import com.example.data.BrowserTab
 import com.example.data.NOVA_HOME_URL
 import com.example.ui.i18n.novaStrings
+import com.example.ui.icons.NovaIcons
+import com.example.ui.theme.JetBrainsMonoFontFamily
 
 /**
  * Lightweight Top Website Bar shown when any website is opened (`!activeTab.isHomePage`).
- * Displays:
- * 1. Lock icon button (opens Certificate, Available Cookies & Site Configuration sheet)
- * 2. Website Title (set by website)
- * 3. 1-Tap Bookmark Toggle Icon Button (placed on the right side near the dropdown button)
- * 4. Dropdown Icon Button that toggles a fall-down drawer showing the full website URL;
- *    re-clicking the dropdown icon smoothly collapses and vanishes the fall-down drawer.
  */
 @Composable
 fun TopWebsiteHeaderBar(
@@ -226,7 +202,7 @@ fun TopWebsiteHeaderBar(
                                     }
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Filled.Close,
+                                        imageVector = NovaIcons.Close,
                                         contentDescription = "Clear URL"
                                     )
                                 }
@@ -240,7 +216,7 @@ fun TopWebsiteHeaderBar(
                                     }
                                 ) {
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        imageVector = NovaIcons.Send,
                                         contentDescription = "Go",
                                         tint = MaterialTheme.colorScheme.primary
                                     )
@@ -269,7 +245,7 @@ fun TopWebsiteHeaderBar(
                     }
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Close,
+                        imageVector = NovaIcons.Close,
                         contentDescription = "Cancel URL Edit"
                     )
                 }
@@ -283,7 +259,6 @@ fun TopWebsiteHeaderBar(
                     .height(50.dp)
                     .padding(horizontal = 8.dp)
             ) {
-                // 1. Lock Icon Button (Certificate, Cookies & Site Config) - Distinctive & clearly visible in both themes
                 val lockBgColor = if (activeTab.isSecureSsl) {
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                 } else {
@@ -306,25 +281,25 @@ fun TopWebsiteHeaderBar(
                             .size(34.dp)
                             .background(
                                 color = lockBgColor,
-                                shape = CircleShape
+                                shape = RoundedCornerShape(10.dp)
                             )
                     ) {
                         Icon(
                             imageVector = if (activeTab.isSecureSsl) {
-                                Icons.Filled.Lock
+                                NovaIcons.Lock
                             } else {
-                                Icons.Filled.Warning
+                                NovaIcons.Warning
                             },
                             contentDescription = "Site Security, Certificate, Cookies & Configuration",
                             tint = lockTint,
-                            modifier = Modifier.size(19.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // 2. Website Title (set by website)
+                // Website Title
                 Box(
                     contentAlignment = Alignment.CenterStart,
                     modifier = Modifier
@@ -348,7 +323,7 @@ fun TopWebsiteHeaderBar(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                // 3. 1-Tap Bookmark Toggle Button (placed on right side near the dropdown button)
+                // 1-Tap Bookmark Toggle Button
                 IconButton(
                     onClick = onToggleBookmarkClick,
                     modifier = Modifier
@@ -359,13 +334,13 @@ fun TopWebsiteHeaderBar(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(34.dp)
-                            .background(bookmarkBgColor, CircleShape)
+                            .background(bookmarkBgColor, RoundedCornerShape(10.dp))
                     ) {
                         Icon(
                             imageVector = if (isBookmarked) {
-                                Icons.Filled.Bookmark
+                                NovaIcons.Bookmark
                             } else {
-                                Icons.Filled.BookmarkBorder
+                                NovaIcons.BookmarkBorder
                             },
                             contentDescription = if (isBookmarked) {
                                 "Remove Bookmark"
@@ -373,14 +348,14 @@ fun TopWebsiteHeaderBar(
                                 "Bookmark This Website"
                             },
                             tint = bookmarkTint,
-                            modifier = Modifier.size(19.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.width(2.dp))
 
-                // 4. Dropdown Icon Button to show/hide full Website Link fall-down
+                // Dropdown Icon Button
                 IconButton(
                     onClick = { isUrlDropdownExpanded = !isUrlDropdownExpanded },
                     modifier = Modifier
@@ -391,13 +366,13 @@ fun TopWebsiteHeaderBar(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(34.dp)
-                            .background(dropdownBgColor, CircleShape)
+                            .background(dropdownBgColor, RoundedCornerShape(10.dp))
                     ) {
                         Icon(
                             imageVector = if (isUrlDropdownExpanded) {
-                                Icons.Filled.KeyboardArrowUp
+                                NovaIcons.KeyboardArrowUp
                             } else {
-                                Icons.Filled.KeyboardArrowDown
+                                NovaIcons.KeyboardArrowDown
                             },
                             contentDescription = if (isUrlDropdownExpanded) {
                                 "Hide Website Link"
@@ -409,14 +384,14 @@ fun TopWebsiteHeaderBar(
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
         }
 
-        // Fall-down panel below Top Bar showing the full link of the website; vanishes on re-click
+        // Fall-down panel below Top Bar showing the full link of the website
         AnimatedVisibility(
             visible = isUrlDropdownExpanded && !isEditingTopUrl,
             enter = expandVertically(animationSpec = tween(160)) + fadeIn(animationSpec = tween(140)),
@@ -434,7 +409,6 @@ fun TopWebsiteHeaderBar(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Header Row: "Website Link" aligned on Left + 3 Individual Action Icons (Copy, Edit, Share) on Right
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -443,7 +417,7 @@ fun TopWebsiteHeaderBar(
                         .padding(horizontal = 2.dp)
                 ) {
                     Text(
-                        text = "Website Link",
+                        text = novaStrings.websiteLinkTitle,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
@@ -453,81 +427,57 @@ fun TopWebsiteHeaderBar(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // 1. Copy Link Icon Button
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(RoundedCornerShape(9.dp))
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(9.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                    shape = RoundedCornerShape(9.dp)
-                                )
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(9.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(9.dp))
                                 .clickable { onCopyUrlClick(activeTab.url) }
                                 .testTag("falldown_copy_url_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.ContentCopy,
+                                imageVector = NovaIcons.ContentCopy,
                                 contentDescription = "Copy Link",
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(15.dp)
                             )
                         }
 
-                        // 2. Edit URL Icon Button
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(RoundedCornerShape(9.dp))
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(9.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                    shape = RoundedCornerShape(9.dp)
-                                )
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(9.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(9.dp))
                                 .clickable { isEditingTopUrl = true }
                                 .testTag("falldown_edit_url_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Edit,
+                                imageVector = NovaIcons.Edit,
                                 contentDescription = "Edit Link",
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(15.dp)
                             )
                         }
 
-                        // 3. Share Link Icon Button
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(RoundedCornerShape(9.dp))
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(9.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                                    shape = RoundedCornerShape(9.dp)
-                                )
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(9.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(9.dp))
                                 .clickable { onShareUrlClick(websiteTitle, activeTab.url) }
                                 .testTag("falldown_share_url_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Share,
+                                imageVector = NovaIcons.Share,
                                 contentDescription = "Share Link",
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                     }
@@ -535,16 +485,11 @@ fun TopWebsiteHeaderBar(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Full Website URL Box aligned cleanly with header row
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.32f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.32f), RoundedCornerShape(12.dp))
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
                     SelectionContainer {
@@ -561,7 +506,6 @@ fun TopWebsiteHeaderBar(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
 
-        // Loading progress bar along the bottom edge of the Top Bar
         AnimatedVisibility(
             visible = activeTab.isLoading,
             enter = fadeIn(animationSpec = tween(120)) + expandVertically(animationSpec = tween(120)),
@@ -580,12 +524,11 @@ fun TopWebsiteHeaderBar(
 }
 
 /**
- * Lightweight Bottom Browser Bar optimized for budget phones:
- * - On the Home Screen (`activeTab.isHomePage`), only shows Tab View (`[N]`) and 3-Dot Menu on the right
- *   (no Left/Back icon, no Home button, and no duplicate bottom search bar).
- * - When a website is opened (`!activeTab.isHomePage`), the on-demand website controls
- *   (Left Arrow, Home, Inspect, Video Detector, Refresh/Stop) smoothly slide in from Left to Right,
- *   and reverse-slide Right to Left when returning to the Home page.
+ * Redesigned Bottom Navigation & Website Toolbar:
+ * - On the Home Screen (`activeTab.isHomePage`): displays the 4-tab bar:
+ *   `HOME` (active pill indicator), `SAVED` (Bookmarks), `TABS` (with count badge), and `SETTINGS` (Control center).
+ * - When a website is opened (`!activeTab.isHomePage`): smoothly shows website actions
+ *   (Back, Home, Inspect/DevTools, Video Detector, Refresh/Stop, Tabs `[N]`, Settings).
  */
 @Composable
 fun BottomBrowserBar(
@@ -600,15 +543,13 @@ fun BottomBrowserBar(
     onSslIconClick: () -> Unit,
     onToggleDevToolsClick: () -> Unit,
     onScanPageVideosClick: () -> Unit,
+    onOpenBookmarksClick: () -> Unit = {},
     onOpenTabsClick: () -> Unit,
     onOpenMenuClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val devToolsBg by animateColorAsState(
-        targetValue = if (isDevToolsVisible) Color(0xFF00E676).copy(alpha = 0.18f) else Color.Transparent,
-        animationSpec = tween(150),
-        label = "devtools_bg"
-    )
+    val strings = novaStrings
+    val accentColor = MaterialTheme.colorScheme.primary
 
     Column(
         modifier = modifier
@@ -617,45 +558,88 @@ fun BottomBrowserBar(
             .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
             .testTag("bottom_browser_bar")
     ) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
-                .padding(horizontal = 12.dp)
-        ) {
-            // Left / Center area: On-Demand Website Toolbar (slides in Left-to-Right when website opens,
-            // and reverse-slides Right-to-Left when returning to Home page)
-            Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.weight(1f)
+        if (activeTab.isHomePage) {
+            // 4-Tab Home Navigation Bar: HOME | SAVED | TABS | SETTINGS
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(62.dp)
+                    .padding(horizontal = 8.dp)
             ) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = !activeTab.isHomePage,
-                    enter = slideInHorizontally(
-                        initialOffsetX = { fullWidth -> -fullWidth },
-                        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
-                    ) + fadeIn(
-                        animationSpec = tween(durationMillis = 220)
-                    ),
-                    exit = slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> -fullWidth },
-                        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
-                    ) + fadeOut(
-                        animationSpec = tween(durationMillis = 180)
-                    )
+                // 1. HOME (Active)
+                BottomNavTabItem(
+                    icon = NovaIcons.HomeFilled,
+                    label = strings.navHome,
+                    isSelected = true,
+                    badgeCount = null,
+                    onClick = onHomeClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("nav_home_button")
+                )
+
+                // 2. SAVED (Bookmarks)
+                BottomNavTabItem(
+                    icon = NovaIcons.BookmarkBorder,
+                    label = strings.navSaved,
+                    isSelected = false,
+                    badgeCount = null,
+                    onClick = onOpenBookmarksClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("bottom_saved_bookmarks_button")
+                )
+
+                // 3. TABS (with Count Badge)
+                BottomNavTabItem(
+                    icon = NovaIcons.Tab,
+                    label = strings.navTabs,
+                    isSelected = false,
+                    badgeCount = tabsCount,
+                    onClick = onOpenTabsClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("tabs_fab_button")
+                )
+
+                // 4. SETTINGS (Control Center / Menu)
+                BottomNavTabItem(
+                    icon = NovaIcons.Settings,
+                    label = strings.navSettings,
+                    isSelected = false,
+                    badgeCount = null,
+                    onClick = onOpenMenuClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("browser_menu_button")
+                )
+            }
+        } else {
+            // On-Demand Website Toolbar when browsing any webpage
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .padding(horizontal = 10.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.weight(1f)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 8.dp)
+                            .padding(end = 6.dp)
                             .testTag("bottom_on_demand_website_actions")
                     ) {
-                        // 1. Left Arrow (Back)
+                        // 1. Back
                         IconButton(
                             onClick = onBackClick,
                             enabled = activeTab.canGoBack || !activeTab.isHomePage,
@@ -664,14 +648,14 @@ fun BottomBrowserBar(
                                 .testTag("nav_back_button")
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                imageVector = NovaIcons.ArrowBack,
                                 contentDescription = "Back",
                                 tint = if (activeTab.canGoBack || !activeTab.isHomePage) {
-                                    MaterialTheme.colorScheme.onSurface
+                                    accentColor
                                 } else {
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                 },
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
@@ -683,10 +667,10 @@ fun BottomBrowserBar(
                                 .testTag("nav_home_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Home,
-                                contentDescription = "Home",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(22.dp)
+                                imageVector = NovaIcons.Home,
+                                contentDescription = strings.navHome,
+                                tint = accentColor,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
@@ -698,18 +682,18 @@ fun BottomBrowserBar(
                                 .testTag("address_bar_devtools_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Code,
-                                contentDescription = "Inspect Page (DevTools)",
+                                imageVector = NovaIcons.Code,
+                                contentDescription = strings.inspectButton,
                                 tint = if (isDevToolsVisible) {
-                                    MaterialTheme.colorScheme.primary
+                                    MaterialTheme.colorScheme.secondary
                                 } else {
-                                    MaterialTheme.colorScheme.onSurface
+                                    accentColor
                                 },
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
-                        // 4. Video Detector (Normal icon presentation like other icons, no rounded box highlight)
+                        // 4. Video Detector
                         IconButton(
                             onClick = onScanPageVideosClick,
                             modifier = Modifier
@@ -717,10 +701,10 @@ fun BottomBrowserBar(
                                 .testTag("address_bar_video_detect_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Videocam,
-                                contentDescription = "Detect Videos on Page",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(22.dp)
+                                imageVector = NovaIcons.Videocam,
+                                contentDescription = strings.videosButton,
+                                tint = accentColor,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
@@ -733,61 +717,150 @@ fun BottomBrowserBar(
                         ) {
                             Icon(
                                 imageVector = if (activeTab.isLoading) {
-                                    Icons.Filled.Close
+                                    NovaIcons.Close
                                 } else {
-                                    Icons.Filled.Refresh
+                                    NovaIcons.Refresh
                                 },
                                 contentDescription = if (activeTab.isLoading) "Stop Loading" else "Refresh Page",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(22.dp)
+                                tint = accentColor,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
                 }
-            }
 
-            // Right area (Always visible on both Home Screen and Website Mode):
-            // 6. Tab View Button
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(13.dp))
-                    .clickable { onOpenTabsClick() }
-                    .testTag("tabs_fab_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Tab,
-                    contentDescription = "Open Tabs ($tabsCount)",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = "$tabsCount",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
+                // 6. Tabs Button with Properly Aligned Tab Icon & Count
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .height(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(accentColor.copy(alpha = 0.16f), RoundedCornerShape(12.dp))
+                        .border(1.dp, accentColor.copy(alpha = 0.42f), RoundedCornerShape(12.dp))
+                        .clickable { onOpenTabsClick() }
+                        .padding(horizontal = 10.dp)
+                        .testTag("tabs_fab_button")
+                ) {
+                    Icon(
+                        imageVector = NovaIcons.Tab,
+                        contentDescription = "${strings.openTabsTitle} ($tabsCount)",
+                        tint = accentColor,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "$tabsCount",
+                        fontFamily = JetBrainsMonoFontFamily,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = accentColor
+                    )
+                }
 
-            Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
 
-            // 7. 3-Dot Menu Button
-            IconButton(
-                onClick = onOpenMenuClick,
-                modifier = Modifier
-                    .size(44.dp)
-                    .testTag("browser_menu_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "Browser Menu",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(22.dp)
-                )
+                // 7. Settings / Control Center Button
+                IconButton(
+                    onClick = onOpenMenuClick,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("browser_menu_button")
+                ) {
+                    Icon(
+                        imageVector = NovaIcons.Settings,
+                        contentDescription = strings.navSettings,
+                        tint = accentColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun BottomNavTabItem(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    badgeCount: Int?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val activeColor = MaterialTheme.colorScheme.primary
+    val inactiveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)
+    val labelInactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .height(60.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+    ) {
+        // Top glowing indicator line when active
+        Box(
+            modifier = Modifier
+                .width(24.dp)
+                .height(3.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isSelected) {
+                        Brush.horizontalGradient(
+                            listOf(activeColor, MaterialTheme.colorScheme.secondary)
+                        )
+                    } else {
+                        Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                    }
+                )
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (isSelected) activeColor else inactiveColor,
+                modifier = Modifier.size(20.dp)
+            )
+
+            if (badgeCount != null) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 10.dp, y = (-5).dp)
+                        .size(16.dp)
+                        .background(activeColor, CircleShape)
+                ) {
+                    Text(
+                        text = "$badgeCount",
+                        fontFamily = JetBrainsMonoFontFamily,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = label,
+            fontFamily = JetBrainsMonoFontFamily,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                letterSpacing = 0.8.sp
+            ),
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (isSelected) activeColor else labelInactiveColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -832,13 +905,13 @@ fun FindInPageTopBar(
         )
         IconButton(onClick = onFindPrev) {
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowUp,
+                imageVector = NovaIcons.KeyboardArrowUp,
                 contentDescription = "Previous Match"
             )
         }
         IconButton(onClick = onFindNext) {
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
+                imageVector = NovaIcons.KeyboardArrowDown,
                 contentDescription = "Next Match"
             )
         }
@@ -847,7 +920,7 @@ fun FindInPageTopBar(
             modifier = Modifier.testTag("close_find_in_page_button")
         ) {
             Icon(
-                imageVector = Icons.Filled.Close,
+                imageVector = NovaIcons.Close,
                 contentDescription = "Close Find in Page"
             )
         }
@@ -878,7 +951,7 @@ fun BackgroundMediaMiniBar(
                 .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f), CircleShape)
         ) {
             Icon(
-                imageVector = Icons.Filled.Headphones,
+                imageVector = NovaIcons.Headphones,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.size(18.dp)
@@ -902,14 +975,14 @@ fun BackgroundMediaMiniBar(
         }
         IconButton(onClick = onTogglePlayPause) {
             Icon(
-                imageVector = if (mediaState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                imageVector = if (mediaState.isPlaying) NovaIcons.Pause else NovaIcons.PlayArrow,
                 contentDescription = if (mediaState.isPlaying) "Pause" else "Play",
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
         IconButton(onClick = onClose) {
             Icon(
-                imageVector = Icons.Filled.Close,
+                imageVector = NovaIcons.Close,
                 contentDescription = "Stop Background Playback",
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )

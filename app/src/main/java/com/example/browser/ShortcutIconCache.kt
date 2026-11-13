@@ -20,16 +20,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Lightweight, memory-safe Favicon & App Icon Cache for Quick Shortcuts.
- * - Keeps at most 32 small (64x64) icons in RAM via LruCache (~250 KB total).
- * - Persists fetched icons to internal mobile cache (`cacheDir/shortcut_icons/`).
- * - Never polls or fetches continuously: only fetches once if missing from disk cache.
+ * Real Website Favicon & App Icon Cache for Quick Shortcuts.
+ * - Keeps up to 48 crisp (96x96) website icons in RAM via LruCache.
+ * - Persists fetched icons to internal storage (`filesDir/shortcut_icons/`) so they survive cache clears.
+ * - Fetches real website icons from Google S2 Favicon API, DuckDuckGo Icon API, or direct `/favicon.ico`.
  */
 object ShortcutIconCache {
-    private const val ICON_SIZE_PX = 64
+    private const val ICON_SIZE_PX = 96
 
-    private val memoryCache = object : LruCache<String, ImageBitmap>(32) {}
-    private val attemptedInSession: MutableSet<String> =
+    private val memoryCache = object : LruCache<String, ImageBitmap>(48) {}
+    private val inFlightDomains: MutableSet<String> =
         Collections.synchronizedSet(HashSet<String>())
 
     private fun normalizeDomainKey(rawUrl: String): String {
@@ -49,7 +49,7 @@ object ShortcutIconCache {
     }
 
     private fun getCacheFile(context: Context, domainKey: String): File {
-        val dir = File(context.cacheDir, "shortcut_icons")
+        val dir = File(context.filesDir, "shortcut_icons")
         if (!dir.exists()) {
             dir.mkdirs()
         }
@@ -62,11 +62,30 @@ object ShortcutIconCache {
         return memoryCache.get(key)
     }
 
+    fun saveVisitedWebsiteIcon(context: Context, rawUrl: String, bitmap: Bitmap?) {
+        if (bitmap == null || bitmap.width <= 0 || bitmap.height <= 0) return
+        val key = normalizeDomainKey(rawUrl)
+        if (key.isBlank()) return
+        try {
+            val scaled = if (bitmap.width == ICON_SIZE_PX && bitmap.height == ICON_SIZE_PX) {
+                bitmap
+            } else {
+                Bitmap.createScaledBitmap(bitmap, ICON_SIZE_PX, ICON_SIZE_PX, true)
+            }
+            val diskFile = getCacheFile(context.applicationContext, key)
+            FileOutputStream(diskFile).use { out ->
+                scaled.compress(Bitmap.CompressFormat.PNG, 92, out)
+            }
+            memoryCache.put(key, scaled.asImageBitmap())
+        } catch (_: Throwable) {
+        }
+    }
+
     suspend fun loadOrFetchOnce(context: Context, rawUrl: String): ImageBitmap? =
         withContext(Dispatchers.IO) {
             val key = normalizeDomainKey(rawUrl)
             val host = extractCleanHost(rawUrl)
-            if (key.isBlank() || host.isBlank()) return@withContext null
+            if (key.isBlank() || host.isBlank() || host.startsWith("nova")) return@withContext null
 
             memoryCache.get(key)?.let { return@withContext it }
 
@@ -79,29 +98,49 @@ object ShortcutIconCache {
                 }
             }
 
-            // Do not fetch continuously — attempt network fetch at most once per domain per session
-            if (!attemptedInSession.add(key)) {
-                return@withContext null
-            }
-
-            val candidateUrls = listOf(
-                "https://www.google.com/s2/favicons?domain=$host&sz=128",
-                "https://icons.duckduckgo.com/ip3/$host.ico"
-            )
-
-            for (endpoint in candidateUrls) {
-                val downloaded = downloadAndScaleIcon(endpoint)
-                if (downloaded != null) {
+            // Also check legacy cacheDir if previously stored there
+            val legacyFile = File(File(context.cacheDir, "shortcut_icons"), "$key.png")
+            if (legacyFile.exists() && legacyFile.length() > 64L) {
+                decodeBitmapSafely(legacyFile)?.let { bmp ->
                     try {
-                        FileOutputStream(diskFile).use { out ->
-                            downloaded.compress(Bitmap.CompressFormat.PNG, 90, out)
-                        }
+                        legacyFile.copyTo(diskFile, overwrite = true)
                     } catch (_: Exception) {
                     }
-                    val img = downloaded.asImageBitmap()
+                    val img = bmp.asImageBitmap()
                     memoryCache.put(key, img)
                     return@withContext img
                 }
+            }
+
+            if (!inFlightDomains.add(key)) {
+                return@withContext memoryCache.get(key)
+            }
+
+            try {
+                val candidateUrls = listOf(
+                    "https://www.google.com/s2/favicons?domain_url=https://$host&sz=128",
+                    "https://www.google.com/s2/favicons?domain=$host&sz=128",
+                    "https://icons.duckduckgo.com/ip3/$host.ico",
+                    "https://$host/apple-touch-icon.png",
+                    "https://$host/favicon.ico"
+                )
+
+                for (endpoint in candidateUrls) {
+                    val downloaded = downloadAndScaleIcon(endpoint)
+                    if (downloaded != null) {
+                        try {
+                            FileOutputStream(diskFile).use { out ->
+                                downloaded.compress(Bitmap.CompressFormat.PNG, 92, out)
+                            }
+                        } catch (_: Exception) {
+                        }
+                        val img = downloaded.asImageBitmap()
+                        memoryCache.put(key, img)
+                        return@withContext img
+                    }
+                }
+            } finally {
+                inFlightDomains.remove(key)
             }
 
             null
@@ -122,20 +161,23 @@ object ShortcutIconCache {
         var connection: HttpURLConnection? = null
         return try {
             connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 5000
-                readTimeout = 5000
+                connectTimeout = 6000
+                readTimeout = 6000
                 instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
+                setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+                )
             }
             if (connection.responseCode !in 200..299) return null
             val bytes = connection.inputStream.use { it.readBytes() }
-            if (bytes.isEmpty() || bytes.size > 512 * 1024) return null
+            if (bytes.isEmpty() || bytes.size > 768 * 1024) return null
 
             val opts = BitmapFactory.Options().apply {
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }
             val rawBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts) ?: return null
-            if (rawBitmap.width <= 0 || rawBitmap.height <= 0) return null
+            if (rawBitmap.width <= 4 || rawBitmap.height <= 4) return null
 
             if (rawBitmap.width == ICON_SIZE_PX && rawBitmap.height == ICON_SIZE_PX) {
                 rawBitmap

@@ -742,6 +742,14 @@ class NovaWebViewPool(
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onReceivedIcon(view: WebView?, icon: android.graphics.Bitmap?) {
+                super.onReceivedIcon(view, icon)
+                val currentUrl = view?.url
+                if (!currentUrl.isNullOrBlank()) {
+                    ShortcutIconCache.saveVisitedWebsiteIcon(context, currentUrl, icon)
+                }
+            }
+
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 super.onProgressChanged(view, newProgress)
                 onTabStateUpdated(

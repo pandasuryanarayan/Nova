@@ -34,7 +34,8 @@ import com.example.data.HistoryEntity
 import com.example.data.NOVA_HOME_URL
 import com.example.data.NovaDatabase
 import com.example.data.QuickShortcutEntity
-import java.util.concurrent.TimeUnit
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,8 +46,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
@@ -74,12 +73,6 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val database = NovaDatabase.getInstance(application)
     private val repository = BrowserRepository(application, database.browserDao())
     val downloadHelper = NovaDownloadHelper(application, repository, viewModelScope)
-
-    private val sourceHttpClient = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .followRedirects(true)
-        .build()
 
     private val initialTab = BrowserTab(title = "Nova Home", url = NOVA_HOME_URL)
 
@@ -480,17 +473,22 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun fetchRemoteSource(sourceFile: DevToolsSourceFile) {
         viewModelScope.launch(Dispatchers.IO) {
             val content = try {
-                val req = Request.Builder()
-                    .url(sourceFile.url)
-                    .header("User-Agent", "Mozilla/5.0 (Android 14; Mobile)")
-                    .get()
-                    .build()
-                sourceHttpClient.newCall(req).execute().use { resp ->
-                    if (resp.isSuccessful) {
-                        resp.body?.string()?.take(45000) ?: "// Empty response"
+                val conn = (URL(sourceFile.url).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 10_000
+                    readTimeout = 15_000
+                    instanceFollowRedirects = true
+                    setRequestProperty("User-Agent", "Mozilla/5.0 (Android 14; Mobile)")
+                }
+                try {
+                    val code = conn.responseCode
+                    if (code in 200..299) {
+                        conn.inputStream.bufferedReader().use { it.readText().take(45000) }
+                            .ifBlank { "// Empty response" }
                     } else {
-                        "// HTTP ${resp.code} ${resp.message}"
+                        "// HTTP $code ${conn.responseMessage.orEmpty()}"
                     }
+                } finally {
+                    conn.disconnect()
                 }
             } catch (e: Exception) {
                 "// Failed to load remote source: ${e.localizedMessage ?: "Network error"}"
@@ -1118,6 +1116,19 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 )
                 emitToast("Saved to Bookmarks")
             }
+        }
+    }
+
+    fun addCustomBookmark(title: String, rawUrl: String) {
+        val normalized = BrowserUrlUtils.normalizeInputToUrl(rawUrl)
+        val domain = BrowserUrlUtils.extractDomain(normalized)
+        viewModelScope.launch {
+            repository.addBookmark(
+                title = title.trim().ifBlank { domain },
+                url = normalized,
+                domain = domain
+            )
+            emitToast("Saved to Bookmarks")
         }
     }
 

@@ -25,17 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AdsClick
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -70,6 +59,7 @@ import com.example.data.DevToolsState
 import com.example.data.DevToolsTab
 import com.example.data.DomSelectedElementDetail
 import com.example.data.DomTreeNodeItem
+import com.example.ui.icons.NovaIcons
 import com.example.ui.theme.JetBrainsMonoFontFamily
 
 /**
@@ -140,7 +130,7 @@ fun DevToolsInspectorPanel(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.AdsClick,
+                            imageVector = NovaIcons.AdsClick,
                             contentDescription = "Pick Element on Page",
                             tint = if (devToolsState.isInspectElementPickerActive) {
                                 Color(0xFF04151F)
@@ -202,7 +192,7 @@ fun DevToolsInspectorPanel(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Refresh,
+                        imageVector = NovaIcons.Refresh,
                         contentDescription = "Refresh Inspector",
                         tint = Color(0xFF9EABC9),
                         modifier = Modifier.size(17.dp)
@@ -216,7 +206,7 @@ fun DevToolsInspectorPanel(
                         .testTag("devtools_close_button")
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Close,
+                        imageVector = NovaIcons.Close,
                         contentDescription = "Close DevTools",
                         tint = Color(0xFF9EABC9),
                         modifier = Modifier.size(18.dp)
@@ -458,7 +448,7 @@ private fun SelectedElementDetailView(
                         modifier = Modifier.height(32.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.ContentCopy,
+                            imageVector = NovaIcons.ContentCopy,
                             contentDescription = "Copy HTML",
                             modifier = Modifier.size(14.dp)
                         )
@@ -472,7 +462,7 @@ private fun SelectedElementDetailView(
                         modifier = Modifier.height(32.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Delete,
+                            imageVector = NovaIcons.Delete,
                             contentDescription = "Remove Element",
                             tint = Color(0xFFFF5252),
                             modifier = Modifier.size(14.dp)
@@ -743,7 +733,7 @@ private fun SourcesTabContent(
                             modifier = Modifier.height(28.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Download,
+                                imageVector = NovaIcons.Download,
                                 contentDescription = null,
                                 modifier = Modifier.size(13.dp)
                             )
@@ -757,7 +747,7 @@ private fun SourcesTabContent(
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.ContentCopy,
+                            imageVector = NovaIcons.ContentCopy,
                             contentDescription = "Copy Source Code",
                             tint = Color(0xFF00E5FF),
                             modifier = Modifier.size(15.dp)
@@ -856,7 +846,7 @@ private fun ConsoleTabContent(
                 modifier = Modifier.size(28.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.DeleteSweep,
+                    imageVector = NovaIcons.DeleteSweep,
                     contentDescription = "Clear Console",
                     tint = Color(0xFF9EABC9),
                     modifier = Modifier.size(16.dp)
@@ -929,7 +919,7 @@ private fun ConsoleTabContent(
                 .padding(horizontal = 8.dp, vertical = 6.dp)
         ) {
             Icon(
-                imageVector = Icons.Filled.Terminal,
+                imageVector = NovaIcons.Terminal,
                 contentDescription = null,
                 tint = Color(0xFF00E5FF),
                 modifier = Modifier.size(18.dp)
@@ -969,7 +959,7 @@ private fun ConsoleTabContent(
                 modifier = Modifier.testTag("devtools_console_run_button")
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
+                    imageVector = NovaIcons.Send,
                     contentDescription = "Execute JS",
                     tint = Color(0xFF00E5FF)
                 )
@@ -1039,7 +1029,7 @@ private fun NetworkTabContent(
                 modifier = Modifier.size(28.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.DeleteSweep,
+                    imageVector = NovaIcons.DeleteSweep,
                     contentDescription = "Clear Network Log",
                     tint = Color(0xFF9EABC9),
                     modifier = Modifier.size(16.dp)

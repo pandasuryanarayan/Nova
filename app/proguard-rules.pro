@@ -9,18 +9,11 @@
 
 -keep class com.example.browser.NovaJsBridge { *; }
 -keep class com.example.browser.NovaDevToolsJsBridge { *; }
--keep class com.example.data.** { *; }
--keep class com.example.vpn.** { *; }
 
-# Keep Room entities and DAOs
+# Keep Room database and entities while allowing R8 field/method shrinking
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *
 -dontwarn androidx.room.paging.**
 
-# OkHttp / Kotlinx Coroutines warnings
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn javax.annotation.**
--dontwarn org.conscrypt.**
--dontwarn org.bouncycastle.**
--dontwarn org.openjsse.**
+-repackageclasses
+-allowaccessmodification

@@ -4,23 +4,23 @@
 
 ### **Fast, Private, Ad-Free & Developer-Grade Open-Source Android Web Browser**
 
-[![Version](https://img.shields.io/badge/Release-v6.7.0%20(code%2013)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.7.0/NovaBrowser-v6.7.0-release.apk)
+[![Version](https://img.shields.io/badge/Release-v6.8.0%20(code%2014)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.8.0/NovaBrowser-v6.8.0-release.apk)
 [![Platform](https://img.shields.io/badge/Android-API%2024%E2%80%9336-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#building-from-source)
 [![Kotlin](https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](#tech-stack--architecture)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](#key-features)
 [![Ad-Blocker](https://img.shields.io/badge/Ad--Shield-3--Tier%20(Up%20to%20220%20Rules)-00C853?style=for-the-badge&logo=shield&logoColor=white)](#3-tier-cumulative-ad-blocker--tracker-shield)
-[![APK Size](https://img.shields.io/badge/APK%20Size-2.41%20MB%20(R8%20Shrunk)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v670)
+[![APK Size](https://img.shields.io/badge/APK%20Size-1.40%20MB%20(%3C1.5%20MB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v680)
 [![License](https://img.shields.io/badge/License-GNU%20GPL%20v3.0-D50000?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 
 <br/>
 
-[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-NovaBrowser--v6.7.0--release.apk-FF6D00?style=for-the-badge)](releases/v6.7.0/NovaBrowser-v6.7.0-release.apk)
-[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.7.0-263238?style=for-the-badge)](releases/v6.7.0/RELEASE_NOTES.md)
+[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-NovaBrowser--v6.8.0--release.apk-FF6D00?style=for-the-badge)](releases/v6.8.0/NovaBrowser-v6.8.0-release.apk)
+[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.8.0-263238?style=for-the-badge)](releases/v6.8.0/RELEASE_NOTES.md)
 [![CI Workflow](https://img.shields.io/badge/GitHub%20Actions-Release%20Pipeline-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/release.yml)
 
 ---
 
-**Package ID:** `com.suryatech.browser.nova` &nbsp;•&nbsp; **Version:** `6.7.0` (`versionCode = 13`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
+**Package ID:** `com.suryatech.browser.nova` &nbsp;•&nbsp; **Version:** `6.8.0` (`versionCode = 14`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
 
 </div>
 
@@ -33,12 +33,13 @@
 ![Minimal Ad-Block](https://img.shields.io/badge/%F0%9F%9B%A1%EF%B8%8F%20Minimal%20Mode-58%20Filters%20(Default%20ON)-00C853?style=flat-square)
 ![Pro Ad-Block](https://img.shields.io/badge/%F0%9F%94%A5%20Pro%20Mode-189%20Filters%20(Minimal%20%2B%20Pro)-FF6D00?style=flat-square)
 ![Max Ad-Block](https://img.shields.io/badge/%E2%9A%A1%20Max%20Mode-220%20Filters%20(%2B%20YouTube%20Ad--Skip)-D50000?style=flat-square)
+![QR Scanner](https://img.shields.io/badge/%F0%9F%93%B7%20QR%20%26%20Barcode%20Scanner-Live%20Camera2%20%2B%20Gallery-00B0FF?style=flat-square)
 ![Downloads](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Downloads-Ongoing%20%7C%20Success%20%7C%20Failure-00897B?style=flat-square)
 ![Languages](https://img.shields.io/badge/%F0%9F%8C%90%20Languages-System%20%7C%20English%20%7C%20%E0%A4%B9%E0%A4%BF%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A5%80-6A1B9A?style=flat-square)
 ![Default Theme](https://img.shields.io/badge/%F0%9F%8E%A8%20Default%20Theme-Warm%20Light%20Orange-FF8A3D?style=flat-square)
 ![Incognito Theme](https://img.shields.io/badge/%F0%9F%95%B5%EF%B8%8F%20Incognito%20Mode-Dark%20Stealth%20Cyan%20%2B%20Radial%20Wave-00E5FF?style=flat-square)
 ![Anti-CAPTCHA](https://img.shields.io/badge/%F0%9F%94%92%20Google%20Search-Trusted%20Anti--CAPTCHA%20Headers-4285F4?style=flat-square)
-![Favicon Cache](https://img.shields.io/badge/%F0%9F%96%BC%EF%B8%8F%20Shortcut%20Icons-On--Visit%2096x96%20WEBP%20Cache-8E24AA?style=flat-square)
+![Favicon Cache](https://img.shields.io/badge/%F0%9F%96%BC%EF%B8%8F%20Shortcut%20Icons-Real%20Website%2096x96%20Cache-8E24AA?style=flat-square)
 ![DevTools](https://img.shields.io/badge/%F0%9F%9B%A0%EF%B8%8F%20DevTools-Elements%20%7C%20Sources%20%7C%20Console%20%7C%20Network-37474F?style=flat-square)
 ![Video Sniffer](https://img.shields.io/badge/%F0%9F%8E%AC%20Video%20Sniffer-MP4%20%2F%20HLS%20%2B%20Background%20Audio-E91E63?style=flat-square)
 
@@ -46,20 +47,20 @@
 
 ---
 
-## 📦 Signed Release APK (`v6.7.0`)
+## 📦 Signed Release APK (`v6.8.0`)
 
-A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.7.0/`](releases/v6.7.0/):
+A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.8.0/`](releases/v6.8.0/):
 
 | Property | Details |
 | :--- | :--- |
-| **APK File** | [`releases/v6.7.0/NovaBrowser-v6.7.0-release.apk`](releases/v6.7.0/NovaBrowser-v6.7.0-release.apk) |
-| **Release Notes** | [`releases/v6.7.0/RELEASE_NOTES.md`](releases/v6.7.0/RELEASE_NOTES.md) |
+| **APK File** | [`releases/v6.8.0/NovaBrowser-v6.8.0-release.apk`](releases/v6.8.0/NovaBrowser-v6.8.0-release.apk) |
+| **Release Notes** | [`releases/v6.8.0/RELEASE_NOTES.md`](releases/v6.8.0/RELEASE_NOTES.md) |
 | **Application ID** | `com.suryatech.browser.nova` |
-| **Version** | `6.7.0` (`versionCode = 13`) |
-| **APK Size** | `2,524,632 bytes` (**~2.41 MB**) |
-| **SHA-256 Checksum** | `04af675fa55587b5bcc9139f863e190f3917da1f9d0893cb509ca276d5312f12` |
+| **Version** | `6.8.0` (`versionCode = 14`) |
+| **APK Size** | `1,466,192 bytes` (**1.40 MB** — strictly below `1.5 MB`; **2.63 MB** installed) |
+| **SHA-256 Checksum** | `7f9764564422d47285747d95ab213dba5539e6112dad35e60930343c4e756f38` |
 | **Signing Certificate** | `CN=SuryaTech, OU=Mobile, O=SuryaTech, L=Bengaluru, ST=KA, C=IN` |
-| **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`) |
+| **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`, `localeFilters = [en, hi]`, lightweight vector icons & native system typography) |
 
 ---
 

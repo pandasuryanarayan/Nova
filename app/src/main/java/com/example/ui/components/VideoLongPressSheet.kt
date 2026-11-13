@@ -52,9 +52,21 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import com.example.browser.BrowserUrlUtils
 import com.example.data.DetectedVideoInfo
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,12 +181,30 @@ fun VideoLongPressBottomSheet(
                     )
             ) {
                 if (videoInfo.posterUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = videoInfo.posterUrl,
-                        contentDescription = "Video Thumbnail Preview",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    var posterBitmap by remember(videoInfo.posterUrl) { mutableStateOf<ImageBitmap?>(null) }
+                    LaunchedEffect(videoInfo.posterUrl) {
+                        posterBitmap = withContext(Dispatchers.IO) {
+                            try {
+                                val conn = (URL(videoInfo.posterUrl).openConnection() as HttpURLConnection).apply {
+                                    connectTimeout = 5000
+                                    readTimeout = 5000
+                                }
+                                conn.inputStream.use { stream ->
+                                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                                }
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+                    }
+                    posterBitmap?.let { bmp ->
+                        Image(
+                            bitmap = bmp,
+                            contentDescription = "Video Thumbnail Preview",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

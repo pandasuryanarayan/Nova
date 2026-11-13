@@ -202,12 +202,12 @@ fun NovaHomeContent(
                                 )
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.img_nova_launcher_fg_1794331213367),
+                                painter = painterResource(id = R.drawable.img_nova_launcher_fg),
                                 contentDescription = "Nova Browser Logo",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(RoundedCornerShape(18.dp))
+                                    .size(72.dp)
+                                    .clip(RoundedCornerShape(22.dp))
                             )
                         }
                     }

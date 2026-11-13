@@ -272,7 +272,8 @@ fun NovaBrowserApp(
                                 onToggleDevToolsClick = viewModel::toggleDevTools,
                                 onScanPageVideosClick = viewModel::scanVideosOnCurrentPage,
                                 onOpenTabsClick = { viewModel.setActiveSheet(ActiveSheet.TABS) },
-                                onOpenMenuClick = { viewModel.setActiveSheet(ActiveSheet.MENU) }
+                                onOpenMenuClick = { viewModel.setActiveSheet(ActiveSheet.MENU) },
+                                onOpenBookmarksClick = { viewModel.setActiveSheet(ActiveSheet.BOOKMARKS) }
                             )
                         }
                     }
@@ -461,7 +462,20 @@ fun NovaBrowserApp(
                         viewModel.loadUrlOrSearch(url)
                     },
                     onDeleteBookmark = viewModel::deleteBookmark,
-                    onDismiss = viewModel::dismissSheet
+                    onDismiss = viewModel::dismissSheet,
+                    onAddBookmark = { title, url ->
+                        viewModel.addCustomBookmark(title, url)
+                    },
+                    onOpenAllBookmarks = { urls ->
+                        viewModel.dismissSheet()
+                        urls.forEachIndexed { idx, url ->
+                            if (idx == 0) {
+                                viewModel.loadUrlOrSearch(url)
+                            } else {
+                                viewModel.openNewTab(url = url, isIncognito = activeTab.isIncognito)
+                            }
+                        }
+                    }
                 )
             }
 
@@ -492,8 +506,13 @@ fun NovaBrowserApp(
                         viewModel.emitToast("Copied to clipboard")
                     },
                     onClearLog = viewModel::clearBlockedAdsLog,
-                    onDismiss = viewModel::dismissSheet
+                    onDismiss = viewModel::dismissSheet,
+                    currentSiteUrl = activeTab.url
                 )
+            }
+
+            ActiveSheet.QR_SCANNER -> {
+                viewModel.dismissSheet()
             }
 
             ActiveSheet.MENU -> {

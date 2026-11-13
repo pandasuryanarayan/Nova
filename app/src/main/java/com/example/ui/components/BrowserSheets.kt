@@ -1,8 +1,10 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,99 +14,227 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Bookmarks
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.DesktopWindows
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.FindInPage
-import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Tab
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.automirrored.filled.ListAlt
-import androidx.compose.material3.FilterChip
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.text.font.FontFamily
-import com.example.browser.BrowserUrlUtils
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import com.example.browser.AdBlocker
+import com.example.browser.AdFilterRuleItem
+import com.example.browser.rememberShortcutIcon
+import com.example.data.AdBlockMode
 import com.example.data.AppLanguage
 import com.example.data.BlockedAdEntry
 import com.example.data.BookmarkEntity
 import com.example.data.BrowserTab
-import com.example.data.DownloadFilterTab
 import com.example.data.DownloadItemEntity
 import com.example.data.DownloadStatus
 import com.example.data.HistoryEntity
-import com.example.ui.i18n.NovaStrings
-import com.example.ui.i18n.novaStrings
+import com.example.data.SslCertificateDetails
+import com.example.ui.i18n.LocalNovaStrings
+import com.example.ui.icons.NovaIcons
+import java.net.URI
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+// ============================================================================
+// SHARED REDESIGN PALETTE & HELPERS
+// ============================================================================
+
+internal data class SheetVisualPalette(
+    val sheetBg: Color,
+    val cardBg: Color,
+    val cardElevatedBg: Color,
+    val cardBorder: Color,
+    val badgeBg: Brush,
+    val badgeBorder: Color,
+    val accentPrimary: Color,
+    val accentSecondary: Color,
+    val accentGradient: Brush,
+    val activePillBg: Color,
+    val activePillBorder: Color,
+    val textPrimary: Color,
+    val textSecondary: Color,
+    val textMuted: Color,
+    val dangerRed: Color,
+    val dangerBg: Color,
+    val dangerBorder: Color
+)
+
+@Composable
+internal fun rememberSheetPalette(isIncognito: Boolean = false): SheetVisualPalette {
+    val scheme = MaterialTheme.colorScheme
+    val isDark = isIncognito || scheme.background.luminance() < 0.35f
+    val accentPrimary = scheme.primary
+    val accentSecondary = scheme.secondary
+    return SheetVisualPalette(
+        sheetBg = if (isDark) Color(0xFF0C1120) else scheme.background,
+        cardBg = if (isDark) Color(0xFF131B2E) else scheme.surface,
+        cardElevatedBg = if (isDark) Color(0xFF19233B) else scheme.surfaceVariant.copy(alpha = 0.65f),
+        cardBorder = if (isDark) Color(0xFF273657) else scheme.outline.copy(alpha = 0.42f),
+        badgeBg = Brush.linearGradient(
+            colors = listOf(
+                accentPrimary.copy(alpha = 0.22f),
+                accentSecondary.copy(alpha = 0.14f)
+            )
+        ),
+        badgeBorder = accentPrimary.copy(alpha = 0.42f),
+        accentPrimary = accentPrimary,
+        accentSecondary = accentSecondary,
+        accentGradient = Brush.horizontalGradient(listOf(accentPrimary, accentSecondary)),
+        activePillBg = accentPrimary.copy(alpha = if (isDark) 0.24f else 0.14f),
+        activePillBorder = accentPrimary.copy(alpha = 0.72f),
+        textPrimary = scheme.onSurface,
+        textSecondary = scheme.onSurfaceVariant,
+        textMuted = scheme.onSurfaceVariant.copy(alpha = 0.75f),
+        dangerRed = Color(0xFFE53935),
+        dangerBg = Color(0xFFE53935).copy(alpha = 0.12f),
+        dangerBorder = Color(0xFFE53935).copy(alpha = 0.38f)
+    )
+}
+
+@Composable
+private fun SheetHeaderIconBadge(
+    icon: ImageVector,
+    palette: SheetVisualPalette,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(46.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(palette.badgeBg)
+            .border(1.dp, palette.badgeBorder, RoundedCornerShape(14.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = palette.accentPrimary,
+            modifier = Modifier.size(22.dp)
+        )
+    }
+}
+
+@Composable
+private fun MonogramSiteBadge(
+    label: String,
+    seed: String,
+    url: String? = null,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val cachedIcon = if (!url.isNullOrBlank()) {
+        rememberShortcutIcon(context = context, url = url).value
+    } else {
+        null
+    }
+    val accentPrimary = MaterialTheme.colorScheme.primary
+    val letter = label.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "N"
+
+    Box(
+        modifier = modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (cachedIcon != null) Color.White else accentPrimary.copy(alpha = 0.15f)
+            )
+            .border(1.dp, accentPrimary.copy(alpha = 0.38f), RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (cachedIcon != null) {
+            Image(
+                bitmap = cachedIcon,
+                contentDescription = label,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(RoundedCornerShape(6.dp))
+            )
+        } else {
+            Text(
+                text = letter,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                ),
+                color = accentPrimary
+            )
+        }
+    }
+}
+
+private fun extractHostClean(url: String): String {
+    return try {
+        val host = URI(url).host?.removePrefix("www.")
+        if (!host.isNullOrBlank()) host else url.removePrefix("https://").removePrefix("http://").substringBefore("/")
+    } catch (_: Exception) {
+        url.removePrefix("https://").removePrefix("http://").substringBefore("/")
+    }
+}
+
+// ============================================================================
+// 1. TABS SWITCHER BOTTOM SHEET
+// ============================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,176 +248,266 @@ fun TabsSwitcherSheet(
     onNewIncognitoTab: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalNovaStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val palette = rememberSheetPalette()
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        containerColor = palette.sheetBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.testTag("tabs_switcher_sheet")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
-                .testTag("tabs_switcher_sheet")
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp)
         ) {
+            // Top Header Row: Tab Icon Badge + Title/Stats + Close Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val strings = novaStrings
-                    Icon(
-                        imageVector = Icons.Filled.Tab,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "${strings.openTabsTitle} (${tabs.size})",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    SheetHeaderIconBadge(icon = NovaIcons.Tab, palette = palette)
+                    Column {
+                        Text(
+                            text = strings.openTabsTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary
+                        )
+                        val incognitoCount = tabs.count { it.isIncognito }
+                        Text(
+                            text = strings.tabsHeaderStats(tabs.size, incognitoCount),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp
+                            ),
+                            color = palette.textSecondary
+                        )
+                    }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val strings = novaStrings
-                    OutlinedButton(
-                        onClick = onNewIncognitoTab,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        modifier = Modifier.testTag("new_incognito_tab_button")
-                    ) {
+                Surface(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Filled.VisibilityOff,
-                            contentDescription = "New Incognito Tab",
+                            imageVector = NovaIcons.Close,
+                            contentDescription = "Close",
+                            tint = palette.accentPrimary,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.privateTabButton, style = MaterialTheme.typography.labelLarge)
-                    }
-                    Button(
-                        onClick = onNewNormalTab,
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        modifier = Modifier.testTag("new_tab_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = "New Tab",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(strings.newTabButton, style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            LazyColumn(
+            // Dedicated Spaced Action Row for "Private" and "New Tab" Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    onClick = onNewIncognitoTab,
+                    shape = RoundedCornerShape(14.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp)
+                        .testTag("new_incognito_tab_button")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.Incognito,
+                            contentDescription = strings.privateTabButton,
+                            tint = palette.accentPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.privateTabButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = onNewNormalTab,
+                    shape = RoundedCornerShape(14.dp),
+                    color = palette.activePillBg,
+                    border = BorderStroke(1.5.dp, palette.activePillBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp)
+                        .testTag("new_tab_button")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.Add,
+                            contentDescription = strings.newTabButton,
+                            tint = palette.accentPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.newTabButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.accentPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 156.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 420.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .height(360.dp)
             ) {
                 items(tabs, key = { it.id }) { tab ->
                     val isSelected = tab.id == activeTabId
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                        },
+                        onClick = { onSelectTab(tab.id) },
+                        shape = RoundedCornerShape(18.dp),
+                        color = if (isSelected) palette.activePillBg else palette.cardBg,
+                        border = BorderStroke(
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) palette.activePillBorder else palette.cardBorder
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onSelectTab(tab.id) }
-                            .border(
-                                width = if (isSelected) 1.5.dp else 1.dp,
-                                color = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-                                },
-                                shape = RoundedCornerShape(16.dp)
-                            )
                             .testTag("tab_item_${tab.id}")
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = if (tab.isIncognito) {
-                                    Color(0xFF00E5FF).copy(alpha = 0.20f)
-                                } else {
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                                },
-                                modifier = Modifier.size(38.dp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Icon(
-                                        imageVector = if (tab.isIncognito) Icons.Filled.VisibilityOff else Icons.Filled.Tab,
+                                        imageVector = if (tab.isIncognito) NovaIcons.Incognito else NovaIcons.Public,
                                         contentDescription = null,
-                                        tint = if (tab.isIncognito) Color(0xFF00E5FF) else MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
+                                        tint = palette.accentPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = if (tab.isHomePage) strings.novaHomeTabTitle else tab.title,
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = palette.textPrimary
                                     )
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (tab.isIncognito) {
-                                        Text(
-                                            text = "PRIVATE • ",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF00E5FF)
+                                    IconButton(
+                                        onClick = { onDuplicateTab(tab.id) },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .testTag("duplicate_tab_${tab.id}")
+                                    ) {
+                                        Icon(
+                                            imageVector = NovaIcons.ContentCopy,
+                                            contentDescription = "Duplicate Tab",
+                                            tint = palette.accentPrimary,
+                                            modifier = Modifier.size(14.dp)
                                         )
                                     }
+                                    IconButton(
+                                        onClick = { onCloseTab(tab.id) },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .testTag("close_tab_${tab.id}")
+                                    ) {
+                                        Icon(
+                                            imageVector = NovaIcons.Close,
+                                            contentDescription = "Close Tab",
+                                            tint = palette.textSecondary,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(74.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(palette.cardElevatedBg)
+                                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                    .padding(10.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Column {
                                     Text(
-                                        text = tab.title.ifBlank { "New Tab" },
-                                        style = MaterialTheme.typography.titleSmall,
+                                        text = if (tab.isHomePage) "nova://start" else extractHostClean(tab.url),
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontFamily = FontFamily.Monospace
+                                        ),
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = palette.textPrimary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = if (tab.isIncognito) strings.stealthTabBadge else strings.standardTabBadge,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 10.sp
+                                        ),
+                                        color = if (tab.isIncognito) palette.accentPrimary else palette.textMuted
                                     )
                                 }
-                                Text(
-                                    text = tab.url,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-
-                            IconButton(
-                                onClick = { onDuplicateTab(tab.id) },
-                                modifier = Modifier.testTag("duplicate_tab_${tab.id}")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.ContentCopy,
-                                    contentDescription = "Duplicate Tab",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
-                            IconButton(
-                                onClick = { onCloseTab(tab.id) },
-                                modifier = Modifier.testTag("close_tab_${tab.id}")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "Close Tab",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
                             }
                         }
                     }
@@ -296,6 +516,10 @@ fun TabsSwitcherSheet(
         }
     }
 }
+
+// ============================================================================
+// 2. DOWNLOADS MANAGER BOTTOM SHEET (Ongoing / Success / Failure)
+// ============================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -307,411 +531,236 @@ fun DownloadsManagerSheet(
     onDeleteDownload: (DownloadItemEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalNovaStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val strings = novaStrings
+    val palette = rememberSheetPalette()
 
-    val ongoingDownloads = remember(downloads) {
-        downloads.filter {
-            it.statusEnum == DownloadStatus.PENDING ||
-                it.statusEnum == DownloadStatus.RUNNING ||
-                it.statusEnum == DownloadStatus.PAUSED
-        }
-    }
-    val successDownloads = remember(downloads) {
-        downloads.filter { it.statusEnum == DownloadStatus.COMPLETED }
-    }
-    val failureDownloads = remember(downloads) {
-        downloads.filter { it.statusEnum == DownloadStatus.FAILED }
-    }
-
-    var selectedTab by remember {
-        mutableStateOf(
-            when {
-                ongoingDownloads.isNotEmpty() -> DownloadFilterTab.ONGOING
-                successDownloads.isNotEmpty() -> DownloadFilterTab.SUCCESS
-                failureDownloads.isNotEmpty() -> DownloadFilterTab.FAILURE
-                else -> DownloadFilterTab.ONGOING
-            }
-        )
-    }
-
-    var prevOngoingCount by remember { mutableIntStateOf(ongoingDownloads.size) }
-    var prevSuccessCount by remember { mutableIntStateOf(successDownloads.size) }
-    var prevFailureCount by remember { mutableIntStateOf(failureDownloads.size) }
-
-    // Automatically route to Ongoing when a download starts, Success when it finishes, or Failure when it fails
-    LaunchedEffect(ongoingDownloads.size, successDownloads.size, failureDownloads.size) {
+    // 0 = Ongoing, 1 = Success, 2 = Failure
+    val initialTab = remember(downloads.size) {
         when {
-            ongoingDownloads.size > prevOngoingCount -> {
-                selectedTab = DownloadFilterTab.ONGOING
-            }
-            successDownloads.size > prevSuccessCount && ongoingDownloads.isEmpty() -> {
-                selectedTab = DownloadFilterTab.SUCCESS
-            }
-            failureDownloads.size > prevFailureCount && ongoingDownloads.isEmpty() -> {
-                selectedTab = DownloadFilterTab.FAILURE
-            }
+            downloads.any {
+                val st = it.statusEnum
+                st == DownloadStatus.RUNNING || st == DownloadStatus.PAUSED || st == DownloadStatus.PENDING
+            } -> 0
+            downloads.any { it.statusEnum == DownloadStatus.COMPLETED } -> 1
+            downloads.any { it.statusEnum == DownloadStatus.FAILED } -> 2
+            else -> 1 // Default to Success/Completed videos view when empty
         }
-        prevOngoingCount = ongoingDownloads.size
-        prevSuccessCount = successDownloads.size
-        prevFailureCount = failureDownloads.size
+    }
+    var selectedSection by remember { mutableIntStateOf(initialTab) }
+    var sortNewestFirst by remember { mutableStateOf(true) }
+
+    val ongoingDownloads = remember(downloads, sortNewestFirst) {
+        val list = downloads.filter {
+            val st = it.statusEnum
+            st == DownloadStatus.RUNNING ||
+                st == DownloadStatus.PAUSED ||
+                st == DownloadStatus.PENDING
+        }
+        if (sortNewestFirst) list.sortedByDescending { it.createdAt } else list.sortedBy { it.createdAt }
+    }
+    val successDownloads = remember(downloads, sortNewestFirst) {
+        val list = downloads.filter { it.statusEnum == DownloadStatus.COMPLETED }
+        if (sortNewestFirst) list.sortedByDescending { it.createdAt } else list.sortedBy { it.createdAt }
+    }
+    val failedDownloads = remember(downloads, sortNewestFirst) {
+        val list = downloads.filter { it.statusEnum == DownloadStatus.FAILED }
+        if (sortNewestFirst) list.sortedByDescending { it.createdAt } else list.sortedBy { it.createdAt }
     }
 
-    val activeSectionItems = when (selectedTab) {
-        DownloadFilterTab.ONGOING -> ongoingDownloads
-        DownloadFilterTab.SUCCESS -> successDownloads
-        DownloadFilterTab.FAILURE -> failureDownloads
+    val displayedDownloads = when (selectedSection) {
+        0 -> ongoingDownloads
+        1 -> successDownloads
+        else -> failedDownloads
+    }
+
+    val totalBytes = remember(downloads) {
+        downloads.sumOf { maxOf(it.downloadedBytes, 0L) }
+    }
+    val totalMbFormatted = remember(totalBytes) {
+        if (totalBytes <= 0L) "0 MB" else String.format(Locale.US, "%.1f MB", totalBytes / (1024.0 * 1024.0))
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        containerColor = palette.sheetBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.testTag("downloads_manager_sheet")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
-                .testTag("downloads_manager_sheet")
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp)
         ) {
+            // Header
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Download,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SheetHeaderIconBadge(icon = NovaIcons.Download, palette = palette)
                     Column {
                         Text(
-                            text = "${strings.downloadsTitle} (${downloads.size})",
-                            style = MaterialTheme.typography.titleLarge
+                            text = strings.downloadsTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary
                         )
                         Text(
-                            text = strings.downloadsFolderSubtitle,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            text = strings.downloadsHeaderStats(downloads.size, totalMbFormatted),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp
+                            ),
+                            color = palette.textSecondary
                         )
                     }
+                }
+
+                // "Open folder" pill button
+                Surface(
+                    onClick = {
+                        val firstCompleted = successDownloads.firstOrNull() ?: downloads.firstOrNull()
+                        if (firstCompleted != null) {
+                            onOpenFile(firstCompleted)
+                        }
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier.testTag("downloads_open_folder_button")
+                ) {
+                    Text(
+                        text = strings.openFolderButton,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = palette.accentPrimary,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 3 Download Section Tabs: Ongoing | Success | Failure
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val tabsMeta = listOf(
-                    Triple(
-                        DownloadFilterTab.ONGOING,
-                        strings.downloadTabOngoing,
-                        ongoingDownloads.size
-                    ),
-                    Triple(
-                        DownloadFilterTab.SUCCESS,
-                        strings.downloadTabSuccess,
-                        successDownloads.size
-                    ),
-                    Triple(
-                        DownloadFilterTab.FAILURE,
-                        strings.downloadTabFailure,
-                        failureDownloads.size
-                    )
-                )
+            // Folder path line
+            Text(
+                text = strings.downloadsFolderLabel,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 0.4.sp
+                ),
+                color = palette.textMuted
+            )
 
-                tabsMeta.forEach { (tab, label, count) ->
-                    val isSelected = selectedTab == tab
-                    val accentColor = when (tab) {
-                        DownloadFilterTab.ONGOING -> MaterialTheme.colorScheme.primary
-                        DownloadFilterTab.SUCCESS -> Color(0xFF00C853)
-                        DownloadFilterTab.FAILURE -> MaterialTheme.colorScheme.error
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) {
-                            accentColor.copy(alpha = 0.18f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { selectedTab = tab }
-                            .border(
-                                width = if (isSelected) 1.5.dp else 1.dp,
-                                color = if (isSelected) {
-                                    accentColor
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                },
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .testTag("download_tab_${tab.name.lowercase()}")
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 6.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "$count ${strings.filesCountSuffix}",
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center,
-                                color = if (isSelected) {
-                                    accentColor
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                maxLines = 1,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Filter Pills Row: Success, Ongoing, Failure + Sort: Newest/Oldest
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DownloadFilterPill(
+                    label = "${strings.downloadTabSuccess} (${successDownloads.size})",
+                    selected = selectedSection == 1,
+                    palette = palette,
+                    onClick = { selectedSection = 1 },
+                    modifier = Modifier.testTag("download_tab_success")
+                )
+                DownloadFilterPill(
+                    label = "${strings.downloadTabOngoing} (${ongoingDownloads.size})",
+                    selected = selectedSection == 0,
+                    palette = palette,
+                    onClick = { selectedSection = 0 },
+                    modifier = Modifier.testTag("download_tab_ongoing")
+                )
+                DownloadFilterPill(
+                    label = "${strings.downloadTabFailure} (${failedDownloads.size})",
+                    selected = selectedSection == 2,
+                    palette = palette,
+                    onClick = { selectedSection = 2 },
+                    modifier = Modifier.testTag("download_tab_failure")
+                )
+                DownloadFilterPill(
+                    label = if (sortNewestFirst) strings.sortNewest else strings.sortOldest,
+                    selected = false,
+                    palette = palette,
+                    onClick = { sortNewestFirst = !sortNewestFirst },
+                    modifier = Modifier.testTag("download_sort_chip")
+                )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            if (activeSectionItems.isEmpty()) {
-                val (emptyIcon, emptyTitle, emptySubtitle) = when (selectedTab) {
-                    DownloadFilterTab.ONGOING -> Triple(
-                        Icons.Filled.Download,
-                        strings.noOngoingDownloadsTitle,
-                        strings.noOngoingDownloadsSubtitle
-                    )
-                    DownloadFilterTab.SUCCESS -> Triple(
-                        Icons.Filled.CheckCircle,
-                        strings.noSuccessDownloadsTitle,
-                        strings.noSuccessDownloadsSubtitle
-                    )
-                    DownloadFilterTab.FAILURE -> Triple(
-                        Icons.Filled.ErrorOutline,
-                        strings.noFailureDownloadsTitle,
-                        strings.noFailureDownloadsSubtitle
-                    )
-                }
-                val emptyTint = when (selectedTab) {
-                    DownloadFilterTab.ONGOING -> MaterialTheme.colorScheme.primary
-                    DownloadFilterTab.SUCCESS -> Color(0xFF00C853)
-                    DownloadFilterTab.FAILURE -> MaterialTheme.colorScheme.error
-                }
-
+            if (displayedDownloads.isEmpty()) {
+                // Empty state card
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(22.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(28.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = emptyIcon,
-                            contentDescription = null,
-                            tint = emptyTint,
-                            modifier = Modifier.size(38.dp)
+                        SheetHeaderIconBadge(
+                            icon = when (selectedSection) {
+                                0 -> NovaIcons.Download
+                                1 -> NovaIcons.Videocam
+                                else -> NovaIcons.Warning
+                            },
+                            palette = palette
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = emptyTitle,
-                            style = MaterialTheme.typography.titleMedium,
+                            text = when (selectedSection) {
+                                0 -> strings.noOngoingDownloadsTitle
+                                1 -> strings.noSuccessDownloadsTitle
+                                else -> strings.noFailureDownloadsTitle
+                            },
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = emptySubtitle,
+                            text = when (selectedSection) {
+                                0 -> strings.noOngoingDownloadsSub
+                                1 -> strings.noSuccessDownloadsSub
+                                else -> strings.noFailureDownloadsSub
+                            },
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            color = palette.textSecondary,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
                         )
                     }
                 }
             } else {
                 LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .heightIn(min = 180.dp, max = 380.dp)
                 ) {
-                    items(activeSectionItems, key = { it.id }) { item ->
-                        val status = item.statusEnum
-                        val borderColor = when (status) {
-                            DownloadStatus.COMPLETED -> Color(0xFF00C853).copy(alpha = 0.45f)
-                            DownloadStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.45f)
-                            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(
-                                    width = 1.dp,
-                                    color = borderColor,
-                                    shape = RoundedCornerShape(16.dp)
-                                )
-                                .testTag("download_item_${item.id}")
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = item.fileName,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = "${item.domain} • ${formatDownloadProgressText(item, strings)}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        when (status) {
-                                            DownloadStatus.RUNNING, DownloadStatus.PENDING -> {
-                                                IconButton(
-                                                    onClick = { onPauseDownload(item) },
-                                                    modifier = Modifier.testTag("pause_download_${item.id}")
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Filled.Pause,
-                                                        contentDescription = "Pause Download",
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                    )
-                                                }
-                                            }
-                                            DownloadStatus.PAUSED -> {
-                                                IconButton(
-                                                    onClick = { onResumeDownload(item) },
-                                                    modifier = Modifier.testTag("resume_download_${item.id}")
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Filled.PlayArrow,
-                                                        contentDescription = "Resume Download",
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                    )
-                                                }
-                                            }
-                                            DownloadStatus.FAILED -> {
-                                                IconButton(
-                                                    onClick = { onResumeDownload(item) },
-                                                    modifier = Modifier.testTag("retry_download_${item.id}")
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Filled.Refresh,
-                                                        contentDescription = "Retry Download",
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                    )
-                                                }
-                                            }
-                                            DownloadStatus.COMPLETED -> {
-                                                IconButton(
-                                                    onClick = { onOpenFile(item) },
-                                                    modifier = Modifier.testTag("open_download_${item.id}")
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Filled.FolderOpen,
-                                                        contentDescription = "Open File",
-                                                        tint = Color(0xFF00C853)
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        IconButton(
-                                            onClick = { onDeleteDownload(item) },
-                                            modifier = Modifier.testTag("delete_download_${item.id}")
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Filled.Delete,
-                                                contentDescription = "Delete Download",
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (status == DownloadStatus.RUNNING || status == DownloadStatus.PENDING || status == DownloadStatus.PAUSED) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    if (item.totalBytes > 0L) {
-                                        LinearProgressIndicator(
-                                            progress = { item.progressFraction },
-                                            color = if (status == DownloadStatus.PAUSED) {
-                                                Color(0xFFFFB300)
-                                            } else {
-                                                MaterialTheme.colorScheme.primary
-                                            },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(6.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                        )
-                                    } else {
-                                        LinearProgressIndicator(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(6.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                        )
-                                    }
-                                }
-
-                                if (!item.errorReason.isNullOrBlank() && status == DownloadStatus.FAILED) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(8.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Filled.ErrorOutline,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = item.errorReason,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    items(displayedDownloads, key = { it.id }) { item ->
+                        DownloadItemCard(
+                            item = item,
+                            palette = palette,
+                            onPause = { onPauseDownload(item) },
+                            onResume = { onResumeDownload(item) },
+                            onOpen = { onOpenFile(item) },
+                            onDelete = { onDeleteDownload(item) }
+                        )
                     }
                 }
             }
@@ -719,17 +768,207 @@ fun DownloadsManagerSheet(
     }
 }
 
-private fun formatDownloadProgressText(item: DownloadItemEntity, strings: NovaStrings): String {
-    val downloadedStr = BrowserUrlUtils.formatBytes(item.downloadedBytes)
-    val totalStr = if (item.totalBytes > 0L) BrowserUrlUtils.formatBytes(item.totalBytes) else strings.unknownSize
-    return when (item.statusEnum) {
-        DownloadStatus.COMPLETED -> "${strings.downloadStatusCompleted} • ${if (item.totalBytes > 0L) totalStr else downloadedStr}"
-        DownloadStatus.PAUSED -> "${strings.downloadStatusPaused} • $downloadedStr / $totalStr"
-        DownloadStatus.FAILED -> strings.downloadStatusFailed
-        DownloadStatus.PENDING -> strings.downloadStatusStarting
-        DownloadStatus.RUNNING -> "$downloadedStr / $totalStr (${(item.progressFraction * 100).toInt()}%)"
+@Composable
+private fun DownloadFilterPill(
+    label: String,
+    selected: Boolean,
+    palette: SheetVisualPalette,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) palette.activePillBg else palette.cardBg,
+        border = BorderStroke(
+            width = if (selected) 1.5.dp else 1.dp,
+            color = if (selected) palette.activePillBorder else palette.cardBorder
+        ),
+        modifier = modifier
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+            ),
+            color = if (selected) palette.accentPrimary else palette.textSecondary,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)
+        )
     }
 }
+
+@Composable
+private fun DownloadItemCard(
+    item: DownloadItemEntity,
+    palette: SheetVisualPalette,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onOpen: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val statusEnum = item.statusEnum
+    val progress = item.progressFraction
+
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = palette.cardBg,
+        border = BorderStroke(1.dp, palette.cardBorder),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("download_item_${item.id}")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    SheetHeaderIconBadge(
+                        icon = NovaIcons.Videocam,
+                        palette = palette,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.fileName,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = palette.textPrimary
+                        )
+                        val statusText = when (statusEnum) {
+                            DownloadStatus.RUNNING -> "DOWNLOADING • ${formatBytes(item.downloadedBytes)} / ${formatBytes(item.totalBytes)}"
+                            DownloadStatus.PAUSED -> "PAUSED • ${formatBytes(item.downloadedBytes)}"
+                            DownloadStatus.COMPLETED -> "COMPLETED • ${formatBytes(item.downloadedBytes)}"
+                            DownloadStatus.FAILED -> "FAILED • TAP RETRY"
+                            DownloadStatus.PENDING -> "QUEUED..."
+                        }
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp
+                            ),
+                            color = when (statusEnum) {
+                                DownloadStatus.FAILED -> palette.dangerRed
+                                DownloadStatus.COMPLETED -> Color(0xFF10B981)
+                                else -> palette.textSecondary
+                            }
+                        )
+                    }
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    when (statusEnum) {
+                        DownloadStatus.RUNNING -> {
+                            IconButton(
+                                onClick = onPause,
+                                modifier = Modifier.testTag("pause_download_${item.id}")
+                            ) {
+                                Icon(
+                                    imageVector = NovaIcons.Pause,
+                                    contentDescription = "Pause Download",
+                                    tint = palette.accentPrimary
+                                )
+                            }
+                        }
+
+                        DownloadStatus.PAUSED -> {
+                            IconButton(
+                                onClick = onResume,
+                                modifier = Modifier.testTag("resume_download_${item.id}")
+                            ) {
+                                Icon(
+                                    imageVector = NovaIcons.PlayArrow,
+                                    contentDescription = "Resume Download",
+                                    tint = palette.accentPrimary
+                                )
+                            }
+                        }
+
+                        DownloadStatus.FAILED -> {
+                            IconButton(
+                                onClick = onResume,
+                                modifier = Modifier.testTag("retry_download_${item.id}")
+                            ) {
+                                Icon(
+                                    imageVector = NovaIcons.Refresh,
+                                    contentDescription = "Retry Download",
+                                    tint = palette.accentPrimary
+                                )
+                            }
+                        }
+
+                        DownloadStatus.COMPLETED -> {
+                            IconButton(
+                                onClick = onOpen,
+                                modifier = Modifier.testTag("open_download_${item.id}")
+                            ) {
+                                Icon(
+                                    imageVector = NovaIcons.FolderOpen,
+                                    contentDescription = "Open File",
+                                    tint = palette.accentPrimary
+                                )
+                            }
+                        }
+
+                        DownloadStatus.PENDING -> Unit
+                    }
+
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.testTag("delete_download_${item.id}")
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.DeleteOutline,
+                            contentDescription = "Delete Download",
+                            tint = palette.dangerRed,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            if (statusEnum == DownloadStatus.RUNNING || statusEnum == DownloadStatus.PAUSED) {
+                Spacer(modifier = Modifier.height(10.dp))
+                if (item.totalBytes > 0) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(CircleShape),
+                        color = palette.accentPrimary,
+                        trackColor = palette.cardElevatedBg
+                    )
+                } else {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(CircleShape),
+                        color = palette.accentPrimary,
+                        trackColor = palette.cardElevatedBg
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// 3. BOOKMARKS SHEET
+// ============================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -737,95 +976,319 @@ fun BookmarksSheet(
     bookmarks: List<BookmarkEntity>,
     onOpenUrl: (String) -> Unit,
     onDeleteBookmark: (Long) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onAddBookmark: ((String, String) -> Unit)? = null,
+    onOpenAllBookmarks: ((List<String>) -> Unit)? = null
 ) {
+    val strings = LocalNovaStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val strings = novaStrings
+    val palette = rememberSheetPalette()
+    var isEditingMode by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var newTitle by remember { mutableStateOf("") }
+    var newUrl by remember { mutableStateOf("https://") }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        containerColor = palette.sheetBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.testTag("bookmarks_sheet")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
-                .testTag("bookmarks_sheet")
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.Bookmark,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${strings.bookmarksTitle} (${bookmarks.size})",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            Spacer(modifier = Modifier.height(14.dp))
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SheetHeaderIconBadge(icon = NovaIcons.BookmarkBorder, palette = palette)
+                    Column {
+                        Text(
+                            text = strings.bookmarksTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = strings.bookmarksHeaderStats(bookmarks.size),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp
+                            ),
+                            color = palette.textSecondary
+                        )
+                    }
+                }
 
-            if (bookmarks.isEmpty()) {
-                Text(
-                    text = strings.noBookmarksYet,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 24.dp)
-                )
-            } else {
+                // "✎ Edit" button
+                Surface(
+                    onClick = { isEditingMode = !isEditingMode },
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isEditingMode) palette.activePillBg else palette.cardBg,
+                    border = BorderStroke(1.dp, if (isEditingMode) palette.activePillBorder else palette.cardBorder),
+                    modifier = Modifier.testTag("bookmarks_edit_button")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.Edit,
+                            contentDescription = strings.editAction,
+                            tint = palette.accentPrimary,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = if (isEditingMode) strings.doneAction else strings.editAction,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = palette.textPrimary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (bookmarks.isNotEmpty()) {
                 LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .heightIn(max = 310.dp)
                 ) {
-                    items(bookmarks, key = { it.id }) { item ->
+                    items(bookmarks, key = { it.id }) { bookmark ->
+                        val cleanUrl = remember(bookmark.url) {
+                            bookmark.url.removePrefix("https://").removePrefix("http://").removePrefix("www.")
+                        }
                         Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            onClick = { onOpenUrl(bookmark.url) },
+                            shape = RoundedCornerShape(20.dp),
+                            color = palette.cardBg,
+                            border = BorderStroke(1.dp, palette.cardBorder),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable { onOpenUrl(item.url) }
+                                .testTag("bookmark_item_${bookmark.id}")
                         ) {
                             Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                MonogramSiteBadge(
+                                    label = bookmark.title.ifBlank { cleanUrl },
+                                    seed = cleanUrl,
+                                    url = bookmark.url
+                                )
+
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = item.title,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        text = bookmark.title,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            lineHeight = 20.sp
+                                        ),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = palette.textPrimary
                                     )
+                                    Spacer(modifier = Modifier.height(3.dp))
                                     Text(
-                                        text = item.url,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        text = cleanUrl,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontFamily = FontFamily.Monospace
+                                        ),
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = palette.textSecondary
                                     )
                                 }
-                                IconButton(onClick = { onDeleteBookmark(item.id) }) {
+
+                                IconButton(
+                                    onClick = { onDeleteBookmark(bookmark.id) },
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .testTag("delete_bookmark_${bookmark.id}")
+                                ) {
                                     Icon(
-                                        imageVector = Icons.Filled.Delete,
-                                        contentDescription = "Remove Bookmark",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        imageVector = NovaIcons.DeleteOutline,
+                                        contentDescription = strings.deleteAction,
+                                        tint = palette.dangerRed,
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // Hint Card
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = palette.cardBg,
+                border = BorderStroke(1.dp, palette.cardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        append(strings.bookmarksHintPrefix)
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = palette.accentPrimary)) {
+                            append(strings.addBookmarkButton)
+                        }
+                        append(strings.bookmarksHintSuffix)
+                    },
+                    style = MaterialTheme.typography.bodySmall.copy(lineHeight = 19.sp),
+                    color = palette.textSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Bottom 2-button row: "+ Add bookmark" and "Open all"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    onClick = { showAddDialog = true },
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("bookmarks_add_button")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.Add,
+                            contentDescription = null,
+                            tint = palette.accentPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = strings.addBookmarkButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = {
+                        if (bookmarks.isNotEmpty()) {
+                            if (onOpenAllBookmarks != null) {
+                                onOpenAllBookmarks(bookmarks.map { it.url })
+                            } else {
+                                onOpenUrl(bookmarks.first().url)
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("bookmarks_open_all_button")
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = strings.openAllBookmarksButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = if (bookmarks.isNotEmpty()) palette.accentPrimary else palette.textMuted
+                        )
+                    }
+                }
             }
         }
     }
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text(strings.addBookmarkButton, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = newTitle,
+                        onValueChange = { newTitle = it },
+                        label = { Text(strings.siteTitleLabel) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = newUrl,
+                        onValueChange = { newUrl = it },
+                        label = { Text(strings.websiteUrlLabel) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val cleanTarget = newUrl.trim()
+                        if (cleanTarget.isNotEmpty()) {
+                            if (onAddBookmark != null) {
+                                onAddBookmark(newTitle.ifBlank { cleanTarget }, cleanTarget)
+                            } else {
+                                onOpenUrl(cleanTarget)
+                            }
+                            showAddDialog = false
+                        }
+                    }
+                ) {
+                    Text(strings.saveButton)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text(strings.cancelButton)
+                }
+            }
+        )
+    }
 }
+
+// ============================================================================
+// 4. BROWSING HISTORY SHEET
+// ============================================================================
+
+private data class HistoryDayGroup(
+    val headerLabel: String,
+    val items: List<HistoryEntity>,
+    val visitCountsByUrl: Map<String, Int>
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -836,107 +1299,360 @@ fun HistorySheet(
     onOpenClearDataDialog: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalNovaStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val strings = novaStrings
-    val timeFormatter = remember { SimpleDateFormat("MMM d, HH:mm", Locale.US) }
+    val palette = rememberSheetPalette()
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredHistory = remember(history, searchQuery) {
+        val q = searchQuery.trim()
+        if (q.isEmpty()) {
+            history
+        } else {
+            history.filter {
+                it.title.contains(q, ignoreCase = true) || it.url.contains(q, ignoreCase = true)
+            }
+        }
+    }
+
+    val todayCount = remember(history) {
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val startOfToday = cal.timeInMillis
+        history.count { it.visitedAt >= startOfToday }
+    }
+
+    val groupedHistory = remember(filteredHistory, strings) {
+        val nowCal = Calendar.getInstance()
+        val todayStart = (nowCal.clone() as Calendar).apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val yesterdayStart = todayStart - 24L * 60L * 60L * 1000L
+        val dateFormat = SimpleDateFormat("MMM d", Locale.US)
+
+        val buckets = LinkedHashMap<String, MutableList<HistoryEntity>>()
+        for (entry in filteredHistory) {
+            val dateStr = dateFormat.format(Date(entry.visitedAt)).uppercase(Locale.US)
+            val prefix = when {
+                entry.visitedAt >= todayStart -> "${strings.historyTodayPrefix} • $dateStr"
+                entry.visitedAt >= yesterdayStart -> "${strings.historyYesterdayPrefix} • $dateStr"
+                else -> dateStr
+            }
+            buckets.getOrPut(prefix) { mutableListOf() }.add(entry)
+        }
+
+        buckets.map { (header, entries) ->
+            val counts = entries.groupingBy { it.url }.eachCount()
+            HistoryDayGroup(
+                headerLabel = header,
+                items = entries,
+                visitCountsByUrl = counts
+            )
+        }
+    }
+
+    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        containerColor = palette.sheetBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.testTag("history_sheet")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
-                .testTag("history_sheet")
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp)
         ) {
+            // Header
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.History,
-                        contentDescription = null,
-                        tint = Color(0xFFFFB300)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = strings.historyTitle,
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SheetHeaderIconBadge(icon = NovaIcons.History, palette = palette)
+                    Column {
+                        Text(
+                            text = strings.browsingHistoryTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = strings.historyVisitsStats(history.size, todayCount),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp
+                            ),
+                            color = palette.textSecondary
+                        )
+                    }
                 }
 
-                FilledTonalButton(
+                // Red-tinted "🗑 Clear all" pill button
+                Surface(
                     onClick = onOpenClearDataDialog,
+                    shape = RoundedCornerShape(14.dp),
+                    color = palette.dangerBg,
+                    border = BorderStroke(1.dp, palette.dangerBorder),
                     modifier = Modifier.testTag("clear_browsing_data_button")
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.DeleteSweep,
-                        contentDescription = strings.clearDataButton,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.clearDataButton, style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.DeleteOutline,
+                            contentDescription = null,
+                            tint = palette.dangerRed,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = strings.clearAllButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.dangerRed
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            if (history.isEmpty()) {
-                Text(
-                    text = strings.noHistoryYet,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 24.dp)
-                )
-            } else {
-                LazyColumn(
+            // Search history bar
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = palette.cardBg,
+                border = BorderStroke(1.dp, palette.cardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(history, key = { it.id }) { item ->
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    Icon(
+                        imageVector = NovaIcons.Search,
+                        contentDescription = null,
+                        tint = palette.accentPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (searchQuery.isEmpty()) {
+                            Text(
+                                text = strings.searchHistoryPlaceholder,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = palette.textMuted
+                            )
+                        }
+                        BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                color = palette.textPrimary,
+                                fontSize = 14.sp
+                            ),
+                            cursorBrush = SolidColor(palette.accentPrimary),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable { onOpenUrl(item.url) }
-                        ) {
+                                .testTag("history_search_input")
+                        )
+                    }
+                    if (searchQuery.isNotEmpty()) {
+                        Icon(
+                            imageVector = NovaIcons.Close,
+                            contentDescription = "Clear search",
+                            tint = palette.textSecondary,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable { searchQuery = "" }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            if (groupedHistory.isEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        SheetHeaderIconBadge(icon = NovaIcons.History, palette = palette)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (searchQuery.isNotBlank()) strings.noMatchingVisitsTitle else strings.noHistoryTitle,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = strings.noHistorySubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.textSecondary,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 200.dp, max = 430.dp)
+                ) {
+                    items(groupedHistory, key = { it.headerLabel }) { group ->
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // Date header row
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.title,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "${item.domain} • ${timeFormatter.format(Date(item.visitedAt))}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                IconButton(onClick = { onDeleteHistoryItem(item.id) }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Close,
-                                        contentDescription = "Delete History Entry",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                Text(
+                                    text = group.headerLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.SemiBold,
+                                        letterSpacing = 0.8.sp
+                                    ),
+                                    color = palette.textSecondary
+                                )
+                                Text(
+                                    text = strings.historyVisitsLabel(group.items.size),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontFamily = FontFamily.Monospace
+                                    ),
+                                    color = palette.textMuted
+                                )
+                            }
+
+                            // Unified container card for the day's history entries
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = palette.cardBg,
+                                border = BorderStroke(1.dp, palette.cardBorder),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    group.items.forEachIndexed { idx, entry ->
+                                        val host = remember(entry.url) { extractHostClean(entry.url) }
+                                        val repeatCount = group.visitCountsByUrl[entry.url] ?: 1
+
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { onOpenUrl(entry.url) }
+                                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                                                .testTag("history_item_${entry.id}"),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            MonogramSiteBadge(
+                                                label = host.ifBlank { entry.title },
+                                                seed = host,
+                                                url = entry.url
+                                            )
+
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    Text(
+                                                        text = entry.title.ifBlank { host },
+                                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                                            fontWeight = FontWeight.Bold
+                                                        ),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        color = palette.textPrimary,
+                                                        modifier = Modifier.weight(1f, fill = false)
+                                                    )
+                                                    if (repeatCount > 1) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(6.dp),
+                                                            color = palette.accentPrimary.copy(alpha = 0.18f),
+                                                            border = BorderStroke(
+                                                                1.dp,
+                                                                palette.accentPrimary.copy(alpha = 0.55f)
+                                                            )
+                                                        ) {
+                                                            Text(
+                                                                text = "${repeatCount}×",
+                                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                                    fontFamily = FontFamily.Monospace,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    fontSize = 10.sp
+                                                                ),
+                                                                color = palette.accentPrimary,
+                                                                modifier = Modifier.padding(
+                                                                    horizontal = 6.dp,
+                                                                    vertical = 2.dp
+                                                                )
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = "$host • ${timeFormat.format(Date(entry.visitedAt))}",
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        fontFamily = FontFamily.Monospace
+                                                    ),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    color = palette.textSecondary
+                                                )
+                                            }
+
+                                            IconButton(
+                                                onClick = { onDeleteHistoryItem(entry.id) },
+                                                modifier = Modifier
+                                                    .size(30.dp)
+                                                    .testTag("delete_history_${entry.id}")
+                                            ) {
+                                                Icon(
+                                                    imageVector = NovaIcons.Close,
+                                                    contentDescription = strings.deleteAction,
+                                                    tint = palette.textSecondary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+
+                                        if (idx < group.items.lastIndex) {
+                                            HorizontalDivider(
+                                                color = palette.cardBorder.copy(alpha = 0.55f),
+                                                modifier = Modifier.padding(horizontal = 14.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -947,21 +1663,25 @@ fun HistorySheet(
     }
 }
 
+// ============================================================================
+// 5. BROWSER MENU SHEET — "Control center"
+// ============================================================================
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BrowserMenuSheet(
     activeTab: BrowserTab,
     isBookmarked: Boolean,
     isAdBlockEnabled: Boolean,
-    adBlockMode: com.example.data.AdBlockMode = com.example.data.AdBlockMode.MINIMAL,
-    appLanguage: AppLanguage = AppLanguage.SYSTEM,
+    adBlockMode: AdBlockMode,
+    appLanguage: AppLanguage,
     isDarkMode: Boolean,
     totalAdsBlocked: Long,
     blockedAdsInSessionCount: Int,
     onToggleBookmark: () -> Unit,
     onToggleAdBlock: () -> Unit,
-    onSelectAdBlockMode: (com.example.data.AdBlockMode) -> Unit = {},
-    onSelectAppLanguage: (AppLanguage) -> Unit = {},
+    onSelectAdBlockMode: (AdBlockMode) -> Unit,
+    onSelectAppLanguage: (AppLanguage) -> Unit,
     onOpenBlockedAdsList: () -> Unit,
     onToggleDesktopMode: () -> Unit,
     onToggleDarkMode: () -> Unit,
@@ -978,419 +1698,646 @@ fun BrowserMenuSheet(
     onOpenClearData: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalNovaStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val strings = novaStrings
+    val palette = rememberSheetPalette(isIncognito = activeTab.isIncognito)
+    val minimalTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MINIMAL) }
+    val proTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.PRO) }
+    val maxTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MAX) }
+
+    val activeModeLabel = when (adBlockMode) {
+        AdBlockMode.MINIMAL -> strings.modeMinimalTitle
+        AdBlockMode.PRO -> strings.modeProTitle
+        AdBlockMode.MAX -> strings.modeMaxTitle
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        containerColor = palette.sheetBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.testTag("browser_menu_sheet")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
-                .testTag("browser_menu_sheet")
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Quick Top Action Bar (Bookmarks Manager, Downloads, History, Share, Copy Link)
+            // Top Header: Tune badge + "Control center" + "MINIMAL SHIELD • 242 BLOCKED" + Close button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    SheetHeaderIconBadge(icon = NovaIcons.Tune, palette = palette)
+                    Column {
+                        Text(
+                            text = strings.controlCenterTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = if (isAdBlockEnabled) {
+                                strings.shieldHeaderActive(activeModeLabel.uppercase(Locale.ROOT), totalAdsBlocked)
+                            } else {
+                                strings.shieldHeaderPaused(totalAdsBlocked)
+                            },
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.8.sp
+                            ),
+                            color = palette.textSecondary
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = NovaIcons.Close,
+                            contentDescription = "Close",
+                            tint = palette.accentPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            // 5 Quick Action Squircles
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MenuQuickIconTile(
-                    icon = Icons.Filled.Bookmarks,
-                    label = strings.bookmarksTitle,
+                ControlCenterQuickTile(
+                    icon = NovaIcons.BookmarkBorder,
+                    label = strings.quickActionBookmarks,
+                    palette = palette,
                     onClick = onOpenBookmarks,
-                    testTag = "menu_bookmarks_button"
+                    modifier = Modifier.testTag("menu_bookmarks_button")
                 )
-                MenuQuickIconTile(
-                    icon = Icons.Filled.Download,
-                    label = strings.downloadsTitle,
+                ControlCenterQuickTile(
+                    icon = NovaIcons.Download,
+                    label = strings.quickActionDownloads,
+                    palette = palette,
                     onClick = onOpenDownloads,
-                    testTag = "menu_downloads_button"
+                    modifier = Modifier.testTag("menu_downloads_button")
                 )
-                MenuQuickIconTile(
-                    icon = Icons.Filled.History,
-                    label = strings.historyTitle,
+                ControlCenterQuickTile(
+                    icon = NovaIcons.History,
+                    label = strings.quickActionHistory,
+                    palette = palette,
                     onClick = onOpenHistory,
-                    testTag = "menu_history_button"
+                    modifier = Modifier.testTag("menu_history_button")
                 )
-                MenuQuickIconTile(
-                    icon = Icons.Filled.Share,
-                    label = strings.shareAction,
+                ControlCenterQuickTile(
+                    icon = NovaIcons.Share,
+                    label = strings.quickActionShare,
+                    palette = palette,
                     onClick = onSharePage,
-                    testTag = "menu_share_button"
+                    modifier = Modifier.testTag("menu_share_button")
                 )
-                MenuQuickIconTile(
-                    icon = Icons.Filled.ContentCopy,
-                    label = strings.copyAction,
+                ControlCenterQuickTile(
+                    icon = NovaIcons.ContentCopy,
+                    label = strings.quickActionCopyLink,
+                    palette = palette,
                     onClick = onCopyPageLink,
-                    testTag = "menu_copy_link_button"
+                    modifier = Modifier.testTag("menu_copy_link_button")
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.7f))
 
-            // Toggles: Ad-Block, 3-Tier AdBlock Mode Selector, Blocked Ads List Button, Desktop Mode, Dark Mode, Incognito Mode
-            MenuSwitchRow(
-                icon = Icons.Filled.Shield,
-                title = "${strings.adBlockShieldMenuTitle} (${adBlockMode.shortBadge} • $totalAdsBlocked ${strings.blockedCountSuffix})",
-                checked = isAdBlockEnabled,
-                onCheckedChange = { onToggleAdBlock() },
-                testTag = "menu_adblock_switch"
-            )
-            if (isAdBlockEnabled) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    com.example.data.AdBlockMode.entries.forEach { mode ->
-                        val selected = adBlockMode == mode
-                        val ruleCount = com.example.browser.AdBlocker.getTotalRuleCount(mode)
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { onSelectAdBlockMode(mode) }
-                                .border(
-                                    width = 1.dp,
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-                                    },
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                .testTag("menu_adblock_mode_${mode.name.lowercase()}")
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 6.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = mode.shortBadge,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurface
-                                    },
-                                    maxLines = 1,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Text(
-                                    text = "$ruleCount ${strings.rulesCountSuffix}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    textAlign = TextAlign.Center,
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f)
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                    maxLines = 1,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onOpenBlockedAdsList() }
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .testTag("menu_view_blocked_ads_button")
+            // Ad-block shield row with switch
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ListAlt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "${strings.blockedAdsFilterModesTitle} ($blockedAdsInSessionCount ${strings.inSessionSuffix})",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = strings.blockedAdsFilterModesSubtitle,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primary
-                    ) {
-                        Text(
-                            text = strings.configureButton,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-            }
-            MenuSwitchRow(
-                icon = Icons.Filled.DesktopWindows,
-                title = if (activeTab.isDesktopMode) strings.desktopSiteModeActive else strings.desktopSiteMode,
-                checked = activeTab.isDesktopMode,
-                onCheckedChange = { onToggleDesktopMode() },
-                testTag = "menu_desktop_mode_switch"
-            )
-            MenuSwitchRow(
-                icon = Icons.Filled.DarkMode,
-                title = strings.darkModeTheme,
-                checked = isDarkMode,
-                onCheckedChange = { onToggleDarkMode() },
-                testTag = "menu_dark_mode_switch"
-            )
-            MenuSwitchRow(
-                icon = Icons.Filled.VisibilityOff,
-                title = strings.incognitoPrivateMode,
-                checked = activeTab.isIncognito,
-                onCheckedChange = { onToggleIncognito() },
-                testTag = "menu_incognito_switch"
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.20f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Language Section in 3-Dot Menu: System Language | English | Hindi
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Language,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = strings.languageSectionTitle,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLanguage.entries.forEach { lang ->
-                    val selected = appLanguage == lang
-                    val langTitle = when (lang) {
-                        AppLanguage.SYSTEM -> strings.languageSystemOption
-                        AppLanguage.ENGLISH -> strings.languageEnglishOption
-                        AppLanguage.HINDI -> strings.languageHindiOption
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onSelectAppLanguage(lang) }
-                            .border(
-                                width = 1.dp,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-                                },
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .testTag("menu_language_${lang.code}")
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 6.dp, vertical = 7.dp)
-                        ) {
-                            Text(
-                                text = langTitle,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Text(
-                                text = lang.subLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f)
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                maxLines = 1,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Text Zoom Control Row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Filled.TextFields,
+                        imageVector = NovaIcons.ShieldOutline,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        tint = palette.accentPrimary,
+                        modifier = Modifier.size(22.dp)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "${strings.textZoomLabel} (${activeTab.textZoom}%)",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    IconButton(
-                        onClick = { onUpdateTextZoom(activeTab.textZoom - 10) },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                            .testTag("text_zoom_decrease")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Remove,
-                            contentDescription = "Decrease Text Zoom",
-                            modifier = Modifier.size(16.dp)
+                    Column {
+                        Text(
+                            text = strings.adBlockShieldMenuTitle,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary
                         )
-                    }
-                    TextButton(onClick = { onUpdateTextZoom(100) }) {
-                        Text(strings.resetButton, style = MaterialTheme.typography.labelLarge)
-                    }
-                    IconButton(
-                        onClick = { onUpdateTextZoom(activeTab.textZoom + 10) },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                            .testTag("text_zoom_increase")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = "Increase Text Zoom",
-                            modifier = Modifier.size(16.dp)
+                        Text(
+                            text = "${activeModeLabel.uppercase(Locale.ROOT)} • $totalAdsBlocked",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.6.sp
+                            ),
+                            color = palette.textSecondary
                         )
                     }
                 }
+                Switch(
+                    checked = isAdBlockEnabled,
+                    onCheckedChange = { onToggleAdBlock() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = palette.accentPrimary
+                    ),
+                    modifier = Modifier.testTag("menu_adblock_switch")
+                )
             }
 
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            // Action Rows: Find in Page, Clear Browsing Data
+            // 3 Mode Cards: Minimal (58 RULES), Pro (235), Max (267)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                OutlinedButton(
+                listOf(
+                    Triple(AdBlockMode.MINIMAL, strings.modeMinimalTitle to strings.rulesCountSuffix(minimalTotal), "menu_adblock_mode_minimal"),
+                    Triple(AdBlockMode.PRO, strings.modeProTitle to "$proTotal", "menu_adblock_mode_pro"),
+                    Triple(AdBlockMode.MAX, strings.modeMaxTitle to "$maxTotal", "menu_adblock_mode_max")
+                ).forEach { (mode, titleAndSub, tag) ->
+                    val (modeTitle, countSubtitle) = titleAndSub
+                    val isSelected = isAdBlockEnabled && adBlockMode == mode
+                    Surface(
+                        onClick = { onSelectAdBlockMode(mode) },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSelected) palette.activePillBg else palette.cardBg,
+                        border = BorderStroke(
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) palette.activePillBorder else palette.cardBorder
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag(tag)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = modeTitle,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (isSelected) palette.accentPrimary else palette.textPrimary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = countSubtitle,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 11.sp
+                                ),
+                                color = if (isSelected) palette.textPrimary.copy(alpha = 0.85f) else palette.textMuted,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+
+            // "Filter modes / Inspect every active rule" card with "Configure" gradient button
+            Surface(
+                onClick = onOpenBlockedAdsList,
+                shape = RoundedCornerShape(18.dp),
+                color = palette.cardBg,
+                border = BorderStroke(1.dp, palette.cardBorder),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("menu_view_blocked_ads_button")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        SheetHeaderIconBadge(
+                            icon = NovaIcons.ListAlt,
+                            palette = palette,
+                            modifier = Modifier.size(38.dp)
+                        )
+                        Column {
+                            Text(
+                                text = strings.filterModesTitle,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                color = palette.textPrimary
+                            )
+                            Text(
+                                text = strings.filterModesSubtitle,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = palette.textSecondary
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(palette.accentGradient)
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = strings.configureButton,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.7f))
+
+            // Desktop site toggle row
+            ControlCenterSwitchRow(
+                icon = NovaIcons.DesktopWindows,
+                title = strings.desktopSiteMode,
+                subtitle = null,
+                checked = activeTab.isDesktopMode,
+                palette = palette,
+                onCheckedChange = { onToggleDesktopMode() },
+                testTag = "menu_desktop_mode_switch"
+            )
+
+            // Dark theme toggle row
+            ControlCenterSwitchRow(
+                icon = NovaIcons.DarkMode,
+                title = strings.darkModeTheme,
+                subtitle = null,
+                checked = isDarkMode,
+                palette = palette,
+                onCheckedChange = { onToggleDarkMode() },
+                testTag = "menu_dark_mode_switch"
+            )
+
+            // Incognito toggle row
+            ControlCenterSwitchRow(
+                icon = NovaIcons.Incognito,
+                title = strings.incognitoLabel,
+                subtitle = strings.nothingIsSavedSubtitle,
+                checked = activeTab.isIncognito,
+                palette = palette,
+                onCheckedChange = { onToggleIncognito() },
+                testTag = "menu_incognito_switch"
+            )
+
+            // Text zoom row with -, 100%, +, and Reset button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = NovaIcons.TextFields,
+                        contentDescription = null,
+                        tint = palette.accentPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = strings.textZoomLabel,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = palette.textPrimary
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        onClick = { onUpdateTextZoom(activeTab.textZoom - 10) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.cardBg,
+                        border = BorderStroke(1.dp, palette.cardBorder),
+                        modifier = Modifier
+                            .size(34.dp)
+                            .testTag("text_zoom_decrease")
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = NovaIcons.Remove,
+                                contentDescription = "Decrease Text Size",
+                                tint = palette.accentPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "${activeTab.textZoom}%",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = palette.textPrimary,
+                        modifier = Modifier.widthIn(min = 44.dp),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Surface(
+                        onClick = { onUpdateTextZoom(activeTab.textZoom + 10) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.cardBg,
+                        border = BorderStroke(1.dp, palette.cardBorder),
+                        modifier = Modifier
+                            .size(34.dp)
+                            .testTag("text_zoom_increase")
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = NovaIcons.Add,
+                                contentDescription = "Increase Text Size",
+                                tint = palette.accentPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = { onUpdateTextZoom(100) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.cardBg,
+                        border = BorderStroke(1.dp, palette.cardBorder),
+                        modifier = Modifier
+                            .height(34.dp)
+                            .testTag("text_zoom_reset")
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(horizontal = 10.dp)
+                        ) {
+                            Text(
+                                text = strings.resetZoomButton,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = palette.accentPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Language section (System, English, Hindi)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = NovaIcons.Translate,
+                        contentDescription = null,
+                        tint = palette.accentPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = strings.languageSectionTitle,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = palette.textPrimary
+                    )
+                }
+
+                val langOptions: List<Triple<AppLanguage, String, String>> = listOf(
+                    Triple(AppLanguage.SYSTEM, strings.languageSystemOption, "menu_language_system"),
+                    Triple(AppLanguage.ENGLISH, strings.languageEnglishOption, "menu_language_en"),
+                    Triple(AppLanguage.HINDI, strings.languageHindiOption, "menu_language_hi")
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    langOptions.forEach { (lang, label, tag) ->
+                        val isSelected = appLanguage == lang
+                        Surface(
+                            onClick = { onSelectAppLanguage(lang) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) palette.activePillBg else palette.cardBg,
+                            border = BorderStroke(
+                                width = if (isSelected) 1.5.dp else 1.dp,
+                                color = if (isSelected) palette.activePillBorder else palette.cardBorder
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag(tag)
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                ),
+                                color = if (isSelected) palette.accentPrimary else palette.textPrimary,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 9.dp, horizontal = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Active Webpage Tools row (Bookmark, DevTools, Sniff Videos) when browsing a site
+            if (!activeTab.isHomePage) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        onClick = onToggleBookmark,
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isBookmarked) palette.activePillBg else palette.cardBg,
+                        border = BorderStroke(1.dp, if (isBookmarked) palette.activePillBorder else palette.cardBorder),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("menu_bookmark_toggle_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isBookmarked) NovaIcons.Bookmark else NovaIcons.BookmarkBorder,
+                                contentDescription = null,
+                                tint = palette.accentPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = if (isBookmarked) strings.savedButton else strings.bookmarkButton,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = palette.textPrimary,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = onOpenDevTools,
+                        shape = RoundedCornerShape(12.dp),
+                        color = palette.cardBg,
+                        border = BorderStroke(1.dp, palette.cardBorder),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("menu_devtools_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = NovaIcons.Code,
+                                contentDescription = null,
+                                tint = palette.accentPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = strings.inspectButton,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = palette.textPrimary,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = onScanPageVideos,
+                        shape = RoundedCornerShape(12.dp),
+                        color = palette.cardBg,
+                        border = BorderStroke(1.dp, palette.cardBorder),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("menu_scan_videos_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = NovaIcons.Videocam,
+                                contentDescription = null,
+                                tint = palette.accentPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = strings.videosButton,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = palette.textPrimary,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom 2-button row: "🔍 Find in page" + "🗑 Clear data"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
                     onClick = onOpenFindInPage,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
                     modifier = Modifier
                         .weight(1f)
                         .testTag("menu_find_in_page_button")
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.FindInPage,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.findInPageButton, style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.Search,
+                            contentDescription = null,
+                            tint = palette.accentPrimary,
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.findInPageButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary
+                        )
+                    }
                 }
 
-                OutlinedButton(
+                Surface(
                     onClick = onOpenClearData,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.dangerBg,
+                    border = BorderStroke(1.dp, palette.dangerBorder),
                     modifier = Modifier
                         .weight(1f)
                         .testTag("menu_clear_data_button")
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.DeleteSweep,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = strings.clearDataButton,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.DeleteOutline,
+                            contentDescription = null,
+                            tint = palette.dangerRed,
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.clearDataButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.dangerRed
+                        )
+                    }
                 }
             }
         }
@@ -1398,94 +2345,139 @@ fun BrowserMenuSheet(
 }
 
 @Composable
-private fun MenuQuickIconTile(
+private fun ControlCenterQuickTile(
     icon: ImageVector,
     label: String,
+    palette: SheetVisualPalette,
     onClick: () -> Unit,
-    testTag: String
+    modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-            .testTag(testTag)
+        modifier = modifier.clickable(onClick = onClick)
     ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.size(44.dp)
+        Box(
+            modifier = Modifier
+                .size(54.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(palette.cardElevatedBg)
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = palette.accentPrimary,
+                modifier = Modifier.size(22.dp)
+            )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                letterSpacing = 0.4.sp
+            ),
+            color = palette.textSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
 @Composable
-private fun MenuSwitchRow(
+private fun ControlCenterSwitchRow(
     icon: ImageVector,
     title: String,
+    subtitle: String?,
     checked: Boolean,
+    palette: SheetVisualPalette,
     onCheckedChange: (Boolean) -> Unit,
     testTag: String
 ) {
     Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 4.dp)
-            .testTag(testTag)
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = palette.accentPrimary,
                 modifier = Modifier.size(20.dp)
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = palette.textPrimary
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            letterSpacing = 0.6.sp
+                        ),
+                        color = palette.textMuted
+                    )
+                }
+            }
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = palette.accentPrimary
+            ),
+            modifier = Modifier.testTag(testTag)
         )
     }
 }
 
+// ============================================================================
+// 6. CLEAR BROWSING DATA DIALOG & ADD SHORTCUT DIALOG
+// ============================================================================
+
 @Composable
 fun ClearBrowsingDataDialog(
-    onConfirmClear: (clearHistory: Boolean, clearCache: Boolean, clearCookies: Boolean) -> Unit,
+    onConfirmClear: (clearHistory: Boolean, clearCookies: Boolean, clearCache: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = novaStrings
+    val strings = LocalNovaStrings.current
     var clearHistory by remember { mutableStateOf(true) }
-    var clearCache by remember { mutableStateOf(true) }
     var clearCookies by remember { mutableStateOf(true) }
+    var clearCache by remember { mutableStateOf(true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(strings.clearBrowsingDataTitle) },
+        icon = {
+            Icon(
+                imageVector = NovaIcons.DeleteOutline,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = {
+            Text(
+                text = strings.clearDataDialogTitle,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = strings.clearBrowsingDataPrompt,
-                    style = MaterialTheme.typography.bodySmall
+                    text = strings.clearDataDialogSubtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1494,16 +2486,7 @@ fun ClearBrowsingDataDialog(
                         .clickable { clearHistory = !clearHistory }
                 ) {
                     Checkbox(checked = clearHistory, onCheckedChange = { clearHistory = it })
-                    Text(strings.browsingHistoryOption, style = MaterialTheme.typography.bodyMedium)
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { clearCache = !clearCache }
-                ) {
-                    Checkbox(checked = clearCache, onCheckedChange = { clearCache = it })
-                    Text(strings.cachedImagesFilesOption, style = MaterialTheme.typography.bodyMedium)
+                    Text(strings.clearHistoryCheckbox)
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1512,16 +2495,26 @@ fun ClearBrowsingDataDialog(
                         .clickable { clearCookies = !clearCookies }
                 ) {
                     Checkbox(checked = clearCookies, onCheckedChange = { clearCookies = it })
-                    Text(strings.cookiesSiteDataOption, style = MaterialTheme.typography.bodyMedium)
+                    Text(strings.clearCookiesCheckbox)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { clearCache = !clearCache }
+                ) {
+                    Checkbox(checked = clearCache, onCheckedChange = { clearCache = it })
+                    Text(strings.clearCacheCheckbox)
                 }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirmClear(clearHistory, clearCache, clearCookies) },
+                onClick = { onConfirmClear(clearHistory, clearCookies, clearCache) },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 modifier = Modifier.testTag("confirm_clear_data_button")
             ) {
-                Text(strings.clearDataButton)
+                Text(strings.clearNowButton)
             }
         },
         dismissButton = {
@@ -1537,40 +2530,48 @@ fun AddShortcutDialog(
     onConfirmAdd: (title: String, url: String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = novaStrings
+    val strings = LocalNovaStrings.current
     var title by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("https://") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(strings.addShortcutDialogTitle) },
+        title = {
+            Text(
+                text = strings.addShortcutDialogTitle,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(strings.siteTitleLabel) },
+                    placeholder = { Text("e.g. GitHub") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("shortcut_title_input")
                 )
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
                     label = { Text(strings.websiteUrlLabel) },
+                    placeholder = { Text("https://github.com") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("shortcut_url_input")
                 )
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (url.isNotBlank()) {
-                        onConfirmAdd(title, url)
-                    }
-                }
+                onClick = { onConfirmAdd(title, url) },
+                modifier = Modifier.testTag("confirm_add_shortcut_button")
             ) {
-                Text(strings.saveButton)
+                Text(strings.addButton)
             }
         },
         dismissButton = {
@@ -1581,398 +2582,235 @@ fun AddShortcutDialog(
     )
 }
 
+// ============================================================================
+// 7. SSL SECURITY & SITE CONFIG INSPECTOR SHEET
+// ============================================================================
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SslSecurityInfoDialog(
     tab: BrowserTab,
-    certificateDetails: com.example.data.SslCertificateDetails,
+    certificateDetails: SslCertificateDetails?,
     siteCookies: List<Pair<String, String>>,
     isAdBlockEnabled: Boolean,
     isDarkMode: Boolean,
     onToggleAdBlock: () -> Unit,
     onToggleDesktopMode: () -> Unit,
     onToggleDarkMode: () -> Unit,
-    onCopyText: (label: String, text: String) -> Unit,
+    onCopyText: (String, String) -> Unit,
     onClearSiteCookies: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalNovaStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    // Tabs: "CERTIFICATE", "COOKIES", "CONFIG"
-    var selectedSection by remember { mutableStateOf("CERTIFICATE") }
-
-    val domain = BrowserUrlUtils.extractDomain(tab.url).ifBlank { tab.url }
+    val palette = rememberSheetPalette(isIncognito = tab.isIncognito)
+    var selectedSection by remember { mutableIntStateOf(0) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        containerColor = palette.sheetBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.testTag("ssl_security_info_sheet")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
-                .testTag("ssl_security_info_sheet")
+                .heightIn(min = 380.dp, max = 600.dp)
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp)
         ) {
-            // Top Header: Lock Status + Website Title & Domain
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                val sslBadgeBg = if (tab.isSecureSsl) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                } else {
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.16f)
-                }
-                val sslBadgeTint = if (tab.isSecureSsl) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                }
-
-                Surface(
-                    shape = CircleShape,
-                    color = sslBadgeBg,
-                    modifier = Modifier.size(46.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (tab.isSecureSsl) Icons.Filled.Lock else Icons.Filled.Warning,
-                            contentDescription = null,
-                            tint = sslBadgeTint,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
+                SheetHeaderIconBadge(
+                    icon = if (tab.isSecureSsl) NovaIcons.Lock else NovaIcons.Warning,
+                    palette = palette
+                )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (tab.isSecureSsl) "Connection is Secure" else "Connection Not Secure",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = sslBadgeTint
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = palette.textPrimary
                     )
                     Text(
-                        text = tab.title.ifBlank { domain },
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        text = extractHostClean(tab.url),
+                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = domain,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        color = palette.textSecondary
                     )
                 }
-
-                IconButton(onClick = onDismiss) {
+                IconButton(
+                    onClick = { onCopyText("Website URL", tab.url) },
+                    modifier = Modifier.size(34.dp)
+                ) {
                     Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = "Close Site Security Sheet"
+                        imageVector = NovaIcons.ContentCopy,
+                        contentDescription = "Copy Full URL",
+                        tint = palette.accentPrimary,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3 Option Selector Cards: View Certificate | Available Cookies | Site Configuration
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                LockSectionSelectorCard(
-                    title = "Certificate",
-                    subtitle = if (tab.isSecureSsl) "Valid X.509" else "HTTP Only",
-                    isSelected = selectedSection == "CERTIFICATE",
-                    onClick = { selectedSection = "CERTIFICATE" },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("lock_tab_certificate")
+                DownloadFilterPill(
+                    label = "Certificate",
+                    selected = selectedSection == 0,
+                    palette = palette,
+                    onClick = { selectedSection = 0 },
+                    modifier = Modifier.testTag("lock_tab_certificate")
                 )
-
-                LockSectionSelectorCard(
-                    title = "Cookies",
-                    subtitle = "${siteCookies.size} available",
-                    isSelected = selectedSection == "COOKIES",
-                    onClick = { selectedSection = "COOKIES" },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("lock_tab_cookies")
+                DownloadFilterPill(
+                    label = "Cookies (${siteCookies.size})",
+                    selected = selectedSection == 1,
+                    palette = palette,
+                    onClick = { selectedSection = 1 },
+                    modifier = Modifier.testTag("lock_tab_cookies")
                 )
-
-                LockSectionSelectorCard(
-                    title = "Site Config",
-                    subtitle = "Active settings",
-                    isSelected = selectedSection == "CONFIG",
-                    onClick = { selectedSection = "CONFIG" },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("lock_tab_site_config")
+                DownloadFilterPill(
+                    label = "Site Config",
+                    selected = selectedSection == 2,
+                    palette = palette,
+                    onClick = { selectedSection = 2 },
+                    modifier = Modifier.testTag("lock_tab_site_config")
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
             Spacer(modifier = Modifier.height(12.dp))
 
             when (selectedSection) {
-                "CERTIFICATE" -> {
-                    LazyColumn(
+                0 -> {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 420.dp),
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        item {
+                        if (certificateDetails != null) {
+                            CertificateFieldBlock("Issued To (Common Name)", certificateDetails.issuedToCommonName, palette)
+                            CertificateFieldBlock("Issued To Organization", certificateDetails.issuedToOrganization, palette)
+                            CertificateFieldBlock("Issued By (Authority)", certificateDetails.issuedByCommonName, palette)
+                            CertificateFieldBlock("Valid From", certificateDetails.validFrom, palette)
+                            CertificateFieldBlock("Expires On", certificateDetails.validUntil, palette)
+                            CertificateFieldBlock("SHA-256 Fingerprint", certificateDetails.sha256Fingerprint, palette, monospace = true)
+                        } else {
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                color = palette.cardBg,
+                                border = BorderStroke(1.dp, palette.cardBorder),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "SSL / TLS CERTIFICATE OVERVIEW",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    CertificateFieldRow("Status", certificateDetails.summary)
-                                    CertificateFieldRow("Protocol", certificateDetails.protocol)
-                                    CertificateFieldRow("Serial Number", certificateDetails.serialNumber)
-                                }
-                            }
-                        }
-
-                        item {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "ISSUED TO (SUBJECT)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    CertificateFieldRow("Common Name (CN)", certificateDetails.issuedToCommonName)
-                                    CertificateFieldRow("Organization (O)", certificateDetails.issuedToOrganization)
-                                    CertificateFieldRow("Organizational Unit (OU)", certificateDetails.issuedToOrganizationalUnit)
-                                }
-                            }
-                        }
-
-                        item {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "ISSUED BY (CERTIFICATE AUTHORITY)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    CertificateFieldRow("Common Name (CN)", certificateDetails.issuedByCommonName)
-                                    CertificateFieldRow("Organization (O)", certificateDetails.issuedByOrganization)
-                                    CertificateFieldRow("Organizational Unit (OU)", certificateDetails.issuedByOrganizationalUnit)
-                                }
-                            }
-                        }
-
-                        item {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "VALIDITY PERIOD & SHA-256 FINGERPRINT",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    CertificateFieldRow("Issued On", certificateDetails.validFrom)
-                                    CertificateFieldRow("Expires On", certificateDetails.validUntil)
-                                    CertificateFieldRow("SHA-256 Fingerprint", certificateDetails.sha256Fingerprint)
-
-                                    Row(
-                                        horizontalArrangement = Arrangement.End,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        TextButton(
-                                            onClick = {
-                                                val certSummaryText = buildString {
-                                                    appendLine("Domain: $domain")
-                                                    appendLine("Issued To: ${certificateDetails.issuedToCommonName} (${certificateDetails.issuedToOrganization})")
-                                                    appendLine("Issued By: ${certificateDetails.issuedByCommonName} (${certificateDetails.issuedByOrganization})")
-                                                    appendLine("Valid From: ${certificateDetails.validFrom}")
-                                                    appendLine("Valid Until: ${certificateDetails.validUntil}")
-                                                    append("SHA-256: ${certificateDetails.sha256Fingerprint}")
-                                                }
-                                                onCopyText("Certificate Details", certSummaryText)
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Filled.ContentCopy,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Copy Certificate Info")
-                                        }
-                                    }
-                                }
+                                Text(
+                                    text = "No X.509 SSL certificate is attached to this page.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.textSecondary,
+                                    modifier = Modifier.padding(16.dp)
+                                )
                             }
                         }
                     }
                 }
 
-                "COOKIES" -> {
+                1 -> {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 420.dp)
+                            .weight(1f)
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp)
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "AVAILABLE SITE COOKIES (${siteCookies.size})",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                text = "${siteCookies.size} cookies stored",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = palette.textSecondary
                             )
-
                             if (siteCookies.isNotEmpty()) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    TextButton(
-                                        onClick = {
-                                            val allCookiesStr = siteCookies.joinToString("; ") { "${it.first}=${it.second}" }
-                                            onCopyText("Site Cookies", allCookiesStr)
-                                        }
-                                    ) {
-                                        Text("Copy All", style = MaterialTheme.typography.labelMedium)
-                                    }
-                                    TextButton(
-                                        onClick = onClearSiteCookies,
-                                        modifier = Modifier.testTag("clear_site_cookies_button")
-                                    ) {
-                                        Text(
-                                            text = "Clear Cookies",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    }
+                                TextButton(
+                                    onClick = onClearSiteCookies,
+                                    modifier = Modifier.testTag("clear_site_cookies_button")
+                                ) {
+                                    Text("Clear Site Cookies", color = palette.dangerRed)
                                 }
                             }
                         }
 
                         if (siteCookies.isEmpty()) {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                                modifier = Modifier.fillMaxWidth()
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(24.dp)
-                                ) {
-                                    Text(
-                                        text = "No Cookies Stored for This Page",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = if (tab.isIncognito) {
-                                            "Incognito Mode is active — persistent cookies are blocked."
-                                        } else {
-                                            "This website has not set any readable HTTP/JS cookies in your current session."
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                Text(
+                                    text = "No cookies stored for this domain.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = palette.textSecondary
+                                )
                             }
                         } else {
                             LazyColumn(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
                             ) {
-                                items(siteCookies, key = { it.first }) { (cookieName, cookieValue) ->
+                                itemsIndexed(siteCookies, key = { idx, pair -> "${pair.first}_$idx" }) { _, (cookieName, cookieVal) ->
                                     Surface(
                                         shape = RoundedCornerShape(14.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .border(
-                                                width = 1.dp,
-                                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                                shape = RoundedCornerShape(14.dp)
-                                            )
+                                        color = palette.cardBg,
+                                        border = BorderStroke(1.dp, palette.cardBorder),
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
                                                     text = cookieName,
-                                                    style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontFamily = FontFamily.Monospace,
-                                                    color = MaterialTheme.colorScheme.primary
+                                                    style = MaterialTheme.typography.labelMedium.copy(
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontWeight = FontWeight.Bold
+                                                    ),
+                                                    color = palette.accentPrimary
                                                 )
-                                                Spacer(modifier = Modifier.height(2.dp))
-                                                Text(
-                                                    text = cookieValue.ifBlank { "(empty)" },
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontFamily = FontFamily.Monospace,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    maxLines = 3,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
+                                                SelectionContainer {
+                                                    Text(
+                                                        text = cookieVal.ifBlank { "(empty)" },
+                                                        style = MaterialTheme.typography.bodySmall.copy(
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontSize = 11.sp
+                                                        ),
+                                                        maxLines = 2,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        color = palette.textPrimary
+                                                    )
+                                                }
                                             }
                                             IconButton(
-                                                onClick = {
-                                                    onCopyText("Cookie $cookieName", "$cookieName=$cookieValue")
-                                                },
-                                                modifier = Modifier.size(34.dp)
+                                                onClick = { onCopyText(cookieName, "$cookieName=$cookieVal") },
+                                                modifier = Modifier.size(28.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Filled.ContentCopy,
+                                                    imageVector = NovaIcons.ContentCopy,
                                                     contentDescription = "Copy Cookie",
-                                                    modifier = Modifier.size(16.dp)
+                                                    tint = palette.accentPrimary,
+                                                    modifier = Modifier.size(14.dp)
                                                 )
                                             }
                                         }
@@ -1983,526 +2821,307 @@ fun SslSecurityInfoDialog(
                     }
                 }
 
-                "CONFIG" -> {
-                    val cookiesEnabled = !tab.isIncognito
-                    val domStorageEnabled = !tab.isIncognito
-                    val httpsEnabled = tab.isSecureSsl
-
-                    LazyColumn(
+                2 -> {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 420.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        item {
-                            Text(
-                                text = "SITE CONFIGURATION & ENABLED CAPABILITIES",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                        }
-
-                        item {
-                            SiteConfigToggleItem(
-                                title = "Ad-Block Shield",
-                                subtitle = if (isAdBlockEnabled) {
-                                    "Blocking intrusive ads & trackers (${tab.adsBlockedInTab} blocked on this page)"
-                                } else {
-                                    "Ad-blocking is currently disabled"
-                                },
-                                isEnabled = isAdBlockEnabled,
-                                onToggle = onToggleAdBlock
-                            )
-                        }
-
-                        item {
-                            SiteConfigToggleItem(
-                                title = "Desktop Site Mode (1280px Viewport)",
-                                subtitle = if (tab.isDesktopMode) {
-                                    "Rendering full 1280px desktop layout & Desktop User-Agent"
-                                } else {
-                                    "Rendering standard responsive mobile layout"
-                                },
-                                isEnabled = tab.isDesktopMode,
-                                onToggle = onToggleDesktopMode
-                            )
-                        }
-
-                        item {
-                            SiteConfigToggleItem(
-                                title = "Dark Mode Web Hint",
-                                subtitle = if (isDarkMode) {
-                                    "Injecting prefers-color-scheme: dark for dark-aware websites"
-                                } else {
-                                    "Using standard light color scheme"
-                                },
-                                isEnabled = isDarkMode,
-                                onToggle = onToggleDarkMode
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "JavaScript Engine (V8)",
-                                subtitle = "Interactive scripts & dynamic web applications",
-                                isEnabled = true
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "HTTPS / TLS Encryption",
-                                subtitle = if (httpsEnabled) "Encrypted TLS connection active" else "Plaintext HTTP connection",
-                                isEnabled = httpsEnabled
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "Cookies & Session Data",
-                                subtitle = if (cookiesEnabled) {
-                                    "First-party & third-party cookies allowed (${siteCookies.size} stored)"
-                                } else {
-                                    "Isolated in Incognito Mode (not saved to disk)"
-                                },
-                                isEnabled = cookiesEnabled
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "DOM Storage (localStorage / IndexedDB)",
-                                subtitle = if (domStorageEnabled) {
-                                    "Web storage enabled for offline & site state"
-                                } else {
-                                    "Disabled in Incognito sandbox"
-                                },
-                                isEnabled = domStorageEnabled
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "Automatic Image & Media Loading",
-                                subtitle = "WebP, PNG, SVG, and HTML5 <video> streams enabled",
-                                isEnabled = true
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "Long-Press MP4 Video Sniffer",
-                                subtitle = "Detects downloadable HTML5 video streams on this page",
-                                isEnabled = true
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "Pinch-to-Zoom & Wide Viewport",
-                                subtitle = "Text Zoom set to ${tab.textZoom}% • Multi-touch zoom enabled",
-                                isEnabled = true
-                            )
-                        }
-
-                        item {
-                            SiteConfigStatusItem(
-                                title = "Incognito Private Sandbox",
-                                subtitle = if (tab.isIncognito) {
-                                    "Active — history and site storage are wiped on close"
-                                } else {
-                                    "Normal browsing tab"
-                                },
-                                isEnabled = tab.isIncognito
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LockSectionSelectorCard(
-    title: String,
-    subtitle: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        },
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
-            .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                },
-                shape = RoundedCornerShape(14.dp)
-            )
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                maxLines = 1
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun CertificateFieldRow(label: String, value: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value.ifBlank { "N/A" },
-            style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun SiteConfigToggleItem(
-    title: String,
-    subtitle: String,
-    isEnabled: Boolean,
-    onToggle: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onToggle() }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = if (isEnabled) {
-                            Color(0xFF00E676).copy(alpha = 0.16f)
-                        } else {
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        }
-                    ) {
-                        Text(
-                            text = if (isEnabled) "ENABLED" else "DISABLED",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isEnabled) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        ControlCenterSwitchRow(
+                            icon = NovaIcons.ShieldOutline,
+                            title = strings.adBlockShieldMenuTitle,
+                            subtitle = "BLOCKS ADS & TELEMETRY",
+                            checked = isAdBlockEnabled,
+                            palette = palette,
+                            onCheckedChange = { onToggleAdBlock() },
+                            testTag = "ssl_adblock_switch"
+                        )
+                        ControlCenterSwitchRow(
+                            icon = NovaIcons.DesktopWindows,
+                            title = strings.desktopSiteMode,
+                            subtitle = "DESKTOP USER-AGENT",
+                            checked = tab.isDesktopMode,
+                            palette = palette,
+                            onCheckedChange = { onToggleDesktopMode() },
+                            testTag = "ssl_desktop_switch"
+                        )
+                        ControlCenterSwitchRow(
+                            icon = NovaIcons.DarkMode,
+                            title = strings.darkModeTheme,
+                            subtitle = "DARK WEB PALETTE",
+                            checked = isDarkMode,
+                            palette = palette,
+                            onCheckedChange = { onToggleDarkMode() },
+                            testTag = "ssl_dark_switch"
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-            Switch(
-                checked = isEnabled,
-                onCheckedChange = { onToggle() }
-            )
         }
     }
 }
 
 @Composable
-private fun SiteConfigStatusItem(
-    title: String,
-    subtitle: String,
-    isEnabled: Boolean
+private fun CertificateFieldBlock(
+    label: String,
+    value: String,
+    palette: SheetVisualPalette,
+    monospace: Boolean = false
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        color = palette.cardBg,
+        border = BorderStroke(1.dp, palette.cardBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = palette.textSecondary
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            SelectionContainer {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = if (isEnabled) {
-                    Color(0xFF00E676).copy(alpha = 0.16f)
-                } else {
-                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                }
-            ) {
-                Text(
-                    text = if (isEnabled) "ENABLED" else "DISABLED",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isEnabled) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    text = value.ifBlank { "Unspecified" },
+                    style = if (monospace) {
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp
+                        )
+                    } else {
+                        MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
+                    },
+                    color = palette.textPrimary
                 )
             }
         }
     }
 }
+
+// ============================================================================
+// 8. AD-BLOCK SHIELD SHEET
+// ============================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlockedAdsSheet(
     blockedAds: List<BlockedAdEntry>,
     isAdBlockEnabled: Boolean,
-    adBlockMode: com.example.data.AdBlockMode = com.example.data.AdBlockMode.MINIMAL,
+    adBlockMode: AdBlockMode,
     totalAdsBlocked: Long,
     activeTabId: String,
     onToggleAdBlock: () -> Unit,
-    onSelectAdBlockMode: (com.example.data.AdBlockMode) -> Unit = {},
+    onSelectAdBlockMode: (AdBlockMode) -> Unit,
     onCopyAdUrl: (String) -> Unit,
     onClearLog: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    currentSiteUrl: String = "https://www.google.com"
 ) {
+    val strings = LocalNovaStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.US) }
-    var filterMode by remember { mutableStateOf("ALL") } // ALL, TAB, SCRIPT, TRACKER, RULES
+    val palette = rememberSheetPalette()
 
-    val filteredAds = remember(blockedAds, filterMode, activeTabId) {
-        when (filterMode) {
-            "TAB" -> blockedAds.filter { it.tabId == activeTabId }
-            "SCRIPT" -> blockedAds.filter { it.category.contains("Ad", ignoreCase = true) && !it.category.contains("DOM", ignoreCase = true) }
-            "TRACKER" -> blockedAds.filter { it.category.contains("Tracker", ignoreCase = true) || it.category.contains("Analytics", ignoreCase = true) || it.category.contains("Telemetry", ignoreCase = true) }
+    // 0 = All, 1 = Current Tab, 2 = Ads, 3 = Trackers, 4 = Active Filter Rules
+    var selectedFilter by remember { mutableIntStateOf(0) }
+    var customRulesList by remember { mutableStateOf(listOf<String>()) }
+    var showAddRuleDialog by remember { mutableStateOf(false) }
+    var newCustomRuleInput by remember { mutableStateOf("") }
+
+    val (hostCount, pathCount, cosmeticCount) = remember(adBlockMode) {
+        AdBlocker.getRuleCountsForMode(adBlockMode)
+    }
+    val activeRules: List<AdFilterRuleItem> = remember(adBlockMode, customRulesList) {
+        val base = AdBlocker.getRulesCatalogForMode(adBlockMode)
+        val extra = customRulesList.map { rule ->
+            AdFilterRuleItem(
+                rule = rule,
+                category = "Custom Rule",
+                tier = adBlockMode
+            )
+        }
+        extra + base
+    }
+    val minimalTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MINIMAL) }
+    val proTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.PRO) }
+    val maxTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MAX) }
+
+    val filteredEntries = remember(blockedAds, selectedFilter, activeTabId) {
+        when (selectedFilter) {
+            1 -> blockedAds.filter { it.tabId == activeTabId }
+            2 -> blockedAds.filter { !it.category.contains("Tracker", ignoreCase = true) && !it.category.contains("Analytics", ignoreCase = true) }
+            3 -> blockedAds.filter { it.category.contains("Tracker", ignoreCase = true) || it.category.contains("Analytics", ignoreCase = true) || it.category.contains("Pixel", ignoreCase = true) }
             else -> blockedAds
         }
     }
 
-    val activeRulesCatalog = remember(adBlockMode) {
-        com.example.browser.AdBlocker.getRulesCatalogForMode(adBlockMode)
+    val currentTabBlockedCount = remember(blockedAds, activeTabId) {
+        blockedAds.count { it.tabId == activeTabId }
     }
-    val activeCounts = remember(adBlockMode) {
-        com.example.browser.AdBlocker.getRuleCountsForMode(adBlockMode)
+    val currentSiteHost: String = remember(currentSiteUrl, blockedAds, activeTabId) {
+        val fromUrl = extractHostClean(currentSiteUrl)
+        if (fromUrl.isNotBlank() && !fromUrl.startsWith("nova:")) {
+            fromUrl
+        } else {
+            val fallbackDomain = blockedAds.firstOrNull { it.tabId == activeTabId }?.pageDomain.orEmpty()
+            if (fallbackDomain.isNotBlank()) fallbackDomain else "google.com"
+        }
+    }
+
+    val activeModeLabel = when (adBlockMode) {
+        AdBlockMode.MINIMAL -> strings.modeMinimalTitle
+        AdBlockMode.PRO -> strings.modeProTitle
+        AdBlockMode.MAX -> strings.modeMaxTitle
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        containerColor = palette.sheetBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.testTag("blocked_ads_sheet")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp)
-                .testTag("blocked_ads_sheet")
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 24.dp)
         ) {
+            // Top Header
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Surface(
-                        shape = CircleShape,
-                        color = if (isAdBlockEnabled) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Filled.Shield,
-                                contentDescription = null,
-                                tint = if (isAdBlockEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    SheetHeaderIconBadge(icon = NovaIcons.ShieldCheck, palette = palette)
                     Column {
                         Text(
-                            text = "Ad-Blocker Shield (${adBlockMode.shortBadge})",
-                            style = MaterialTheme.typography.titleLarge
+                            text = strings.adBlockShieldMenuTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary
                         )
                         Text(
-                            text = "$totalAdsBlocked total blocked • ${activeRulesCatalog.size} active rules",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            text = if (isAdBlockEnabled) {
+                                strings.adShieldHeaderActive(totalAdsBlocked, activeRules.size)
+                            } else {
+                                strings.adShieldHeaderDisabled
+                            },
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.7.sp
+                            ),
+                            color = palette.textSecondary
                         )
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (blockedAds.isNotEmpty() && filterMode != "RULES") {
-                        TextButton(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (blockedAds.isNotEmpty()) {
+                        IconButton(
                             onClick = onClearLog,
-                            modifier = Modifier.testTag("clear_blocked_ads_log_button")
+                            modifier = Modifier
+                                .size(34.dp)
+                                .testTag("clear_blocked_ads_log_button")
                         ) {
-                            Text("Clear", style = MaterialTheme.typography.labelLarge)
+                            Icon(
+                                imageVector = NovaIcons.DeleteOutline,
+                                contentDescription = strings.clearAllButton,
+                                tint = palette.dangerRed,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                     Switch(
                         checked = isAdBlockEnabled,
                         onCheckedChange = { onToggleAdBlock() },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = palette.accentPrimary
+                        ),
                         modifier = Modifier.testTag("blocked_ads_sheet_toggle")
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 3-Tier Ad-Blocker Mode Selector Cards: Minimal (Default) | Pro | Max (YouTube)
+            // 3 Mode Cards: Minimal ON (58 FILTERS • FAST), Pro (235 FILTERS), Max (267 FILTERS)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                com.example.data.AdBlockMode.entries.forEach { mode ->
-                    val selected = adBlockMode == mode
-                    val totalRules = com.example.browser.AdBlocker.getTotalRuleCount(mode)
-                    val modeSubLabel = when (mode) {
-                        com.example.data.AdBlockMode.MINIMAL -> "Default • Fast"
-                        com.example.data.AdBlockMode.PRO -> "+131 Ad/Trackers"
-                        com.example.data.AdBlockMode.MAX -> "+YouTube Ads"
-                    }
+                listOf(
+                    Triple(AdBlockMode.MINIMAL, strings.modeMinimalTitle to strings.filtersCountFast(minimalTotal), "adblock_mode_card_minimal"),
+                    Triple(AdBlockMode.PRO, strings.modeProTitle to strings.filtersCountOnly(proTotal), "adblock_mode_card_pro"),
+                    Triple(AdBlockMode.MAX, strings.modeMaxTitle to strings.filtersCountOnly(maxTotal), "adblock_mode_card_max")
+                ).forEach { (mode, titleAndSub, tag) ->
+                    val (modeTitle, subtitle) = titleAndSub
+                    val isSelected = isAdBlockEnabled && adBlockMode == mode
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        },
+                        onClick = { onSelectAdBlockMode(mode) },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSelected) palette.activePillBg else palette.cardBg,
+                        border = BorderStroke(
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) palette.activePillBorder else palette.cardBorder
+                        ),
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { onSelectAdBlockMode(mode) }
-                            .border(
-                                width = if (selected) 1.6.dp else 1.dp,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                },
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            .testTag("adblock_mode_card_${mode.name.lowercase()}")
+                            .testTag(tag)
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
+                                horizontalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = mode.shortBadge,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurface
-                                    }
+                                    text = modeTitle,
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = if (isSelected) palette.accentPrimary else palette.textPrimary
                                 )
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = if (selected) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.surface
+                                if (isSelected) {
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(5.dp),
+                                        color = palette.accentPrimary
+                                    ) {
+                                        Text(
+                                            text = "ON",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 9.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                        )
                                     }
-                                ) {
-                                    Text(
-                                        text = if (selected) "ON" else "OFF",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (selected) {
-                                            MaterialTheme.colorScheme.onPrimary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "$totalRules Filters",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = modeSubLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = subtitle,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp
+                                ),
+                                color = if (isSelected) palette.textPrimary.copy(alpha = 0.86f) else palette.textMuted,
+                                textAlign = TextAlign.Center,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -2511,286 +3130,405 @@ fun BlockedAdsSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
+            // Breakdown line
             Text(
-                text = "${adBlockMode.displayName}: ${activeCounts.first} Host Filters • ${activeCounts.second} Path/Script Filters • ${activeCounts.third} Cosmetic DOM Filters",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = strings.filterBreakdownLine(hostCount, pathCount, cosmeticCount),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp
+                ),
+                color = palette.textSecondary,
+                modifier = Modifier.padding(horizontal = 2.dp)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Filter Chips Row
+            // Filter Pills Row: All (0), Tab (0), Ads, Trackers, Rules (58)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val tabCount = blockedAds.count { it.tabId == activeTabId }
-                FilterChip(
-                    selected = filterMode == "ALL",
-                    onClick = { filterMode = "ALL" },
-                    label = { Text("All (${blockedAds.size})", style = MaterialTheme.typography.labelSmall) }
+                DownloadFilterPill(
+                    label = "${strings.filterChipAll} (${blockedAds.size})",
+                    selected = selectedFilter == 0,
+                    palette = palette,
+                    onClick = { selectedFilter = 0 }
                 )
-                FilterChip(
-                    selected = filterMode == "TAB",
-                    onClick = { filterMode = "TAB" },
-                    label = { Text("Tab ($tabCount)", style = MaterialTheme.typography.labelSmall) }
+                DownloadFilterPill(
+                    label = "${strings.filterChipTab} ($currentTabBlockedCount)",
+                    selected = selectedFilter == 1,
+                    palette = palette,
+                    onClick = { selectedFilter = 1 }
                 )
-                FilterChip(
-                    selected = filterMode == "SCRIPT",
-                    onClick = { filterMode = "SCRIPT" },
-                    label = { Text("Ads", style = MaterialTheme.typography.labelSmall) }
+                DownloadFilterPill(
+                    label = strings.filterChipAds,
+                    selected = selectedFilter == 2,
+                    palette = palette,
+                    onClick = { selectedFilter = 2 }
                 )
-                FilterChip(
-                    selected = filterMode == "TRACKER",
-                    onClick = { filterMode = "TRACKER" },
-                    label = { Text("Trackers", style = MaterialTheme.typography.labelSmall) }
+                DownloadFilterPill(
+                    label = strings.filterChipTrackers,
+                    selected = selectedFilter == 3,
+                    palette = palette,
+                    onClick = { selectedFilter = 3 }
                 )
-                FilterChip(
-                    selected = filterMode == "RULES",
-                    onClick = { filterMode = "RULES" },
-                    label = { Text("Rules (${activeRulesCatalog.size})", style = MaterialTheme.typography.labelSmall) },
+                DownloadFilterPill(
+                    label = "${strings.filterChipRules} (${activeRules.size})",
+                    selected = selectedFilter == 4,
+                    palette = palette,
+                    onClick = { selectedFilter = 4 },
                     modifier = Modifier.testTag("blocked_ads_rules_chip")
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            if (filterMode == "RULES") {
-                LazyColumn(
+            // Current site status card
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = palette.cardBg,
+                border = BorderStroke(1.dp, palette.cardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 380.dp)
-                        .testTag("active_filter_rules_list"),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    items(activeRulesCatalog, key = { "${it.tier.name}_${it.rule}" }) { entry ->
-                        val tierColor = when (entry.tier) {
-                            com.example.data.AdBlockMode.MAX -> Color(0xFFFF5252)
-                            com.example.data.AdBlockMode.PRO -> Color(0xFFFF8A3D)
-                            else -> MaterialTheme.colorScheme.primary
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        MonogramSiteBadge(
+                            label = currentSiteHost,
+                            seed = currentSiteHost,
+                            url = currentSiteUrl
+                        )
+                        Column {
+                            Text(
+                                text = currentSiteHost,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                color = palette.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = strings.thisPageBlockedCount(currentTabBlockedCount),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = palette.textSecondary
+                            )
                         }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = palette.cardElevatedBg,
+                        border = BorderStroke(1.dp, palette.cardBorder)
+                    ) {
+                        Text(
+                            text = if (currentTabBlockedCount == 0) strings.siteCleanBadge else strings.siteProtectedBadge,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = palette.accentPrimary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (selectedFilter == 4) {
+                // Active Rules list view
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 180.dp, max = 280.dp)
+                        .testTag("active_filter_rules_list")
+                ) {
+                    itemsIndexed(activeRules, key = { idx, item -> "${item.tier.name}_${item.category}_${idx}_${item.rule}" }) { _, ruleItem ->
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(
-                                    width = 1.dp,
-                                    color = tierColor.copy(alpha = 0.35f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
+                            onClick = { onCopyAdUrl(ruleItem.rule) },
+                            shape = RoundedCornerShape(14.dp),
+                            color = palette.cardBg,
+                            border = BorderStroke(1.dp, palette.cardBorder),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Surface(
-                                            shape = RoundedCornerShape(5.dp),
-                                            color = tierColor.copy(alpha = 0.18f)
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = palette.activePillBg
                                         ) {
                                             Text(
-                                                text = entry.tier.shortBadge,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = tierColor,
+                                                text = ruleItem.tier.shortBadge.uppercase(Locale.US),
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 9.sp
+                                                ),
+                                                color = palette.accentPrimary,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
                                         Text(
-                                            text = entry.category,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            text = ruleItem.category,
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontFamily = FontFamily.Monospace
+                                            ),
+                                            color = palette.textSecondary
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(3.dp))
                                     Text(
-                                        text = entry.rule,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        text = ruleItem.rule,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.SemiBold
+                                        ),
+                                        color = palette.textPrimary
                                     )
                                 }
-                                IconButton(
-                                    onClick = { onCopyAdUrl(entry.rule) },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.ContentCopy,
-                                        contentDescription = "Copy Filter Rule",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                }
+                                Icon(
+                                    imageVector = NovaIcons.ContentCopy,
+                                    contentDescription = "Copy Rule",
+                                    tint = palette.accentPrimary,
+                                    modifier = Modifier.size(14.dp)
+                                )
                             }
                         }
                     }
                 }
-            } else if (filteredAds.isEmpty()) {
+            } else if (filteredEntries.isEmpty()) {
+                // Summary / Empty state card
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(22.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(22.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 22.dp, vertical = 26.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Block,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(34.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        SheetHeaderIconBadge(icon = NovaIcons.Block, palette = palette)
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = if (isAdBlockEnabled) {
-                                "${adBlockMode.displayName} Active (${activeRulesCatalog.size} Filters)"
+                                strings.shieldActiveEmptyTitle(activeModeLabel, activeRules.size)
                             } else {
-                                "Ad-Block Shield is Paused"
+                                strings.shieldDisabledEmptyTitle
                             },
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary,
+                            textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "${adBlockMode.subtitle}. Tap 'Rules (${activeRulesCatalog.size})' above to inspect every active host, path, and cosmetic filter rule.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = when (adBlockMode) {
+                                AdBlockMode.MINIMAL -> strings.shieldMinimalEmptyDesc(activeRules.size)
+                                AdBlockMode.PRO -> strings.shieldProEmptyDesc(activeRules.size)
+                                AdBlockMode.MAX -> strings.shieldMaxEmptyDesc(activeRules.size)
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+                            color = palette.textSecondary,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
             } else {
+                val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
                 LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 380.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .heightIn(min = 180.dp, max = 280.dp)
                 ) {
-                    items(filteredAds, key = { it.id }) { item ->
-                        val isTracker = item.category.contains("Tracker", ignoreCase = true) ||
-                            item.category.contains("Analytics", ignoreCase = true)
-                        val isDom = item.category.contains("DOM", ignoreCase = true)
-                        val badgeColor = when {
-                            isDom -> Color(0xFFD580FF)
-                            isTracker -> Color(0xFFFFB300)
-                            else -> Color(0xFFFF5252)
-                        }
-
+                    items(filteredEntries, key = { it.id }) { item ->
                         Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f),
+                            onClick = { onCopyAdUrl(item.adUrl) },
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.cardBg,
+                            border = BorderStroke(1.dp, palette.cardBorder),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(
-                                    width = 1.dp,
-                                    color = badgeColor.copy(alpha = 0.35f),
-                                    shape = RoundedCornerShape(14.dp)
-                                )
                                 .testTag("blocked_ad_item_${item.id}")
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp)
+                            ) {
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    Text(
+                                        text = "${item.category} • ${item.filterRule}",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = palette.accentPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f)
-                                    ) {
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = badgeColor.copy(alpha = 0.18f)
-                                        ) {
-                                            Text(
-                                                text = item.category,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = badgeColor,
-                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                                            )
-                                        }
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                        ) {
-                                            Text(
-                                                text = item.filterRule,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontFamily = FontFamily.Monospace,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                            )
-                                        }
-                                    }
-
+                                    )
                                     Text(
                                         text = timeFormatter.format(Date(item.timestamp)),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 10.sp
+                                        ),
+                                        color = palette.textMuted
                                     )
                                 }
-
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = item.adDomain,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = item.adUrl,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = "Blocked on page: ${item.pageDomain}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-
-                                    IconButton(
-                                        onClick = { onCopyAdUrl(item.adUrl) },
-                                        modifier = Modifier.size(34.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.ContentCopy,
-                                            contentDescription = "Copy Blocked Ad URL",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = item.adUrl,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 11.sp
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = palette.textPrimary
+                                )
                             }
                         }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Bottom 2-button row: "Pause on this site" + "Custom rules"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    onClick = onToggleAdBlock,
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("adblock_pause_site_button")
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isAdBlockEnabled) strings.pauseOnSiteButton else strings.resumeOnSiteButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = {
+                        if (selectedFilter == 4) {
+                            showAddRuleDialog = true
+                        } else {
+                            selectedFilter = 4
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.cardBg,
+                    border = BorderStroke(1.dp, palette.cardBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("adblock_custom_rules_button")
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (selectedFilter == 4) strings.addCustomRuleButton else strings.customRulesButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.accentPrimary
+                        )
+                    }
+                }
+            }
         }
+    }
+
+    if (showAddRuleDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddRuleDialog = false },
+            title = { Text(strings.addCustomRuleButton, fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = newCustomRuleInput,
+                    onValueChange = { newCustomRuleInput = it },
+                    label = { Text("Host, path, or CSS selector") },
+                    placeholder = { Text("e.g. ads.example.com or .banner-slot") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val rule = newCustomRuleInput.trim()
+                        if (rule.isNotEmpty()) {
+                            customRulesList = listOf(rule) + customRulesList
+                            newCustomRuleInput = ""
+                            showAddRuleDialog = false
+                        }
+                    }
+                ) {
+                    Text(strings.addButton)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddRuleDialog = false }) {
+                    Text(strings.cancelButton)
+                }
+            }
+        )
+    }
+}
+
+private fun formatBytes(bytes: Long): String {
+    if (bytes <= 0) return "0 B"
+    val kb = bytes / 1024.0
+    val mb = kb / 1024.0
+    val gb = mb / 1024.0
+    return when {
+        gb >= 1.0 -> String.format(Locale.US, "%.2f GB", gb)
+        mb >= 1.0 -> String.format(Locale.US, "%.1f MB", mb)
+        else -> String.format(Locale.US, "%.0f KB", kb)
     }
 }

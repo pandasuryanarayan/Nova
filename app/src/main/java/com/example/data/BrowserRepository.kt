@@ -1,17 +1,10 @@
 package com.example.data
 
 import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import android.content.SharedPreferences
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-
-private val Context.browserDataStore by preferencesDataStore(name = "nova_browser_prefs")
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 data class BrowserPreferences(
     val isDarkMode: Boolean = true,
@@ -23,29 +16,33 @@ data class BrowserPreferences(
 )
 
 class BrowserRepository(
-    private val context: Context,
+    context: Context,
     private val dao: BrowserDao
 ) {
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences("nova_browser_prefs", Context.MODE_PRIVATE)
+
     private object PrefKeys {
-        val DARK_MODE = booleanPreferencesKey("dark_mode")
-        val AD_BLOCK_ENABLED = booleanPreferencesKey("ad_block_enabled")
-        val AD_BLOCK_MODE = stringPreferencesKey("ad_block_mode")
-        val APP_LANGUAGE = stringPreferencesKey("app_language")
-        val DEFAULT_TEXT_ZOOM = intPreferencesKey("default_text_zoom")
-        val TOTAL_ADS_BLOCKED = longPreferencesKey("total_ads_blocked")
-        val DEFAULT_SHORTCUTS_SEEDED = booleanPreferencesKey("default_shortcuts_seeded")
+        const val DARK_MODE = "dark_mode"
+        const val AD_BLOCK_ENABLED = "ad_block_enabled"
+        const val AD_BLOCK_MODE = "ad_block_mode"
+        const val APP_LANGUAGE = "app_language"
+        const val DEFAULT_TEXT_ZOOM = "default_text_zoom"
+        const val TOTAL_ADS_BLOCKED = "total_ads_blocked"
+        const val DEFAULT_SHORTCUTS_SEEDED = "default_shortcuts_seeded"
     }
 
-    val preferencesFlow: Flow<BrowserPreferences> = context.browserDataStore.data.map { prefs ->
-        BrowserPreferences(
-            isDarkMode = prefs[PrefKeys.DARK_MODE] ?: true,
-            isAdBlockEnabled = prefs[PrefKeys.AD_BLOCK_ENABLED] ?: true,
-            adBlockMode = AdBlockMode.fromName(prefs[PrefKeys.AD_BLOCK_MODE]),
-            appLanguage = AppLanguage.fromCode(prefs[PrefKeys.APP_LANGUAGE]),
-            defaultTextZoom = prefs[PrefKeys.DEFAULT_TEXT_ZOOM] ?: 100,
-            totalAdsBlocked = prefs[PrefKeys.TOTAL_ADS_BLOCKED] ?: 0L
-        )
-    }
+    private fun readPreferences(): BrowserPreferences = BrowserPreferences(
+        isDarkMode = prefs.getBoolean(PrefKeys.DARK_MODE, true),
+        isAdBlockEnabled = prefs.getBoolean(PrefKeys.AD_BLOCK_ENABLED, true),
+        adBlockMode = AdBlockMode.fromName(prefs.getString(PrefKeys.AD_BLOCK_MODE, null)),
+        appLanguage = AppLanguage.fromCode(prefs.getString(PrefKeys.APP_LANGUAGE, null)),
+        defaultTextZoom = prefs.getInt(PrefKeys.DEFAULT_TEXT_ZOOM, 100),
+        totalAdsBlocked = prefs.getLong(PrefKeys.TOTAL_ADS_BLOCKED, 0L)
+    )
+
+    private val _preferencesFlow = MutableStateFlow(readPreferences())
+    val preferencesFlow: Flow<BrowserPreferences> = _preferencesFlow.asStateFlow()
 
     val bookmarksFlow: Flow<List<BookmarkEntity>> = dao.getAllBookmarks()
     val historyFlow: Flow<List<HistoryEntity>> = dao.getAllHistory()
@@ -53,46 +50,47 @@ class BrowserRepository(
     val downloadsFlow: Flow<List<DownloadItemEntity>> = dao.getAllDownloads()
 
     suspend fun ensureDefaultShortcutsSeeded() {
-        val prefs = context.browserDataStore.data.first()
-        val alreadySeeded = prefs[PrefKeys.DEFAULT_SHORTCUTS_SEEDED] ?: false
+        val alreadySeeded = prefs.getBoolean(PrefKeys.DEFAULT_SHORTCUTS_SEEDED, false)
         if (!alreadySeeded) {
             if (dao.getShortcutsCount() == 0) {
                 dao.insertShortcuts(NovaDatabase.defaultShortcuts())
             }
-            context.browserDataStore.edit { it[PrefKeys.DEFAULT_SHORTCUTS_SEEDED] = true }
+            prefs.edit().putBoolean(PrefKeys.DEFAULT_SHORTCUTS_SEEDED, true).apply()
         }
     }
 
     suspend fun setDarkMode(enabled: Boolean) {
-        context.browserDataStore.edit { it[PrefKeys.DARK_MODE] = enabled }
+        prefs.edit().putBoolean(PrefKeys.DARK_MODE, enabled).apply()
+        _preferencesFlow.value = readPreferences()
     }
 
     suspend fun setAdBlockEnabled(enabled: Boolean) {
-        context.browserDataStore.edit { it[PrefKeys.AD_BLOCK_ENABLED] = enabled }
+        prefs.edit().putBoolean(PrefKeys.AD_BLOCK_ENABLED, enabled).apply()
+        _preferencesFlow.value = readPreferences()
     }
 
     suspend fun setAdBlockMode(mode: AdBlockMode) {
-        context.browserDataStore.edit {
-            it[PrefKeys.AD_BLOCK_MODE] = mode.name
-            it[PrefKeys.AD_BLOCK_ENABLED] = true
-        }
+        prefs.edit()
+            .putString(PrefKeys.AD_BLOCK_MODE, mode.name)
+            .putBoolean(PrefKeys.AD_BLOCK_ENABLED, true)
+            .apply()
+        _preferencesFlow.value = readPreferences()
     }
 
     suspend fun setAppLanguage(language: AppLanguage) {
-        context.browserDataStore.edit {
-            it[PrefKeys.APP_LANGUAGE] = language.code
-        }
+        prefs.edit().putString(PrefKeys.APP_LANGUAGE, language.code).apply()
+        _preferencesFlow.value = readPreferences()
     }
 
     suspend fun setDefaultTextZoom(zoom: Int) {
-        context.browserDataStore.edit { it[PrefKeys.DEFAULT_TEXT_ZOOM] = zoom.coerceIn(50, 200) }
+        prefs.edit().putInt(PrefKeys.DEFAULT_TEXT_ZOOM, zoom.coerceIn(50, 200)).apply()
+        _preferencesFlow.value = readPreferences()
     }
 
     suspend fun incrementAdsBlocked() {
-        context.browserDataStore.edit { prefs ->
-            val current = prefs[PrefKeys.TOTAL_ADS_BLOCKED] ?: 0L
-            prefs[PrefKeys.TOTAL_ADS_BLOCKED] = current + 1L
-        }
+        val next = prefs.getLong(PrefKeys.TOTAL_ADS_BLOCKED, 0L) + 1L
+        prefs.edit().putLong(PrefKeys.TOTAL_ADS_BLOCKED, next).apply()
+        _preferencesFlow.value = readPreferences()
     }
 
     suspend fun addBookmark(title: String, url: String, domain: String) {
