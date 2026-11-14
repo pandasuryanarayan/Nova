@@ -259,6 +259,7 @@ fun TabsSwitcherSheet(
     activeTabId: String,
     onSelectTab: (String) -> Unit,
     onCloseTab: (String) -> Unit,
+    onCloseAllTabs: () -> Unit,
     onDuplicateTab: (String) -> Unit,
     onNewNormalTab: () -> Unit,
     onNewIncognitoTab: () -> Unit,
@@ -281,21 +282,53 @@ fun TabsSwitcherSheet(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                SheetHeaderIconBadge(icon = NovaIcons.Tab, palette = palette)
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.openTabsTitle,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                        color = palette.textPrimary
-                    )
-                    val incognitoCount = tabs.count { it.isIncognito }
-                    Text(
-                        text = strings.tabsHeaderStats(tabs.size, incognitoCount),
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.8.sp),
-                        color = palette.textSecondary
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SheetHeaderIconBadge(icon = NovaIcons.Tab, palette = palette)
+                    Column {
+                        Text(
+                            text = strings.openTabsTitle,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary
+                        )
+                        val incognitoCount = tabs.count { it.isIncognito }
+                        Text(
+                            text = strings.tabsHeaderStats(tabs.size, incognitoCount),
+                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.8.sp),
+                            color = palette.textSecondary
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = onCloseAllTabs,
+                    shape = RoundedCornerShape(14.dp),
+                    color = palette.dangerBg,
+                    border = BorderStroke(1.dp, palette.dangerBorder),
+                    modifier = Modifier.testTag("close_all_tabs_button")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = NovaIcons.DeleteSweep,
+                            contentDescription = strings.closeAllTabsButton,
+                            tint = palette.dangerRed,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = strings.closeAllTabsButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = palette.dangerRed
+                        )
+                    }
                 }
             }
 

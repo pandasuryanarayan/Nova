@@ -472,6 +472,7 @@ fun NovaBrowserApp(
                                 activeTabId = uiState.activeTabId,
                                 onSelectTab = viewModel::switchTab,
                                 onCloseTab = viewModel::closeTab,
+                                onCloseAllTabs = viewModel::closeAllTabs,
                                 onDuplicateTab = viewModel::duplicateTab,
                                 onNewNormalTab = { viewModel.openNewTab(isIncognito = false) },
                                 onNewIncognitoTab = { viewModel.openNewTab(isIncognito = true) },

@@ -47,4 +47,10 @@ class ExampleUnitTest {
     assertEquals("1.50 GB", com.example.browser.BrowserUrlUtils.formatBytes((1.5 * 1024 * 1024 * 1024L).toLong()))
     assertEquals("500.0 KB", com.example.browser.BrowserUrlUtils.formatBytes(500 * 1024L))
   }
+
+  @Test
+  fun testCloseAllTabsStrings() {
+    assertEquals("Close all", com.example.ui.i18n.EnglishNovaStrings.closeAllTabsButton)
+    assertEquals("सब बंद करें", com.example.ui.i18n.HindiNovaStrings.closeAllTabsButton)
+  }
 }

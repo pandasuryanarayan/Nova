@@ -1074,6 +1074,29 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun closeAllTabs() {
+        val currentTabs = _uiState.value.tabs
+        currentTabs.forEach { tab ->
+            webViewPool.removeAndDestroyTab(tab.id)
+        }
+        val defaultZoom = preferences.value.defaultTextZoom
+        val fresh = BrowserTab(
+            title = "Netra Home",
+            url = NOVA_HOME_URL,
+            textZoom = defaultZoom
+        )
+        _uiState.update { state ->
+            state.copy(
+                tabs = listOf(fresh),
+                activeTabId = fresh.id,
+                activeSheet = ActiveSheet.NONE,
+                isFindInPageVisible = false,
+                detectedVideo = null
+            )
+        }
+        emitToast("All tabs closed")
+    }
+
     fun toggleIncognitoMode() {
         val current = _uiState.value.activeTab
         val nextIncognito = !current.isIncognito
