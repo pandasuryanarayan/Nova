@@ -334,33 +334,42 @@ fun NovaBrowserApp(
                                     modifier = if (!uiState.isFindInPageVisible) Modifier.statusBarsPadding() else Modifier
                                 )
                             } else {
-                                AndroidView(
-                                    factory = { ctx ->
-                                        FrameLayout(ctx).apply {
-                                            layoutParams = ViewGroup.LayoutParams(
-                                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                                ViewGroup.LayoutParams.MATCH_PARENT
-                                            )
-                                        }
-                                    },
-                                    update = { container ->
-                                        val webView = viewModel.webViewPool.getOrCreateWebView(activeTab)
-                                        if (webView.parent != container) {
-                                            (webView.parent as? ViewGroup)?.removeView(webView)
-                                            container.removeAllViews()
-                                            container.addView(
-                                                webView,
-                                                FrameLayout.LayoutParams(
+                                val isTabsSheetOpen = uiState.activeSheet == ActiveSheet.TABS
+                                if (!isTabsSheetOpen) {
+                                    AndroidView(
+                                        factory = { ctx ->
+                                            FrameLayout(ctx).apply {
+                                                layoutParams = ViewGroup.LayoutParams(
                                                     ViewGroup.LayoutParams.MATCH_PARENT,
                                                     ViewGroup.LayoutParams.MATCH_PARENT
                                                 )
-                                            )
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .testTag("browser_webview_container")
-                                )
+                                            }
+                                        },
+                                        update = { container ->
+                                            val webView = viewModel.webViewPool.getOrCreateWebView(activeTab)
+                                            if (webView.parent != container) {
+                                                (webView.parent as? ViewGroup)?.removeView(webView)
+                                                container.removeAllViews()
+                                                container.addView(
+                                                    webView,
+                                                    FrameLayout.LayoutParams(
+                                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                                        ViewGroup.LayoutParams.MATCH_PARENT
+                                                    )
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .testTag("browser_webview_container")
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.background)
+                                    )
+                                }
                             }
                         }
 

@@ -250,8 +250,312 @@ private fun extractHostClean(url: String): String = try {
 }
 
 // ============================================================================
-// 1. TABS SWITCHER BOTTOM SHEET
+// 1. TABS SWITCHER BOTTOM SHEET & WEBSITE PREVIEW
 // ============================================================================
+
+@Composable
+private fun TabWebsitePreviewCard(
+    tab: BrowserTab,
+    palette: SheetVisualPalette,
+    strings: com.example.ui.i18n.NovaStrings
+) {
+    val isYouTube = remember(tab.url, tab.title) {
+        tab.url.contains("youtube.com", ignoreCase = true) ||
+            tab.url.contains("youtu.be", ignoreCase = true) ||
+            tab.title.contains("YouTube", ignoreCase = true)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(116.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isYouTube) Color(0xFF0F0F0F) else palette.cardElevatedBg)
+            .border(1.dp, if (isYouTube) Color(0xFF333333) else palette.cardBorder, RoundedCornerShape(12.dp))
+    ) {
+        if (tab.isHomePage) {
+            // Netra Home Preview
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(palette.accentPrimary.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = NovaIcons.Public,
+                        contentDescription = null,
+                        tint = palette.accentPrimary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .height(18.dp)
+                        .clip(RoundedCornerShape(9.dp))
+                        .background(palette.cardBg)
+                        .border(0.5.dp, palette.cardBorder, RoundedCornerShape(9.dp))
+                        .padding(horizontal = 6.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(NovaIcons.Search, null, tint = palette.textMuted, modifier = Modifier.size(10.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "netra://start",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontFamily = FontFamily.Monospace),
+                            color = palette.textMuted
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(Color(0xFF4285F4), Color(0xFFFF0000), Color(0xFF00C853), Color(0xFFFF8A3D)).forEach { color ->
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(color.copy(alpha = 0.25f))
+                                .border(0.5.dp, color.copy(alpha = 0.5f), CircleShape)
+                        )
+                    }
+                }
+            }
+        } else if (isYouTube) {
+            // YouTube Website Page Preview
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Mini YouTube Top Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)
+                        .background(Color(0xFF212121))
+                        .padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp, 10.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(Color(0xFFFF0000)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(NovaIcons.PlayArrow, null, tint = Color.White, modifier = Modifier.size(8.dp))
+                        }
+                        Text(
+                            text = "YouTube",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 9.sp),
+                            color = Color.White
+                        )
+                    }
+                    Icon(NovaIcons.Search, null, tint = Color.LightGray, modifier = Modifier.size(10.dp))
+                }
+
+                // Mini Video Player
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF1E1E1E), Color(0xFF0A0A0A))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFF0000).copy(alpha = 0.90f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(NovaIcons.PlayArrow, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(4.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color.Black.copy(alpha = 0.75f))
+                            .padding(horizontal = 3.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "1080p",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth(0.42f)
+                            .height(2.dp)
+                            .background(Color(0xFFFF0000))
+                    )
+                }
+
+                // Video Details & Channel Info
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = tab.title.removeSuffix(" - YouTube").ifBlank { "YouTube Video" },
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFF0000).copy(alpha = 0.6f))
+                        )
+                        Text(
+                            text = "m.youtube.com • Recommended",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp),
+                            color = Color(0xFFAAAAAA),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        } else {
+            // General Website Page Preview
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(6.dp)
+            ) {
+                // Mini Address & Status Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(18.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(palette.cardBg)
+                        .padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(NovaIcons.Lock, null, tint = palette.accentPrimary, modifier = Modifier.size(9.dp))
+                        Text(
+                            text = extractHostClean(tab.url),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Text(
+                        text = if (tab.isIncognito) strings.stealthTabBadge else strings.standardTabBadge,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp, fontFamily = FontFamily.Monospace),
+                        color = if (tab.isIncognito) palette.accentPrimary else palette.textMuted
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Hero Content Preview Block
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(palette.accentPrimary.copy(alpha = 0.08f))
+                        .border(0.5.dp, palette.accentPrimary.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
+                        .padding(6.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(palette.accentPrimary.copy(alpha = 0.20f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = extractHostClean(tab.url).firstOrNull()?.uppercaseChar()?.toString() ?: "W",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 11.sp),
+                                color = palette.accentPrimary
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = tab.title,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 8.5.sp),
+                                color = palette.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(1.5.dp))
+                                    .background(palette.textMuted.copy(alpha = 0.35f))
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Simulated Content Lines
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(palette.cardBg)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.68f)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(palette.cardBg)
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun TabsSwitcherSheet(
@@ -419,7 +723,7 @@ fun TabsSwitcherSheet(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 380.dp)
+                    .heightIn(max = 520.dp)
             ) {
                 val cols = if (maxWidth >= 520.dp) 3 else 2
                 val rows = remember(tabs, cols) { tabs.chunked(cols) }
@@ -496,32 +800,11 @@ fun TabsSwitcherSheet(
 
                                         Spacer(modifier = Modifier.height(10.dp))
 
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(72.dp)
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(palette.cardElevatedBg)
-                                                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                                .padding(10.dp),
-                                            contentAlignment = Alignment.CenterStart
-                                        ) {
-                                            Column {
-                                                Text(
-                                                    text = if (tab.isHomePage) "netra://start" else extractHostClean(tab.url),
-                                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace),
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    color = palette.textPrimary
-                                                )
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    text = if (tab.isIncognito) strings.stealthTabBadge else strings.standardTabBadge,
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp),
-                                                    color = if (tab.isIncognito) palette.accentPrimary else palette.textMuted
-                                                )
-                                            }
-                                        }
+                                        TabWebsitePreviewCard(
+                                            tab = tab,
+                                            palette = palette,
+                                            strings = strings
+                                        )
                                     }
                                 }
                             }

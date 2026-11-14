@@ -4,23 +4,23 @@
 
 ### **Fast, Private, Ad-Free & Developer-Grade Open-Source Android Web Browser**
 
-[![Version](https://img.shields.io/badge/Release-v6.9.1%20(code%2016)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.9.1/Netra-v6.9.1-release.apk)
+[![Version](https://img.shields.io/badge/Release-v6.9.2%20(code%2017)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.9.2/Netra-v6.9.2-release.apk)
 [![Platform](https://img.shields.io/badge/Android-API%2024%E2%80%9336-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#building-from-source)
 [![Kotlin](https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](#tech-stack--architecture)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](#key-features)
 [![Ad-Blocker](https://img.shields.io/badge/Ad--Shield-3--Tier%20(Up%20to%20267%20Rules)-00C853?style=for-the-badge&logo=shield&logoColor=white)](#3-tier-cumulative-ad-blocker--tracker-shield)
-[![APK Size](https://img.shields.io/badge/APK%20Size-966%20KB%20(%3C1%20MB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v691)
+[![APK Size](https://img.shields.io/badge/APK%20Size-970%20KB%20(%3C1%20MB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v692)
 [![License](https://img.shields.io/badge/License-GNU%20GPL%20v3.0-D50000?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 
 <br/>
 
-[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-Netra--v6.9.1--release.apk-FF6D00?style=for-the-badge)](releases/v6.9.1/Netra-v6.9.1-release.apk)
-[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.9.1-263238?style=for-the-badge)](releases/v6.9.1/RELEASE_NOTES.md)
+[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-Netra--v6.9.2--release.apk-FF6D00?style=for-the-badge)](releases/v6.9.2/Netra-v6.9.2-release.apk)
+[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.9.2-263238?style=for-the-badge)](releases/v6.9.2/RELEASE_NOTES.md)
 [![CI Workflow](https://img.shields.io/badge/GitHub%20Actions-Release%20Pipeline-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/release.yml)
 
 ---
 
-**Package ID:** `com.suryatech.browser.netra` &nbsp;•&nbsp; **Version:** `6.9.1` (`versionCode = 16`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
+**Package ID:** `com.suryatech.browser.netra` &nbsp;•&nbsp; **Version:** `6.9.2` (`versionCode = 17`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
 
 </div>
 
@@ -47,18 +47,18 @@
 
 ---
 
-## 📦 Signed Release APK (`v6.9.1`)
+## 📦 Signed Release APK (`v6.9.2`)
 
-A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.9.1/`](releases/v6.9.1/):
+A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.9.2/`](releases/v6.9.2/):
 
 | Property | Details |
 | :--- | :--- |
-| **APK File** | [`releases/v6.9.1/Netra-v6.9.1-release.apk`](releases/v6.9.1/Netra-v6.9.1-release.apk) |
-| **Release Notes** | [`releases/v6.9.1/RELEASE_NOTES.md`](releases/v6.9.1/RELEASE_NOTES.md) |
+| **APK File** | [`releases/v6.9.2/Netra-v6.9.2-release.apk`](releases/v6.9.2/Netra-v6.9.2-release.apk) |
+| **Release Notes** | [`releases/v6.9.2/RELEASE_NOTES.md`](releases/v6.9.2/RELEASE_NOTES.md) |
 | **Application ID** | `com.suryatech.browser.netra` |
-| **Version** | `6.9.1` (`versionCode = 16`) |
-| **APK Size** | `990,867 bytes` (**967 KB** — strictly below `1 MB`; **1.88 MB** installed) |
-| **SHA-256 Checksum** | `45a91672f4c97d533eaa96dd06446661c278376c93f149a54d15c1da37d8dbd8` |
+| **Version** | `6.9.2` (`versionCode = 17`) |
+| **APK Size** | `993,875 bytes` (**970 KB** — strictly below `1 MB`; **1.89 MB** installed) |
+| **SHA-256 Checksum** | `f8edbbe332e6b630220eae251bf201a687fe672d53eab8fefcd5e583b08527c5` |
 | **Signing Certificate** | `CN=Nova Browser, OU=Mobile, O=Nova, L=SF, ST=CA, C=US` |
 | **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`, `localeFilters = [en, hi]`, lightweight vector icons & native system typography) |
 
