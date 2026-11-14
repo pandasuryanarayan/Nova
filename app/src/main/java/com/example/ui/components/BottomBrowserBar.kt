@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -68,6 +70,20 @@ fun TopWebsiteHeaderBar(
         mutableStateOf(if (activeTab.url == NOVA_HOME_URL) "" else activeTab.url)
     }
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val localView = LocalView.current
+
+    fun submitTopUrl() {
+        val q = urlInputText.trim()
+        if (q.isNotBlank()) {
+            isEditingTopUrl = false
+            isUrlDropdownExpanded = false
+            dismissSoftKeyboard(localView)
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+            onSubmitUrlOrSearch(q)
+        }
+    }
 
     LaunchedEffect(isEditingTopUrl) {
         if (isEditingTopUrl) {
@@ -115,47 +131,40 @@ fun TopWebsiteHeaderBar(
                     value = urlInputText,
                     onValueChange = { urlInputText = it },
                     placeholder = novaStrings.searchOrTypeUrlPlaceholder,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(18.dp),
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     borderColor = MaterialTheme.colorScheme.primary,
                     imeAction = EditorInfo.IME_ACTION_GO,
-                    onImeAction = {
-                        if (urlInputText.isNotBlank()) {
-                            isEditingTopUrl = false
-                            isUrlDropdownExpanded = false
-                            focusManager.clearFocus()
-                            onSubmitUrlOrSearch(urlInputText)
-                        }
-                    },
+                    onImeAction = { submitTopUrl() },
                     requestFocusOnMount = true,
+                    textSizeSp = 15.5f,
+                    minHeight = 54.dp,
+                    borderWidth = 1.5.dp,
+                    horizontalPadding = 14.dp,
+                    verticalPadding = 10.dp,
                     trailingIcon = if (urlInputText.isNotEmpty()) {
                         {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
                                     onClick = { urlInputText = "" },
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
                                         imageVector = NovaIcons.Close,
                                         contentDescription = "Clear URL",
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                                 IconButton(
-                                    onClick = {
-                                        isEditingTopUrl = false
-                                        isUrlDropdownExpanded = false
-                                        focusManager.clearFocus()
-                                        onSubmitUrlOrSearch(urlInputText)
-                                    },
-                                    modifier = Modifier.size(32.dp)
+                                    onClick = { submitTopUrl() },
+                                    modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
                                         imageVector = NovaIcons.Send,
                                         contentDescription = "Go",
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -173,7 +182,9 @@ fun TopWebsiteHeaderBar(
                 IconButton(
                     onClick = {
                         isEditingTopUrl = false
-                        focusManager.clearFocus()
+                        dismissSoftKeyboard(localView)
+                        focusManager.clearFocus(force = true)
+                        keyboardController?.hide()
                     },
                     modifier = Modifier.size(40.dp)
                 ) {
@@ -190,7 +201,7 @@ fun TopWebsiteHeaderBar(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(58.dp)
                     .padding(horizontal = 8.dp)
             ) {
                 val lockBgColor = if (activeTab.isSecureSsl) {
@@ -206,13 +217,13 @@ fun TopWebsiteHeaderBar(
                 IconButton(
                     onClick = onSslIconClick,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(44.dp)
                         .testTag("ssl_lock_button")
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(36.dp)
                             .background(lockBgColor, RoundedCornerShape(10.dp))
                     ) {
                         Icon(
@@ -230,9 +241,12 @@ fun TopWebsiteHeaderBar(
                     contentAlignment = Alignment.CenterStart,
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
                         .clickable { isUrlDropdownExpanded = !isUrlDropdownExpanded }
-                        .padding(horizontal = 6.dp, vertical = 6.dp)
+                        .padding(horizontal = 12.dp)
                         .testTag("top_bar_website_title")
                 ) {
                     Text(
@@ -458,7 +472,7 @@ fun BottomBrowserBar(
                 )
 
                 BottomNavTabItem(
-                    icon = NovaIcons.BookmarkBorder,
+                    icon = NovaIcons.Bookmarks,
                     label = strings.navSaved,
                     isSelected = false,
                     badgeCount = null,
@@ -716,6 +730,16 @@ fun FindInPageTopBar(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val localView = LocalView.current
+
+    fun hideKeyboard() {
+        dismissSoftKeyboard(localView)
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -730,7 +754,10 @@ fun FindInPageTopBar(
             placeholder = novaStrings.findInPageButton,
             shape = RoundedCornerShape(14.dp),
             imeAction = EditorInfo.IME_ACTION_SEARCH,
-            onImeAction = onFindNext,
+            onImeAction = {
+                hideKeyboard()
+                onFindNext()
+            },
             trailingIcon = if (query.isNotBlank()) {
                 {
                     Text(
@@ -764,7 +791,10 @@ fun FindInPageTopBar(
             )
         }
         IconButton(
-            onClick = onClose,
+            onClick = {
+                hideKeyboard()
+                onClose()
+            },
             modifier = Modifier
                 .size(40.dp)
                 .testTag("close_find_in_page_button")

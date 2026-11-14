@@ -3,14 +3,21 @@ package com.example.browser
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
+import android.net.http.SslCertificate
 import android.net.http.SslError
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -27,6 +34,19 @@ import com.example.data.DetectedVideoInfo
 import com.example.data.DetectedVideoQuality
 import com.example.data.NOVA_HOME_URL
 import com.example.data.NOVA_VIDEO_LAB_URL
+import com.example.data.SiteConfigSettings
+import com.example.data.SiteCookieEntry
+import com.example.data.SiteCookiePolicy
+import com.example.data.SitePermissionMode
+import com.example.data.SslCertificateDetails
+import java.io.ByteArrayInputStream
+import java.security.MessageDigest
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.security.interfaces.ECPublicKey
+import java.security.interfaces.RSAPublicKey
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import org.json.JSONObject
 
@@ -60,7 +80,16 @@ class NovaWebViewPool(
     private val onPageFinishedForDevTools: (tabId: String) -> Unit,
     private val isAdBlockEnabledProvider: () -> Boolean,
     private val adBlockModeProvider: () -> AdBlockMode = { AdBlockMode.MINIMAL },
-    private val isDarkModeEnabledProvider: () -> Boolean
+    private val isDarkModeEnabledProvider: () -> Boolean,
+    private val siteConfigProvider: (domain: String) -> SiteConfigSettings = { SiteConfigSettings(domain = it) },
+    private val onGeolocationPermissionRequested: (domain: String, origin: String, callback: GeolocationPermissions.Callback) -> Unit = { _, origin, cb ->
+        cb.invoke(origin, false, false)
+    },
+    private val onWebPermissionRequested: (domain: String, request: PermissionRequest) -> Unit = { _, req ->
+        req.deny()
+    },
+    private val onWebPermissionCanceled: (request: PermissionRequest) -> Unit = {},
+    private val onPopupBlocked: (domain: String) -> Unit = {}
 ) {
     private val webViews = mutableMapOf<String, WebView>()
     private val tabStates = ConcurrentHashMap<String, BrowserTab>()
@@ -210,109 +239,331 @@ class NovaWebViewPool(
 
     fun getWebView(tabId: String): WebView? = webViews[tabId]
 
-    fun getSslCertificateDetails(tab: BrowserTab): com.example.data.SslCertificateDetails {
-        val domain = BrowserUrlUtils.extractDomain(tab.url).ifBlank { tab.url }
-        val wv = webViews[tab.id]
-        val cert = wv?.certificate
-        val isHttps = tab.url.startsWith("https://", ignoreCase = true) || tab.url.startsWith("nova://", ignoreCase = true)
-
-        if (cert == null) {
-            return com.example.data.SslCertificateDetails(
-                isSecure = tab.isSecureSsl && isHttps,
-                summary = tab.sslSummary,
-                issuedToCommonName = domain,
-                issuedToOrganization = if (isHttps) "Domain Validated (DV) Site" else "Unencrypted HTTP Site",
-                issuedToOrganizationalUnit = if (isHttps) "Web Security" else "None",
-                issuedByCommonName = if (isHttps) "Trusted Root Certificate Authority" else "No Certificate (HTTP)",
-                issuedByOrganization = if (isHttps) "Public Trust CA" else "None",
-                issuedByOrganizationalUnit = if (isHttps) "TLS Validation Authority" else "None",
-                validFrom = if (isHttps) "Active Session" else "N/A",
-                validUntil = if (isHttps) "Valid" else "N/A",
-                sha256Fingerprint = if (isHttps) "TLS-SESSION-VERIFIED" else "NONE (PLAINTEXT HTTP)",
-                serialNumber = if (isHttps) "TLS-1.3" else "N/A",
-                protocol = if (isHttps) "TLS 1.3 / HTTPS (Encrypted)" else "HTTP/1.1 (Unencrypted Plaintext)"
-            )
-        }
-
-        var sha256Hex = ""
-        var serialHex = ""
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+    private fun extractX509Certificate(cert: SslCertificate): X509Certificate? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
-                val x509 = cert.x509Certificate
-                if (x509 != null) {
-                    val digest = java.security.MessageDigest.getInstance("SHA-256").digest(x509.encoded)
-                    sha256Hex = digest.joinToString(":") { "%02X".format(it) }
-                    serialHex = x509.serialNumber?.toString(16)?.uppercase() ?: ""
-                }
+                cert.x509Certificate?.let { return it }
             } catch (_: Exception) {
             }
         }
+        return try {
+            val bundle = SslCertificate.saveState(cert)
+            val bytes = bundle?.getByteArray("x509-certificate")
+            if (bytes != null && bytes.isNotEmpty()) {
+                val cf = CertificateFactory.getInstance("X.509")
+                cf.generateCertificate(ByteArrayInputStream(bytes)) as? X509Certificate
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
 
-        val issuedToCn = cert.issuedTo?.cName?.ifBlank { domain } ?: domain
-        val issuedToO = cert.issuedTo?.oName?.ifBlank { "Domain Validated ($domain)" } ?: "Domain Validated ($domain)"
-        val issuedToOu = cert.issuedTo?.uName?.ifBlank { "TLS Web Server" } ?: "TLS Web Server"
-        val issuedByCn = cert.issuedBy?.cName?.ifBlank { "Trusted CA" } ?: "Trusted CA"
-        val issuedByO = cert.issuedBy?.oName?.ifBlank { issuedByCn } ?: issuedByCn
-        val issuedByOu = cert.issuedBy?.uName?.ifBlank { "Certificate Authority" } ?: "Certificate Authority"
-        val validFrom = cert.validNotBeforeDate?.toString() ?: "Verified"
-        val validUntil = cert.validNotAfterDate?.toString() ?: "Verified"
+    private fun parseDnAttribute(dn: String, key: String): String {
+        if (dn.isBlank()) return ""
+        val regex = Regex("""(?:^|,)\s*${Regex.escape(key)}=([^,"]+|"[^"]*")""", RegexOption.IGNORE_CASE)
+        val match = regex.find(dn) ?: return ""
+        return match.groupValues[1].trim().removeSurrounding("\"")
+    }
 
-        return com.example.data.SslCertificateDetails(
+    private fun formatKeyUsage(x509: X509Certificate): String {
+        val parts = mutableListOf<String>()
+        val bits = x509.keyUsage
+        if (bits != null) {
+            val labels = listOf(
+                "Digital Signature",
+                "Non-Repudiation",
+                "Key Encipherment",
+                "Data Encipherment",
+                "Key Agreement",
+                "Certificate Sign",
+                "CRL Sign",
+                "Encipher Only",
+                "Decipher Only"
+            )
+            bits.forEachIndexed { idx, set ->
+                if (set && idx < labels.size) parts.add(labels[idx])
+            }
+        }
+        try {
+            val eku = x509.extendedKeyUsage.orEmpty()
+            for (oid in eku) {
+                when (oid) {
+                    "1.3.6.1.5.5.7.3.1" -> parts.add("TLS Web Server Auth")
+                    "1.3.6.1.5.5.7.3.2" -> parts.add("TLS Web Client Auth")
+                    "1.3.6.1.5.5.7.3.3" -> parts.add("Code Signing")
+                    "1.3.6.1.5.5.7.3.4" -> parts.add("Email Protection")
+                    "1.3.6.1.5.5.7.3.8" -> parts.add("Time Stamping")
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return parts.distinct().joinToString(" • ")
+    }
+
+    fun getSslCertificateDetails(tab: BrowserTab): SslCertificateDetails {
+        val domain = BrowserUrlUtils.extractDomain(tab.url).ifBlank { tab.url }
+        val wv = webViews[tab.id]
+        val cert = wv?.certificate
+        val isInternal = tab.url.startsWith("netra://", ignoreCase = true) ||
+            tab.url.startsWith("nova://", ignoreCase = true)
+        val isHttps = tab.url.startsWith("https://", ignoreCase = true) || isInternal
+
+        if (cert == null) {
+            return SslCertificateDetails(
+                isSecure = tab.isSecureSsl && isHttps,
+                summary = tab.sslSummary,
+                issuedToCommonName = domain,
+                issuedToOrganization = if (isInternal) "Netra Built-in Page" else if (isHttps) "Domain Validated (DV) Site" else "Unencrypted HTTP Site",
+                issuedToOrganizationalUnit = if (isHttps) "Web Security" else "None",
+                issuedToCountry = "",
+                subjectDn = if (isHttps) "CN=$domain" else "Unencrypted HTTP",
+                issuedByCommonName = if (isInternal) "Netra Local Runtime" else if (isHttps) "Trusted Root Certificate Authority" else "No Certificate (HTTP)",
+                issuedByOrganization = if (isHttps) "Public Trust CA" else "None",
+                issuedByOrganizationalUnit = if (isHttps) "TLS Validation Authority" else "None",
+                issuerDn = "",
+                validFrom = if (isHttps) "Active Session" else "N/A",
+                validUntil = if (isHttps) "Valid" else "N/A",
+                validityStatus = if (isInternal) "Internal Verified Page" else if (isHttps) "TLS Session Active" else "Not Encrypted (HTTP)",
+                sha256Fingerprint = if (isHttps) "TLS-SESSION-VERIFIED" else "NONE (PLAINTEXT HTTP)",
+                sha1Fingerprint = "",
+                serialNumber = if (isHttps) "TLS-1.3" else "N/A",
+                signatureAlgorithm = if (isHttps) "TLS 1.3 Cipher Suite" else "None",
+                publicKeyInfo = "",
+                x509Version = "",
+                keyUsage = "",
+                subjectAltNames = if (isHttps && !isInternal) listOf(domain) else emptyList(),
+                protocol = if (isInternal) "netra:// Internal Scheme" else if (isHttps) "TLS 1.3 / HTTPS (Encrypted)" else "HTTP/1.1 (Unencrypted Plaintext)",
+                hasCertificateObject = false
+            )
+        }
+
+        val x509 = extractX509Certificate(cert)
+        val dateFmt = SimpleDateFormat("dd MMM yyyy, HH:mm z", Locale.getDefault())
+
+        var sha256Hex = ""
+        var sha1Hex = ""
+        var serialHex = ""
+        var sigAlg = ""
+        var pubKeyInfo = ""
+        var versionStr = ""
+        var keyUsageStr = ""
+        var sanList = emptyList<String>()
+        var subjectDnStr = cert.issuedTo?.dName?.trim().orEmpty()
+        var issuerDnStr = cert.issuedBy?.dName?.trim().orEmpty()
+
+        if (x509 != null) {
+            try {
+                val sha256Bytes = MessageDigest.getInstance("SHA-256").digest(x509.encoded)
+                sha256Hex = sha256Bytes.joinToString(":") { "%02X".format(it) }
+            } catch (_: Exception) {
+            }
+            try {
+                val sha1Bytes = MessageDigest.getInstance("SHA-1").digest(x509.encoded)
+                sha1Hex = sha1Bytes.joinToString(":") { "%02X".format(it) }
+            } catch (_: Exception) {
+            }
+            try {
+                val rawHex = x509.serialNumber?.toString(16)?.uppercase(Locale.US).orEmpty()
+                val padded = if (rawHex.length % 2 == 1) "0$rawHex" else rawHex
+                serialHex = padded.chunked(2).joinToString(":")
+            } catch (_: Exception) {
+            }
+            sigAlg = x509.sigAlgName.orEmpty()
+            versionStr = "X.509 v${x509.version}"
+            keyUsageStr = formatKeyUsage(x509)
+            pubKeyInfo = try {
+                when (val pk = x509.publicKey) {
+                    is RSAPublicKey -> "RSA (${pk.modulus.bitLength()}-bit)"
+                    is ECPublicKey -> "ECDSA / EC (${pk.params?.order?.bitLength() ?: 256}-bit)"
+                    else -> "${pk.algorithm} (${pk.encoded.size * 8}-bit)"
+                }
+            } catch (_: Exception) {
+                x509.publicKey?.algorithm.orEmpty()
+            }
+            subjectDnStr = x509.subjectX500Principal?.name?.takeIf { it.isNotBlank() } ?: subjectDnStr
+            issuerDnStr = x509.issuerX500Principal?.name?.takeIf { it.isNotBlank() } ?: issuerDnStr
+            sanList = try {
+                x509.subjectAlternativeNames.orEmpty().mapNotNull { entry ->
+                    val type = entry.getOrNull(0) as? Int
+                    val value = entry.getOrNull(1)?.toString()?.trim()
+                    if (value.isNullOrBlank()) null
+                    else when (type) {
+                        2 -> value // DNS
+                        7 -> "IP: $value"
+                        else -> value
+                    }
+                }.distinct()
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+
+        val notBeforeDate = cert.validNotBeforeDate ?: x509?.notBefore
+        val notAfterDate = cert.validNotAfterDate ?: x509?.notAfter
+        val nowMs = System.currentTimeMillis()
+        val validityStatus = when {
+            notBeforeDate != null && nowMs < notBeforeDate.time -> "Not Yet Valid"
+            notAfterDate != null && nowMs > notAfterDate.time -> {
+                val daysExpired = ((nowMs - notAfterDate.time) / 86_400_000L).coerceAtLeast(1L)
+                "Expired ($daysExpired days ago)"
+            }
+            notAfterDate != null -> {
+                val daysLeft = ((notAfterDate.time - nowMs) / 86_400_000L)
+                if (daysLeft == 0L) "Valid • Expires today" else "Valid • $daysLeft days remaining"
+            }
+            else -> "Verified Active"
+        }
+
+        val issuedToCn = cert.issuedTo?.cName?.ifBlank { parseDnAttribute(subjectDnStr, "CN") }?.ifBlank { domain } ?: domain
+        val issuedToO = cert.issuedTo?.oName?.ifBlank { parseDnAttribute(subjectDnStr, "O") }?.ifBlank { "Domain Validated ($domain)" } ?: "Domain Validated ($domain)"
+        val issuedToOu = cert.issuedTo?.uName?.ifBlank { parseDnAttribute(subjectDnStr, "OU") }?.ifBlank { "TLS Web Server" } ?: "TLS Web Server"
+        val issuedToC = parseDnAttribute(subjectDnStr, "C")
+        val issuedByCn = cert.issuedBy?.cName?.ifBlank { parseDnAttribute(issuerDnStr, "CN") }?.ifBlank { "Trusted CA" } ?: "Trusted CA"
+        val issuedByO = cert.issuedBy?.oName?.ifBlank { parseDnAttribute(issuerDnStr, "O") }?.ifBlank { issuedByCn } ?: issuedByCn
+        val issuedByOu = cert.issuedBy?.uName?.ifBlank { parseDnAttribute(issuerDnStr, "OU") }?.ifBlank { "Certificate Authority" } ?: "Certificate Authority"
+        val validFrom = notBeforeDate?.let { dateFmt.format(it) } ?: "Verified"
+        val validUntil = notAfterDate?.let { dateFmt.format(it) } ?: "Verified"
+
+        return SslCertificateDetails(
             isSecure = tab.isSecureSsl,
             summary = tab.sslSummary,
             issuedToCommonName = issuedToCn,
             issuedToOrganization = issuedToO,
             issuedToOrganizationalUnit = issuedToOu,
+            issuedToCountry = issuedToC,
+            subjectDn = subjectDnStr,
             issuedByCommonName = issuedByCn,
             issuedByOrganization = issuedByO,
             issuedByOrganizationalUnit = issuedByOu,
+            issuerDn = issuerDnStr,
             validFrom = validFrom,
             validUntil = validUntil,
+            validityStatus = validityStatus,
             sha256Fingerprint = sha256Hex.ifBlank { "Verified by Android System Trust Store" },
+            sha1Fingerprint = sha1Hex,
             serialNumber = serialHex.ifBlank { "System Verified X.509" },
-            protocol = "TLS 1.3 / HTTPS (X.509 Certificate)"
+            signatureAlgorithm = sigAlg,
+            publicKeyInfo = pubKeyInfo,
+            x509Version = versionStr,
+            keyUsage = keyUsageStr,
+            subjectAltNames = sanList,
+            protocol = "TLS 1.3 / HTTPS (X.509 Certificate)",
+            hasCertificateObject = true
         )
     }
 
-    fun getSiteCookies(url: String): List<Pair<String, String>> {
-        if (url.isBlank() || url.startsWith("nova://")) return emptyList()
+    fun getSiteCookies(url: String): List<Pair<String, String>> =
+        getSiteCookieDetails(url).map { it.name to it.value }
+
+    fun getSiteCookieDetails(url: String): List<SiteCookieEntry> {
+        if (url.isBlank() || url.startsWith("netra://") || url.startsWith("nova://")) return emptyList()
         return try {
-            val rawCookie = CookieManager.getInstance().getCookie(url) ?: return emptyList()
-            rawCookie.split(";")
-                .mapNotNull { part ->
+            val cookieManager = CookieManager.getInstance()
+            val parsedHost = try { Uri.parse(url).host.orEmpty() } catch (_: Exception) { "" }
+            val candidates = linkedSetOf(url)
+            if (parsedHost.isNotBlank()) {
+                candidates.add("https://$parsedHost/")
+                candidates.add("http://$parsedHost/")
+            }
+            val result = LinkedHashMap<String, SiteCookieEntry>()
+            val displayDomain = BrowserUrlUtils.extractDomain(url).ifBlank { parsedHost }
+            for (candidateUrl in candidates) {
+                val rawCookie = cookieManager.getCookie(candidateUrl) ?: continue
+                rawCookie.split(";").forEach { part ->
                     val trimmed = part.trim()
-                    if (trimmed.isEmpty()) return@mapNotNull null
+                    if (trimmed.isEmpty()) return@forEach
                     val eqIdx = trimmed.indexOf('=')
-                    if (eqIdx > 0) {
-                        val key = trimmed.substring(0, eqIdx).trim()
-                        val value = trimmed.substring(eqIdx + 1).trim()
-                        key to value
+                    val (key, value) = if (eqIdx > 0) {
+                        trimmed.substring(0, eqIdx).trim() to trimmed.substring(eqIdx + 1).trim()
                     } else {
                         trimmed to "(flag)"
                     }
+                    if (!result.containsKey(key)) {
+                        result[key] = SiteCookieEntry(
+                            name = key,
+                            value = value,
+                            domain = parsedHost.ifBlank { displayDomain }
+                        )
+                    }
                 }
+            }
+            result.values.toList()
         } catch (_: Exception) {
             emptyList()
         }
     }
 
-    fun clearSiteCookies(url: String) {
-        if (url.isBlank() || url.startsWith("nova://")) return
+    private fun expireCookieAcrossDomains(cookieManager: CookieManager, url: String, name: String) {
+        val parsedUri = try { Uri.parse(url) } catch (_: Exception) { null }
+        val host = parsedUri?.host.orEmpty()
+        val hostParts = host.split('.').filter { it.isNotBlank() }
+        val baseDomain = if (hostParts.size >= 2) hostParts.takeLast(2).joinToString(".") else host
+        val targetUrls = linkedSetOf(url)
+        if (host.isNotBlank()) {
+            targetUrls.add("https://$host/")
+            targetUrls.add("http://$host/")
+        }
+        val domainAttrs = linkedSetOf("", "; Domain=$host", "; Domain=.$host")
+        if (baseDomain.isNotBlank()) {
+            domainAttrs.add("; Domain=$baseDomain")
+            domainAttrs.add("; Domain=.$baseDomain")
+        }
+        for (target in targetUrls) {
+            for (dAttr in domainAttrs) {
+                cookieManager.setCookie(
+                    target,
+                    "$name=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/$dAttr"
+                )
+            }
+        }
+    }
+
+    fun clearSingleSiteCookie(url: String, cookieName: String) {
+        if (url.isBlank() || url.startsWith("netra://") || url.startsWith("nova://")) return
         try {
             val cookieManager = CookieManager.getInstance()
-            val cookies = getSiteCookies(url)
-            for ((name, _) in cookies) {
-                cookieManager.setCookie(url, "$name=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/")
-            }
+            expireCookieAcrossDomains(cookieManager, url, cookieName)
             cookieManager.flush()
         } catch (_: Exception) {
         }
     }
 
-    fun loadUrl(tab: BrowserTab, targetUrl: String) {
+    fun clearSiteCookies(url: String, tabId: String? = null) {
+        if (url.isBlank() || url.startsWith("netra://") || url.startsWith("nova://")) return
+        try {
+            val cookieManager = CookieManager.getInstance()
+            val cookies = getSiteCookieDetails(url)
+            for (entry in cookies) {
+                expireCookieAcrossDomains(cookieManager, url, entry.name)
+            }
+            cookieManager.flush()
+
+            val parsedHost = try { Uri.parse(url).host.orEmpty() } catch (_: Exception) { "" }
+            val storage = WebStorage.getInstance()
+            storage.deleteOrigin(url)
+            if (parsedHost.isNotBlank()) {
+                storage.deleteOrigin("https://$parsedHost")
+                storage.deleteOrigin("http://$parsedHost")
+                storage.deleteOrigin("https://$parsedHost/")
+                storage.deleteOrigin("http://$parsedHost/")
+            }
+
+            if (tabId != null) {
+                webViews[tabId]?.evaluateJavascript(
+                    "(function(){ try { localStorage.clear(); sessionStorage.clear(); } catch(e) {} })();",
+                    null
+                )
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    fun loadUrl(tab: BrowserTab, targetUrl: String, referer: String? = null) {
         tabStates[tab.id] = tab
         val webView = getOrCreateWebView(tab)
-        loadUrlInWebView(webView, tab, targetUrl)
+        loadUrlInWebView(webView, tab, targetUrl, referer)
     }
 
     /**
@@ -333,7 +584,12 @@ class NovaWebViewPool(
         loadUrlInWebView(wv, tab, convertedUrl)
     }
 
-    private fun loadUrlInWebView(webView: WebView, tab: BrowserTab, targetUrl: String) {
+    private fun loadUrlInWebView(
+        webView: WebView,
+        tab: BrowserTab,
+        targetUrl: String,
+        referer: String? = null
+    ) {
         tabStates[tab.id] = tab
         applyTabSettings(webView, tab)
         when (targetUrl) {
@@ -351,16 +607,25 @@ class NovaWebViewPool(
                 } else {
                     targetUrl
                 }
-                val headers = if (tab.isDesktopMode) {
+                val baseHeaders = if (tab.isDesktopMode) {
                     DESKTOP_CLIENT_HINT_HEADERS
                 } else {
                     MOBILE_CLIENT_HINT_HEADERS
+                }
+                val headers = if (!referer.isNullOrBlank() &&
+                    (referer.startsWith("http://", ignoreCase = true) ||
+                        referer.startsWith("https://", ignoreCase = true))
+                ) {
+                    LinkedHashMap(baseHeaders).apply { put("Referer", referer) }
+                } else {
+                    baseHeaders
                 }
                 webView.loadUrl(modeAdjustedUrl, headers)
             }
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     fun applyTabSettings(webView: WebView, tab: BrowserTab) {
         tabStates[tab.id] = tab
         val targetUa = if (tab.isDesktopMode) DESKTOP_USER_AGENT else defaultSystemMobileUserAgent
@@ -377,6 +642,132 @@ class NovaWebViewPool(
         if (webView.settings.textZoom != desiredTextZoom) {
             webView.settings.textZoom = desiredTextZoom
         }
+
+        val siteDomain = BrowserUrlUtils.extractDomain(tab.url)
+        val siteConfig = siteConfigProvider(siteDomain)
+        applySiteConfig(webView, tab, siteConfig)
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    fun applySiteConfig(webView: WebView, tab: BrowserTab, config: SiteConfigSettings) {
+        val s = webView.settings
+        if (s.javaScriptEnabled != config.javaScriptEnabled) {
+            s.javaScriptEnabled = config.javaScriptEnabled
+        }
+        if (s.loadsImagesAutomatically != config.imagesEnabled) {
+            s.loadsImagesAutomatically = config.imagesEnabled
+        }
+        if (s.blockNetworkImage != !config.imagesEnabled) {
+            s.blockNetworkImage = !config.imagesEnabled
+        }
+        val allowStorage = !tab.isIncognito && config.domStorageEnabled
+        if (s.domStorageEnabled != allowStorage) {
+            s.domStorageEnabled = allowStorage
+        }
+        if (s.databaseEnabled != allowStorage) {
+            s.databaseEnabled = allowStorage
+        }
+        if (s.mediaPlaybackRequiresUserGesture != !config.autoplayEnabled) {
+            s.mediaPlaybackRequiresUserGesture = !config.autoplayEnabled
+        }
+        if (s.javaScriptCanOpenWindowsAutomatically != config.popupsAllowed) {
+            s.javaScriptCanOpenWindowsAutomatically = config.popupsAllowed
+        }
+        if (s.supportMultipleWindows() != config.popupsAllowed) {
+            s.setSupportMultipleWindows(config.popupsAllowed)
+        }
+
+        val desiredMixed = if (config.insecureContentAllowed) {
+            WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        } else {
+            WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        }
+        if (s.mixedContentMode != desiredMixed) {
+            s.mixedContentMode = desiredMixed
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                if (s.safeBrowsingEnabled != config.safeBrowsingEnabled) {
+                    s.safeBrowsingEnabled = config.safeBrowsingEnabled
+                }
+            } catch (_: Exception) {
+            }
+        }
+        try {
+            s.setGeolocationEnabled(config.locationPermission != SitePermissionMode.BLOCK)
+        } catch (_: Exception) {
+        }
+
+        try {
+            val cm = CookieManager.getInstance()
+            if (tab.isIncognito) {
+                cm.setAcceptCookie(false)
+                cm.setAcceptThirdPartyCookies(webView, false)
+            } else {
+                when (config.cookiePolicy) {
+                    SiteCookiePolicy.ALLOW_ALL -> {
+                        cm.setAcceptCookie(true)
+                        cm.setAcceptThirdPartyCookies(webView, true)
+                    }
+                    SiteCookiePolicy.BLOCK_THIRD_PARTY -> {
+                        cm.setAcceptCookie(true)
+                        cm.setAcceptThirdPartyCookies(webView, false)
+                    }
+                    SiteCookiePolicy.BLOCK_ALL -> {
+                        cm.setAcceptCookie(false)
+                        cm.setAcceptThirdPartyCookies(webView, false)
+                    }
+                }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    fun applySiteConfigNow(tabId: String, config: SiteConfigSettings, reloadPage: Boolean = false) {
+        val wv = webViews[tabId] ?: return
+        val tab = tabStates[tabId] ?: return
+        applySiteConfig(wv, tab, config)
+        applySoundMuteJs(wv, config.soundEnabled)
+        if (reloadPage && !tab.isHomePage) {
+            wv.reload()
+        }
+    }
+
+    private fun applySoundMuteJs(webView: WebView, soundEnabled: Boolean) {
+        val muteFlag = !soundEnabled
+        val js = """
+            (function() {
+              try {
+                window.__netraMuteSite = $muteFlag;
+                var applyMute = function(el) {
+                  if (!el) return;
+                  if (window.__netraMuteSite) {
+                    el.muted = true;
+                    el.volume = 0;
+                  } else {
+                    el.muted = false;
+                    if (el.volume === 0) el.volume = 1;
+                  }
+                };
+                document.querySelectorAll('video,audio').forEach(applyMute);
+                if (!window.__netraSoundHookInstalled) {
+                  window.__netraSoundHookInstalled = true;
+                  var origPlay = HTMLMediaElement.prototype.play;
+                  HTMLMediaElement.prototype.play = function() {
+                    if (window.__netraMuteSite) { this.muted = true; this.volume = 0; }
+                    return origPlay.apply(this, arguments);
+                  };
+                  document.addEventListener('play', function(e) {
+                    if (window.__netraMuteSite && e.target) {
+                      e.target.muted = true;
+                      e.target.volume = 0;
+                    }
+                  }, true);
+                }
+              } catch (e) {}
+            })();
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
     }
 
     fun removeAndDestroyTab(tabId: String) {
@@ -427,15 +818,25 @@ class NovaWebViewPool(
             isHapticFeedbackEnabled = true
         }
 
+        val initialSiteDomain = BrowserUrlUtils.extractDomain(initialTab.url)
+        val initialSiteConfig = siteConfigProvider(initialSiteDomain)
+
         val settings = webView.settings
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = !initialTab.isIncognito
-        settings.databaseEnabled = !initialTab.isIncognito
-        settings.mediaPlaybackRequiresUserGesture = false
+        settings.javaScriptEnabled = initialSiteConfig.javaScriptEnabled
+        settings.domStorageEnabled = !initialTab.isIncognito && initialSiteConfig.domStorageEnabled
+        settings.databaseEnabled = !initialTab.isIncognito && initialSiteConfig.domStorageEnabled
+        settings.mediaPlaybackRequiresUserGesture = !initialSiteConfig.autoplayEnabled
         settings.allowFileAccess = true
         settings.allowContentAccess = true
-        settings.loadsImagesAutomatically = true
-        settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        settings.loadsImagesAutomatically = initialSiteConfig.imagesEnabled
+        settings.blockNetworkImage = !initialSiteConfig.imagesEnabled
+        settings.javaScriptCanOpenWindowsAutomatically = initialSiteConfig.popupsAllowed
+        settings.setSupportMultipleWindows(initialSiteConfig.popupsAllowed)
+        settings.mixedContentMode = if (initialSiteConfig.insecureContentAllowed) {
+            WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        } else {
+            WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        }
         settings.builtInZoomControls = true
         settings.displayZoomControls = false
         settings.setSupportZoom(true)
@@ -445,18 +846,37 @@ class NovaWebViewPool(
         settings.cacheMode = if (initialTab.isIncognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
         settings.userAgentString = if (initialTab.isDesktopMode) DESKTOP_USER_AGENT else defaultSystemMobileUserAgent
         settings.textZoom = initialTab.textZoom
-        try {
-            settings.safeBrowsingEnabled = true
-        } catch (_: Exception) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                settings.safeBrowsingEnabled = initialSiteConfig.safeBrowsingEnabled
+            } catch (_: Exception) {
+            }
         }
         try {
-            settings.setGeolocationEnabled(true)
+            settings.setGeolocationEnabled(initialSiteConfig.locationPermission != SitePermissionMode.BLOCK)
         } catch (_: Exception) {
         }
 
         val cookieManager = CookieManager.getInstance()
-        cookieManager.setAcceptCookie(!initialTab.isIncognito)
-        cookieManager.setAcceptThirdPartyCookies(webView, !initialTab.isIncognito)
+        if (initialTab.isIncognito) {
+            cookieManager.setAcceptCookie(false)
+            cookieManager.setAcceptThirdPartyCookies(webView, false)
+        } else {
+            when (initialSiteConfig.cookiePolicy) {
+                SiteCookiePolicy.ALLOW_ALL -> {
+                    cookieManager.setAcceptCookie(true)
+                    cookieManager.setAcceptThirdPartyCookies(webView, true)
+                }
+                SiteCookiePolicy.BLOCK_THIRD_PARTY -> {
+                    cookieManager.setAcceptCookie(true)
+                    cookieManager.setAcceptThirdPartyCookies(webView, false)
+                }
+                SiteCookiePolicy.BLOCK_ALL -> {
+                    cookieManager.setAcceptCookie(false)
+                    cookieManager.setAcceptThirdPartyCookies(webView, false)
+                }
+            }
+        }
 
         // Attach JavaScript Bridge for Long-Press Video Detection + Size Prober + Stream Downloader + DOM Ad Shield
         webView.addJavascriptInterface(
@@ -496,7 +916,9 @@ class NovaWebViewPool(
                     }
                 },
                 onDomAdBlockedJson = { jsonStr ->
-                    if (!isAdBlockEnabledProvider()) return@NovaJsBridge
+                    val currentUrl = tabStates[tabId]?.url.orEmpty()
+                    val perSiteAdBlock = siteConfigProvider(BrowserUrlUtils.extractDomain(currentUrl)).isAdBlockEnabled
+                    if (!isAdBlockEnabledProvider() || !perSiteAdBlock) return@NovaJsBridge
                     mainHandler.post {
                         try {
                             val obj = JSONObject(jsonStr)
@@ -539,6 +961,17 @@ class NovaWebViewPool(
             ),
             "NovaDevToolsBridge"
         )
+
+        var lastTouchCssX = 0f
+        var lastTouchCssY = 0f
+        webView.setOnTouchListener { v, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN || event.actionMasked == MotionEvent.ACTION_MOVE) {
+                val density = v.resources.displayMetrics.density.coerceAtLeast(1f)
+                lastTouchCssX = event.x / density
+                lastTouchCssY = event.y / density
+            }
+            false
+        }
 
         // Native Long-Press Listener using WebView.HitTestResult + JS Inspector fallback
         webView.setOnLongClickListener { view ->
@@ -583,7 +1016,7 @@ class NovaWebViewPool(
             }
 
             wv.evaluateJavascript(
-                "(function(){ return window.__novaInspectVideoAtLastTouch ? window.__novaInspectVideoAtLastTouch() : ''; })();",
+                "(function(){ return window.__novaInspectVideoAtLastTouch ? window.__novaInspectVideoAtLastTouch(${lastTouchCssX}, ${lastTouchCssY}) : ''; })();",
                 null
             )
 
@@ -610,7 +1043,8 @@ class NovaWebViewPool(
                 val reqUrl = request?.url?.toString() ?: return null
                 val liveTab = tabStates[tabId] ?: initialTab
 
-                if (isAdBlockEnabledProvider()) {
+                val perSiteAdBlock = siteConfigProvider(BrowserUrlUtils.extractDomain(liveTab.url)).isAdBlockEnabled
+                if (isAdBlockEnabledProvider() && perSiteAdBlock) {
                     val matchedAd = AdBlocker.matchAdRequest(
                         tabId = tabId,
                         url = reqUrl,
@@ -639,7 +1073,10 @@ class NovaWebViewPool(
                     if (liveTab.isDesktopMode && request.isForMainFrame) {
                         val desktopUrl = BrowserUrlUtils.toDesktopUrl(target)
                         if (desktopUrl != target && view != null) {
-                            loadUrlInWebView(view, liveTab, desktopUrl)
+                            val reqReferer = request.requestHeaders?.entries
+                                ?.firstOrNull { it.key.equals("Referer", ignoreCase = true) }
+                                ?.value ?: view.url
+                            loadUrlInWebView(view, liveTab, desktopUrl, reqReferer)
                             return true
                         }
                     }
@@ -654,9 +1091,16 @@ class NovaWebViewPool(
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 val mappedUrl = mapDisplayUrl(url ?: "")
-                val isSsl = mappedUrl.startsWith("https://") || mappedUrl.startsWith("nova://")
+                val liveTab = tabStates[tabId] ?: initialTab
+                val updatedTab = liveTab.copy(url = mappedUrl)
+                tabStates[tabId] = updatedTab
+                if (view != null && mappedUrl.isNotBlank()) {
+                    applySiteConfig(view, updatedTab, siteConfigProvider(BrowserUrlUtils.extractDomain(mappedUrl)))
+                }
+                val isInternalPage = mappedUrl.startsWith("netra://") || mappedUrl.startsWith("nova://")
+                val isSsl = mappedUrl.startsWith("https://") || isInternalPage
                 val sslDesc = when {
-                    mappedUrl.startsWith("nova://") -> "Nova Internal Verified Page"
+                    isInternalPage -> "Netra Internal Verified Page"
                     isSsl -> "Connection is encrypted (HTTPS / TLS)"
                     else -> "Not Secure (Unencrypted HTTP connection)"
                 }
@@ -683,11 +1127,12 @@ class NovaWebViewPool(
                 val liveTab = tabStates[tabId] ?: initialTab
                 val mappedUrl = mapDisplayUrl(url ?: "")
                 val cert = view?.certificate
+                val isInternalPage = mappedUrl.startsWith("netra://") || mappedUrl.startsWith("nova://")
                 val isSsl = (mappedUrl.startsWith("https://") && cert != null) ||
                     mappedUrl.startsWith("https://") ||
-                    mappedUrl.startsWith("nova://")
+                    isInternalPage
                 val sslDesc = when {
-                    mappedUrl.startsWith("nova://") -> "Nova Internal Verified Page"
+                    isInternalPage -> "Netra Internal Verified Page"
                     cert != null -> "Verified by ${cert.issuedBy?.oName?.ifBlank { cert.issuedBy?.cName } ?: "Trusted CA"}"
                     isSsl -> "Connection is encrypted (HTTPS)"
                     else -> "Not Secure (HTTP)"
@@ -709,7 +1154,7 @@ class NovaWebViewPool(
                     onPageFinishedForDevTools(tabId)
                 }
 
-                if (!liveTab.isIncognito && !mappedUrl.startsWith("nova://") && mappedUrl.isNotBlank()) {
+                if (!liveTab.isIncognito && !isInternalPage && mappedUrl.isNotBlank()) {
                     onHistoryVisited(tabId, title, mappedUrl)
                 }
             }
@@ -809,6 +1254,169 @@ class NovaWebViewPool(
                 return super.onConsoleMessage(consoleMessage)
             }
 
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: Message?
+            ): Boolean {
+                val liveTab = tabStates[tabId] ?: initialTab
+                val parentUrl = mapDisplayUrl(view?.url ?: liveTab.url)
+                val domain = BrowserUrlUtils.extractDomain(parentUrl)
+                val config = siteConfigProvider(domain)
+                if (!config.popupsAllowed && !isUserGesture) {
+                    mainHandler.post { onPopupBlocked(domain) }
+                    return false
+                }
+                val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+                val targetWebView = view ?: return false
+
+                var forwarded = false
+                fun handlePopupNavigation(
+                    tempView: WebView?,
+                    destUrl: String?,
+                    requestHeaders: Map<String, String>?
+                ) {
+                    if (forwarded) return
+                    if (destUrl.isNullOrBlank() || destUrl.equals("about:blank", ignoreCase = true)) {
+                        return
+                    }
+                    forwarded = true
+                    if (destUrl.startsWith("http://", ignoreCase = true) ||
+                        destUrl.startsWith("https://", ignoreCase = true)
+                    ) {
+                        if (isAdBlockEnabledProvider() && config.isAdBlockEnabled) {
+                            val matchedAd = AdBlocker.matchAdRequest(
+                                tabId = tabId,
+                                url = destUrl,
+                                pageUrl = parentUrl,
+                                mode = adBlockModeProvider()
+                            )
+                            if (matchedAd != null) {
+                                mainHandler.post { onAdBlocked(matchedAd) }
+                                mainHandler.post {
+                                    tempView?.stopLoading()
+                                    tempView?.destroy()
+                                }
+                                return
+                            }
+                        }
+                        val headers = LinkedHashMap<String, String>()
+                        headers.putAll(
+                            if (liveTab.isDesktopMode) DESKTOP_CLIENT_HINT_HEADERS else MOBILE_CLIENT_HINT_HEADERS
+                        )
+                        requestHeaders?.forEach { (k, v) ->
+                            if (k.isNotBlank() && v.isNotBlank()) {
+                                headers[k] = v
+                            }
+                        }
+                        val hasReferer = headers.keys.any { it.equals("Referer", ignoreCase = true) }
+                        if (!hasReferer &&
+                            (parentUrl.startsWith("http://", ignoreCase = true) ||
+                                parentUrl.startsWith("https://", ignoreCase = true))
+                        ) {
+                            headers["Referer"] = parentUrl
+                        }
+                        val finalUrl = if (liveTab.isDesktopMode) {
+                            BrowserUrlUtils.toDesktopUrl(destUrl)
+                        } else {
+                            destUrl
+                        }
+                        targetWebView.loadUrl(finalUrl, headers)
+                    }
+                    mainHandler.post {
+                        tempView?.stopLoading()
+                        tempView?.destroy()
+                    }
+                }
+
+                val tempWebView = WebView(context).apply {
+                    settings.javaScriptEnabled = config.javaScriptEnabled
+                    settings.domStorageEnabled = !liveTab.isIncognito && config.domStorageEnabled
+                    settings.userAgentString = targetWebView.settings.userAgentString
+                    settings.mixedContentMode = targetWebView.settings.mixedContentMode
+                    try {
+                        val cm = CookieManager.getInstance()
+                        cm.setAcceptThirdPartyCookies(
+                            this,
+                            !liveTab.isIncognito && config.cookiePolicy == SiteCookiePolicy.ALLOW_ALL
+                        )
+                    } catch (_: Exception) {
+                    }
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(
+                            v: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            handlePopupNavigation(
+                                tempView = v,
+                                destUrl = request?.url?.toString(),
+                                requestHeaders = request?.requestHeaders
+                            )
+                            return true
+                        }
+
+                        override fun onPageStarted(v: WebView?, url: String?, favicon: Bitmap?) {
+                            handlePopupNavigation(
+                                tempView = v,
+                                destUrl = url,
+                                requestHeaders = null
+                            )
+                        }
+                    }
+                }
+                transport.webView = tempWebView
+                resultMsg.sendToTarget()
+                return true
+            }
+
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                val cb = callback ?: return
+                val safeOrigin = origin.orEmpty()
+                val domain = BrowserUrlUtils.extractDomain(safeOrigin.ifBlank { webView.url.orEmpty() })
+                val config = siteConfigProvider(domain)
+                when (config.locationPermission) {
+                    SitePermissionMode.BLOCK -> cb.invoke(safeOrigin, false, false)
+                    SitePermissionMode.ALLOW,
+                    SitePermissionMode.ASK -> mainHandler.post {
+                        onGeolocationPermissionRequested(domain, safeOrigin, cb)
+                    }
+                }
+            }
+
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                val req = request ?: return
+                val originUrl = req.origin?.toString().orEmpty()
+                val domain = BrowserUrlUtils.extractDomain(originUrl.ifBlank { webView.url.orEmpty() })
+                val resources = req.resources.orEmpty().toList()
+                val needsCameraOrMic = resources.any {
+                    it == PermissionRequest.RESOURCE_VIDEO_CAPTURE ||
+                        it == PermissionRequest.RESOURCE_AUDIO_CAPTURE
+                }
+                if (!needsCameraOrMic && resources.contains(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
+                    val config = siteConfigProvider(domain)
+                    if (config.protectedContentAllowed) {
+                        req.grant(arrayOf(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID))
+                    } else {
+                        req.deny()
+                    }
+                    return
+                }
+                mainHandler.post {
+                    onWebPermissionRequested(domain, req)
+                }
+            }
+
+            override fun onPermissionRequestCanceled(request: PermissionRequest?) {
+                if (request != null) {
+                    mainHandler.post { onWebPermissionCanceled(request) }
+                }
+                super.onPermissionRequestCanceled(request)
+            }
+
             override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
                 if (view != null && callback != null) {
                     onEnterFullscreenVideo(view, callback)
@@ -845,13 +1453,19 @@ class NovaWebViewPool(
             webView.evaluateJavascript(MOBILE_MODE_RESTORE_JS, null)
         }
 
+        val currentSiteDomain = BrowserUrlUtils.extractDomain(liveTab?.url ?: webView.url.orEmpty())
+        val currentSiteConfig = siteConfigProvider(currentSiteDomain)
+
         // 2. Cosmetic DOM Ad Shield & Reporter (Minimal / Pro / Max)
-        if (isAdBlockEnabledProvider()) {
+        if (isAdBlockEnabledProvider() && currentSiteConfig.isAdBlockEnabled) {
             webView.evaluateJavascript(
                 AdBlocker.buildCosmeticAdShieldJs(adBlockModeProvider()),
                 null
             )
         }
+
+        // 3. Per-site Sound Mute Enforcement
+        applySoundMuteJs(webView, currentSiteConfig.soundEnabled)
 
         // 4. Long-Press Video Detector & DevTools Inspector
         if (videoDetectorJs.isNotBlank()) {

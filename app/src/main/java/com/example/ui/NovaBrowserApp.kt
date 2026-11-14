@@ -14,12 +14,20 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,24 +35,39 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
+import com.example.browser.BrowserUrlUtils
 import com.example.data.ActiveSheet
+import com.example.data.WebPermissionKind
 import com.example.ui.components.AddShortcutDialog
+import com.example.ui.components.AlertDialog
 import com.example.ui.components.BackgroundMediaMiniBar
 import com.example.ui.components.BlockedAdsSheet
 import com.example.ui.components.BookmarksSheet
 import com.example.ui.components.BottomBrowserBar
 import com.example.ui.components.BrowserMenuSheet
+import com.example.ui.components.Button
 import com.example.ui.components.ClearBrowsingDataDialog
 import com.example.ui.components.DevToolsInspectorPanel
 import com.example.ui.components.DownloadsManagerSheet
@@ -53,12 +76,16 @@ import com.example.ui.components.HistorySheet
 import com.example.ui.components.NovaHomeContent
 import com.example.ui.components.SslSecurityInfoDialog
 import com.example.ui.components.TabsSwitcherSheet
+import com.example.ui.components.Text
+import com.example.ui.components.TextButton
 import com.example.ui.components.TopWebsiteHeaderBar
 import com.example.ui.components.VideoLongPressBottomSheet
 import com.example.ui.i18n.ProvideNovaStrings
+import com.example.ui.i18n.novaStrings
 import com.example.ui.theme.MaterialTheme
 import com.example.ui.theme.NovaBrowserTheme
 import com.example.viewmodel.BrowserViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun NovaBrowserApp(
@@ -67,6 +94,7 @@ fun NovaBrowserApp(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
+    val siteConfigs by viewModel.siteConfigs.collectAsStateWithLifecycle()
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val shortcuts by viewModel.shortcuts.collectAsStateWithLifecycle()
@@ -79,6 +107,21 @@ fun NovaBrowserApp(
     var cookieRefreshTick by remember { mutableIntStateOf(0) }
     var previousIncognito by remember { mutableStateOf(activeTab.isIncognito) }
     var incognitoWaveProgress by remember { mutableFloatStateOf(0f) }
+    var showSplashOverlay by rememberSaveable { mutableStateOf(true) }
+    var splashAlpha by remember { mutableFloatStateOf(1f) }
+
+    LaunchedEffect(Unit) {
+        if (showSplashOverlay) {
+            delay(480L)
+            val fadeStart = withFrameMillis { it }
+            var elapsed = 0L
+            while (elapsed < 220L && showSplashOverlay) {
+                elapsed = withFrameMillis { it } - fadeStart
+                splashAlpha = (1f - (elapsed / 220f)).coerceIn(0f, 1f)
+            }
+            showSplashOverlay = false
+        }
+    }
 
     LaunchedEffect(activeTab.isIncognito) {
         if (activeTab.isIncognito != previousIncognito) {
@@ -110,6 +153,48 @@ fun NovaBrowserApp(
         contract = ActivityResultContracts.RequestPermission()
     ) { _ ->
         viewModel.downloadSelectedVideo()
+    }
+
+    val webRuntimePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val anyGranted = results.values.any { it }
+        viewModel.resolvePendingWebPermission(userAllowed = true, osGranted = anyGranted)
+    }
+
+    val requestOsPermissionsForWebKind: (WebPermissionKind) -> Unit = { kind ->
+        val needed = when (kind) {
+            WebPermissionKind.LOCATION -> arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+            WebPermissionKind.CAMERA -> arrayOf(Manifest.permission.CAMERA)
+            WebPermissionKind.MICROPHONE -> arrayOf(Manifest.permission.RECORD_AUDIO)
+            WebPermissionKind.CAMERA_AND_MICROPHONE -> arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            )
+        }
+        val allGranted = when (kind) {
+            WebPermissionKind.LOCATION -> needed.any {
+                ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+            }
+            else -> needed.all {
+                ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        if (allGranted) {
+            viewModel.resolvePendingWebPermission(userAllowed = true, osGranted = true)
+        } else {
+            webRuntimePermissionLauncher.launch(needed)
+        }
+    }
+
+    LaunchedEffect(uiState.pendingWebPermission?.id) {
+        val pending = uiState.pendingWebPermission
+        if (pending != null && pending.isPreAllowed) {
+            requestOsPermissionsForWebKind(pending.kind)
+        }
     }
 
     val triggerVideoDownloadWithPermissionCheck = {
@@ -367,7 +452,11 @@ fun NovaBrowserApp(
                                         viewModel.dismissSheet()
                                     },
                                     onOpenInNewTabClick = { link ->
-                                        viewModel.openNewTab(url = link, isIncognito = activeTab.isIncognito)
+                                        viewModel.openNewTab(
+                                            url = link,
+                                            isIncognito = activeTab.isIncognito,
+                                            referer = activeTab.url
+                                        )
                                     },
                                     onPlayInBackgroundClick = {
                                         viewModel.playVideoInBackground(videoInfo)
@@ -526,35 +615,142 @@ fun NovaBrowserApp(
                         }
 
                         ActiveSheet.SSL_INFO_DIALOG -> {
-                            val certDetails = remember(activeTab.id, activeTab.url, activeTab.isLoading) {
+                            val certDetails = remember(activeTab.id, activeTab.url, activeTab.isLoading, activeTab.sslSummary) {
                                 viewModel.webViewPool.getSslCertificateDetails(activeTab)
                             }
                             val siteCookies = remember(activeTab.id, activeTab.url, activeTab.isLoading, cookieRefreshTick) {
-                                viewModel.webViewPool.getSiteCookies(activeTab.url)
+                                viewModel.webViewPool.getSiteCookieDetails(activeTab.url)
+                            }
+                            val currentSiteDomain = remember(activeTab.url) {
+                                BrowserUrlUtils.extractDomain(activeTab.url)
+                            }
+                            val currentSiteConfig = remember(siteConfigs, currentSiteDomain) {
+                                viewModel.getSiteConfigForUrl(activeTab.url)
                             }
                             SslSecurityInfoDialog(
                                 tab = activeTab,
                                 certificateDetails = certDetails,
                                 siteCookies = siteCookies,
+                                siteConfig = currentSiteConfig,
                                 isAdBlockEnabled = preferences.isAdBlockEnabled,
                                 isDarkMode = preferences.isDarkMode,
                                 onToggleAdBlock = viewModel::toggleAdBlock,
                                 onToggleDesktopMode = viewModel::toggleDesktopMode,
                                 onToggleDarkMode = viewModel::toggleDarkMode,
+                                onUpdateSiteConfig = { reloadPage, transform ->
+                                    viewModel.updateSiteConfig(activeTab.url, reloadPage, transform)
+                                },
+                                onResetSiteConfigAndData = {
+                                    viewModel.resetSiteConfigAndClearData(activeTab.url)
+                                    cookieRefreshTick++
+                                },
+                                onClearSingleCookie = { cookieName ->
+                                    viewModel.clearSingleSiteCookie(activeTab.url, cookieName)
+                                    cookieRefreshTick++
+                                    viewModel.emitToast("Deleted cookie $cookieName")
+                                },
                                 onCopyText = { label, text ->
                                     copyTextToClipboard(context, label, text)
                                     viewModel.emitToast("$label copied to clipboard")
                                 },
                                 onClearSiteCookies = {
-                                    viewModel.webViewPool.clearSiteCookies(activeTab.url)
+                                    viewModel.clearAllSiteCookiesAndStorage(activeTab.url)
                                     cookieRefreshTick++
-                                    viewModel.emitToast("Site cookies cleared")
+                                    viewModel.emitToast("Site cookies & storage cleared")
                                 },
                                 onDismiss = viewModel::dismissSheet
                             )
                         }
 
                         ActiveSheet.NONE -> Unit
+                    }
+
+                    val pendingPerm = uiState.pendingWebPermission
+                    if (pendingPerm != null && !pendingPerm.isPreAllowed) {
+                        val resourceLabel = when (pendingPerm.kind) {
+                            WebPermissionKind.LOCATION -> if (novaStrings.isHindi) "आपकी लोकेशन" else "your location"
+                            WebPermissionKind.CAMERA -> if (novaStrings.isHindi) "आपका कैमरा" else "your camera"
+                            WebPermissionKind.MICROPHONE -> if (novaStrings.isHindi) "आपका माइक्रोफ़ोन" else "your microphone"
+                            WebPermissionKind.CAMERA_AND_MICROPHONE -> if (novaStrings.isHindi) "आपका कैमरा और माइक्रोफ़ोन" else "your camera and microphone"
+                        }
+                        val promptTitle = if (novaStrings.isHindi) {
+                            "${pendingPerm.domain} $resourceLabel का उपयोग करना चाहता है"
+                        } else {
+                            "${pendingPerm.domain} wants to use $resourceLabel"
+                        }
+                        AlertDialog(
+                            onDismissRequest = {
+                                viewModel.resolvePendingWebPermission(userAllowed = false, osGranted = false)
+                            },
+                            title = { Text(promptTitle, fontWeight = FontWeight.Bold) },
+                            text = {
+                                Text(
+                                    text = if (novaStrings.isHindi) {
+                                        "आप साइट सेटिंग में जाकर कभी भी यह अनुमति बदल सकते हैं।"
+                                    } else {
+                                        "You can change this anytime in Site Config."
+                                    },
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = { requestOsPermissionsForWebKind(pendingPerm.kind) },
+                                    modifier = Modifier.testTag("web_perm_allow_button")
+                                ) { Text(novaStrings.sitePermAllow) }
+                            },
+                            dismissButton = {
+                                TextButton(
+                                    onClick = {
+                                        viewModel.resolvePendingWebPermission(userAllowed = false, osGranted = false)
+                                    },
+                                    modifier = Modifier.testTag("web_perm_block_button")
+                                ) { Text(novaStrings.sitePermBlock) }
+                            }
+                        )
+                    }
+
+                    if (showSplashOverlay) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .alpha(splashAlpha)
+                                .background(Color.Black)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { showSplashOverlay = false }
+                                .testTag("netra_splash_screen")
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_netra_logo),
+                                    contentDescription = "Netra Logo",
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier
+                                        .size(112.dp)
+                                        .clip(RoundedCornerShape(28.dp))
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text(
+                                    text = novaStrings.appTitleStandard,
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontSize = 26.sp,
+                                        lineHeight = 36.sp,
+                                        letterSpacing = if (novaStrings.isHindi) 0.sp else 0.6.sp
+                                    ),
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -575,7 +771,7 @@ private fun shareUrl(context: Context, title: String, url: String) {
             putExtra(Intent.EXTRA_TEXT, url)
         }
         context.startActivity(
-            Intent.createChooser(sendIntent, "Share via Nova Browser").apply {
+            Intent.createChooser(sendIntent, "Share via Netra").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
         )

@@ -475,7 +475,7 @@ fun VideoLongPressBottomSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Saves directly to: Download/NovaBrowser/Videos/",
+                text = "Saves directly to: Download/Netra/Videos/",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

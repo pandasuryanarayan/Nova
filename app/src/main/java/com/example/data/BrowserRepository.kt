@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONObject
 
 data class BrowserPreferences(
     val isDarkMode: Boolean = false,
@@ -30,7 +31,11 @@ class BrowserRepository(
         const val DEFAULT_TEXT_ZOOM = "default_text_zoom"
         const val TOTAL_ADS_BLOCKED = "total_ads_blocked"
         const val DEFAULT_SHORTCUTS_SEEDED = "default_shortcuts_seeded"
+        const val SITE_CONFIGS_JSON = "site_configs_json"
     }
+
+    private fun normalizeDomainKey(domain: String): String =
+        domain.trim().lowercase().removePrefix("www.")
 
     private fun readPreferences(): BrowserPreferences = BrowserPreferences(
         isDarkMode = prefs.getBoolean(PrefKeys.DARK_MODE, false),
@@ -41,8 +46,98 @@ class BrowserRepository(
         totalAdsBlocked = prefs.getLong(PrefKeys.TOTAL_ADS_BLOCKED, 0L)
     )
 
+    private fun readSiteConfigs(): Map<String, SiteConfigSettings> {
+        val raw = prefs.getString(PrefKeys.SITE_CONFIGS_JSON, null) ?: return emptyMap()
+        return try {
+            val root = JSONObject(raw)
+            val map = LinkedHashMap<String, SiteConfigSettings>()
+            val keys = root.keys()
+            while (keys.hasNext()) {
+                val domainKey = normalizeDomainKey(keys.next())
+                val o = root.optJSONObject(domainKey) ?: root.optJSONObject("www.$domainKey") ?: continue
+                if (domainKey.isBlank()) continue
+                map[domainKey] = SiteConfigSettings(
+                    domain = domainKey,
+                    isAdBlockEnabled = o.optBoolean("adBlock", true),
+                    javaScriptEnabled = o.optBoolean("js", true),
+                    cookiePolicy = SiteCookiePolicy.fromName(o.optString("cookies", null)),
+                    popupsAllowed = o.optBoolean("popups", false),
+                    imagesEnabled = o.optBoolean("images", true),
+                    soundEnabled = o.optBoolean("sound", true),
+                    autoplayEnabled = o.optBoolean("autoplay", true),
+                    domStorageEnabled = o.optBoolean("domStorage", true),
+                    locationPermission = SitePermissionMode.fromName(o.optString("location", null)),
+                    cameraPermission = SitePermissionMode.fromName(o.optString("camera", null)),
+                    microphonePermission = SitePermissionMode.fromName(o.optString("mic", null)),
+                    protectedContentAllowed = o.optBoolean("drm", true),
+                    insecureContentAllowed = o.optBoolean("mixed", true),
+                    safeBrowsingEnabled = o.optBoolean("safeBrowsing", true)
+                )
+            }
+            map
+        } catch (_: Exception) {
+            emptyMap()
+        }
+    }
+
+    private fun writeSiteConfigs(map: Map<String, SiteConfigSettings>) {
+        val root = JSONObject()
+        for ((key, cfg) in map) {
+            if (cfg.isDefault) continue
+            val o = JSONObject().apply {
+                put("adBlock", cfg.isAdBlockEnabled)
+                put("js", cfg.javaScriptEnabled)
+                put("cookies", cfg.cookiePolicy.name)
+                put("popups", cfg.popupsAllowed)
+                put("images", cfg.imagesEnabled)
+                put("sound", cfg.soundEnabled)
+                put("autoplay", cfg.autoplayEnabled)
+                put("domStorage", cfg.domStorageEnabled)
+                put("location", cfg.locationPermission.name)
+                put("camera", cfg.cameraPermission.name)
+                put("mic", cfg.microphonePermission.name)
+                put("drm", cfg.protectedContentAllowed)
+                put("mixed", cfg.insecureContentAllowed)
+                put("safeBrowsing", cfg.safeBrowsingEnabled)
+            }
+            root.put(normalizeDomainKey(key), o)
+        }
+        prefs.edit().putString(PrefKeys.SITE_CONFIGS_JSON, root.toString()).apply()
+    }
+
     private val _preferencesFlow = MutableStateFlow(readPreferences())
     val preferencesFlow: Flow<BrowserPreferences> = _preferencesFlow.asStateFlow()
+
+    private val _siteConfigsFlow = MutableStateFlow(readSiteConfigs())
+    val siteConfigsFlow: Flow<Map<String, SiteConfigSettings>> = _siteConfigsFlow.asStateFlow()
+
+    fun getSiteConfig(domain: String): SiteConfigSettings {
+        val key = normalizeDomainKey(domain)
+        return _siteConfigsFlow.value[key] ?: SiteConfigSettings(domain = key)
+    }
+
+    fun saveSiteConfig(config: SiteConfigSettings) {
+        val key = normalizeDomainKey(config.domain)
+        if (key.isBlank()) return
+        val normalized = config.copy(domain = key)
+        val next = _siteConfigsFlow.value.toMutableMap()
+        if (normalized.isDefault) {
+            next.remove(key)
+        } else {
+            next[key] = normalized
+        }
+        writeSiteConfigs(next)
+        _siteConfigsFlow.value = next
+    }
+
+    fun resetSiteConfig(domain: String) {
+        val key = normalizeDomainKey(domain)
+        if (key.isBlank()) return
+        val next = _siteConfigsFlow.value.toMutableMap()
+        next.remove(key)
+        writeSiteConfigs(next)
+        _siteConfigsFlow.value = next
+    }
 
     val bookmarksFlow: Flow<List<BookmarkEntity>> = dao.getAllBookmarks()
     val historyFlow: Flow<List<HistoryEntity>> = dao.getAllHistory()
@@ -106,7 +201,7 @@ class BrowserRepository(
     }
 
     suspend fun recordHistory(title: String, url: String, domain: String) {
-        if (url.startsWith("nova://") || url.isBlank() || url == "about:blank") return
+        if (url.startsWith("netra://") || url.startsWith("nova://") || url.isBlank() || url == "about:blank") return
         dao.insertHistory(HistoryEntity(title = title.ifBlank { domain }, url = url, domain = domain))
     }
 

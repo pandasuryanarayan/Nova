@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Nova Browser"
+rootProject.name = "Netra"
 
 include(":app")

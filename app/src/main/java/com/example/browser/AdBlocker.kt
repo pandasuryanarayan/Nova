@@ -423,47 +423,65 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
 
     fun getRulesCatalogForMode(mode: AdBlockMode): List<AdFilterRuleItem> {
         val list = mutableListOf<AdFilterRuleItem>()
-        // Minimal
-        MINIMAL_HOST_RULES.values.forEach { (cat, rule) ->
-            list.add(AdFilterRuleItem(rule = rule, category = "Host • $cat", tier = AdBlockMode.MINIMAL))
+        val seenHosts = HashSet<String>()
+        val seenPaths = HashSet<String>()
+        val seenSelectors = HashSet<String>()
+
+        // Minimal (always active base tier)
+        MINIMAL_HOST_RULES.forEach { (host, meta) ->
+            if (seenHosts.add(host)) {
+                list.add(AdFilterRuleItem(rule = meta.second, category = "Host • ${meta.first}", tier = AdBlockMode.MINIMAL))
+            }
         }
         MINIMAL_PATH_PATTERNS.forEach { (_, meta) ->
-            list.add(AdFilterRuleItem(rule = meta.second, category = "Path • ${meta.first}", tier = AdBlockMode.MINIMAL))
+            if (seenPaths.add(meta.second)) {
+                list.add(AdFilterRuleItem(rule = meta.second, category = "Path • ${meta.first}", tier = AdBlockMode.MINIMAL))
+            }
         }
         MINIMAL_DOM_SELECTORS.forEach { sel ->
-            list.add(AdFilterRuleItem(rule = "##$sel", category = "DOM • Cosmetic Selector", tier = AdBlockMode.MINIMAL))
+            if (seenSelectors.add(sel)) {
+                list.add(AdFilterRuleItem(rule = "##$sel", category = "DOM • Cosmetic Selector", tier = AdBlockMode.MINIMAL))
+            }
         }
 
         if (mode == AdBlockMode.PRO || mode == AdBlockMode.MAX) {
             PRO_HOST_RULES.forEach { (host, meta) ->
-                if (!MINIMAL_HOST_RULES.containsKey(host)) {
+                if (seenHosts.add(host)) {
                     list.add(AdFilterRuleItem(rule = meta.second, category = "Pro Host • ${meta.first}", tier = AdBlockMode.PRO))
                 }
             }
             PRO_PATH_PATTERNS.forEach { (_, meta) ->
-                if (MINIMAL_PATH_PATTERNS.none { it.second.second == meta.second }) {
+                if (seenPaths.add(meta.second)) {
                     list.add(AdFilterRuleItem(rule = meta.second, category = "Pro Path • ${meta.first}", tier = AdBlockMode.PRO))
                 }
             }
             PRO_REGEX_PATTERNS.forEach { (_, meta) ->
-                list.add(AdFilterRuleItem(rule = meta.second, category = "Pro Pattern • ${meta.first}", tier = AdBlockMode.PRO))
+                if (seenPaths.add(meta.second)) {
+                    list.add(AdFilterRuleItem(rule = meta.second, category = "Pro Pattern • ${meta.first}", tier = AdBlockMode.PRO))
+                }
             }
             PRO_DOM_SELECTORS.forEach { sel ->
-                if (!MINIMAL_DOM_SELECTORS.contains(sel)) {
+                if (seenSelectors.add(sel)) {
                     list.add(AdFilterRuleItem(rule = "##$sel", category = "Pro DOM • Cosmetic Slot", tier = AdBlockMode.PRO))
                 }
             }
         }
 
         if (mode == AdBlockMode.MAX) {
-            MAX_YOUTUBE_HOST_RULES.forEach { (_, meta) ->
-                list.add(AdFilterRuleItem(rule = meta.second, category = "Max YouTube Host • ${meta.first}", tier = AdBlockMode.MAX))
+            MAX_YOUTUBE_HOST_RULES.forEach { (host, meta) ->
+                if (seenHosts.add(host)) {
+                    list.add(AdFilterRuleItem(rule = meta.second, category = "Max YouTube Host • ${meta.first}", tier = AdBlockMode.MAX))
+                }
             }
             MAX_YOUTUBE_PATH_PATTERNS.forEach { (_, meta) ->
-                list.add(AdFilterRuleItem(rule = meta.second, category = "Max YouTube Path • ${meta.first}", tier = AdBlockMode.MAX))
+                if (seenPaths.add(meta.second)) {
+                    list.add(AdFilterRuleItem(rule = meta.second, category = "Max YouTube Path • ${meta.first}", tier = AdBlockMode.MAX))
+                }
             }
             MAX_YOUTUBE_DOM_SELECTORS.forEach { sel ->
-                list.add(AdFilterRuleItem(rule = "##$sel", category = "Max YouTube DOM • Ad Renderer", tier = AdBlockMode.MAX))
+                if (seenSelectors.add(sel)) {
+                    list.add(AdFilterRuleItem(rule = "##$sel", category = "Max YouTube DOM • Ad Renderer", tier = AdBlockMode.MAX))
+                }
             }
         }
         return list
@@ -686,9 +704,10 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
               }
 
               sweepDomAds();
-              if (!window.__novaAdShieldInterval) {
-                window.__novaAdShieldInterval = setInterval(sweepDomAds, 1800);
+              if (window.__novaAdShieldInterval) {
+                clearInterval(window.__novaAdShieldInterval);
               }
+              window.__novaAdShieldInterval = setInterval(sweepDomAds, 1800);
             })();
         """.trimIndent()
     }
@@ -712,7 +731,8 @@ object BrowserUrlUtils {
     fun normalizeInputToUrl(rawInput: String): String {
         val trimmed = rawInput.trim()
         if (trimmed.isEmpty()) return "https://www.google.com"
-        if (trimmed.startsWith("nova://", ignoreCase = true) ||
+        if (trimmed.startsWith("netra://", ignoreCase = true) ||
+            trimmed.startsWith("nova://", ignoreCase = true) ||
             trimmed.startsWith("http://", ignoreCase = true) ||
             trimmed.startsWith("https://", ignoreCase = true) ||
             trimmed.startsWith("file://", ignoreCase = true)
@@ -785,7 +805,7 @@ object BrowserUrlUtils {
     }
 
     fun extractDomain(url: String): String {
-        if (url.startsWith("nova://")) return "Nova Browser"
+        if (url.startsWith("netra://") || url.startsWith("nova://")) return "Netra"
         return try {
             val host = Uri.parse(url).host ?: return url.take(30)
             host.removePrefix("www.")

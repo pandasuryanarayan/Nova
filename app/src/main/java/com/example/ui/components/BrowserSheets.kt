@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -55,6 +56,10 @@ import com.example.data.BrowserTab
 import com.example.data.DownloadItemEntity
 import com.example.data.DownloadStatus
 import com.example.data.HistoryEntity
+import com.example.data.SiteConfigSettings
+import com.example.data.SiteCookieEntry
+import com.example.data.SiteCookiePolicy
+import com.example.data.SitePermissionMode
 import com.example.data.SslCertificateDetails
 import com.example.ui.i18n.LocalNovaStrings
 import com.example.ui.icons.NovaIcons
@@ -461,7 +466,7 @@ fun TabsSwitcherSheet(
                                         ) {
                                             Column {
                                                 Text(
-                                                    text = if (tab.isHomePage) "nova://start" else extractHostClean(tab.url),
+                                                    text = if (tab.isHomePage) "netra://start" else extractHostClean(tab.url),
                                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace),
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis,
@@ -592,7 +597,7 @@ fun DownloadsManagerSheet(
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "PATH: /Download/NovaBrowser",
+                text = "PATH: /Download/Netra",
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.4.sp),
                 color = palette.textMuted
             )
@@ -822,7 +827,7 @@ fun BookmarksSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SheetHeaderIconBadge(icon = NovaIcons.BookmarkBorder, palette = palette)
+                    SheetHeaderIconBadge(icon = NovaIcons.Bookmarks, palette = palette)
                     Column {
                         Text(
                             text = strings.bookmarksTitle,
@@ -1339,38 +1344,13 @@ fun BrowserMenuSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp)
-                .padding(bottom = 24.dp),
+                .padding(horizontal = 18.dp, vertical = 6.dp)
+                .padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header: Clean Title + Shield Stats + Close button (no left 3-dot Tune badge)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.controlCenterTitle,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                        color = palette.textPrimary
-                    )
-                    Text(
-                        text = if (isAdBlockEnabled) {
-                            strings.shieldHeaderActive(activeModeLabel.uppercase(Locale.ROOT), totalAdsBlocked)
-                        } else {
-                            strings.shieldHeaderPaused(totalAdsBlocked)
-                        },
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.8.sp),
-                        color = palette.textSecondary
-                    )
-                }
-                SheetCloseButton(palette = palette, onDismiss = onDismiss)
-            }
-
             // 5 Quick Action Tiles
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                ControlCenterQuickTile(NovaIcons.BookmarkBorder, strings.quickActionBookmarks, palette, onOpenBookmarks, Modifier.testTag("menu_bookmarks_button"))
+                ControlCenterQuickTile(NovaIcons.Bookmarks, strings.quickActionBookmarks, palette, onOpenBookmarks, Modifier.testTag("menu_bookmarks_button"))
                 ControlCenterQuickTile(NovaIcons.Download, strings.quickActionDownloads, palette, onOpenDownloads, Modifier.testTag("menu_downloads_button"))
                 ControlCenterQuickTile(NovaIcons.History, strings.quickActionHistory, palette, onOpenHistory, Modifier.testTag("menu_history_button"))
                 ControlCenterQuickTile(NovaIcons.Share, strings.quickActionShare, palette, onSharePage, Modifier.testTag("menu_share_button"))
@@ -1497,112 +1477,250 @@ fun BrowserMenuSheet(
 
             HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.7f))
 
-            ControlCenterSwitchRow(NovaIcons.DesktopWindows, strings.desktopSiteMode, null, activeTab.isDesktopMode, palette, { onToggleDesktopMode() }, "menu_desktop_mode_switch")
-            ControlCenterSwitchRow(NovaIcons.DarkMode, strings.darkModeTheme, null, isDarkMode, palette, { onToggleDarkMode() }, "menu_dark_mode_switch")
-            ControlCenterSwitchRow(NovaIcons.Incognito, strings.incognitoLabel, strings.nothingIsSavedSubtitle, activeTab.isIncognito, palette, { onToggleIncognito() }, "menu_incognito_switch")
-
-            // Text zoom controls
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Display, privacy & zoom grouped card (Desktop site & below)
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = palette.cardBg,
+                border = BorderStroke(1.dp, palette.cardBorder),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(NovaIcons.TextFields, null, tint = palette.accentPrimary, modifier = Modifier.size(20.dp))
-                    Text(strings.textZoomLabel, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = palette.textPrimary)
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(
-                        onClick = { onUpdateTextZoom(activeTab.textZoom - 10) },
-                        shape = RoundedCornerShape(10.dp),
-                        color = palette.cardBg,
-                        border = BorderStroke(1.dp, palette.cardBorder),
-                        modifier = Modifier
-                            .size(34.dp)
-                            .testTag("text_zoom_decrease")
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(NovaIcons.Remove, "Decrease Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                    Text(
-                        text = "${activeTab.textZoom}%",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
-                        color = palette.textPrimary,
-                        modifier = Modifier.widthIn(min = 44.dp),
-                        textAlign = TextAlign.Center
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    ControlCenterSwitchRow(
+                        icon = NovaIcons.DesktopWindows,
+                        title = strings.desktopSiteMode,
+                        subtitle = null,
+                        checked = activeTab.isDesktopMode,
+                        palette = palette,
+                        onCheckedChange = { onToggleDesktopMode() },
+                        testTag = "menu_desktop_mode_switch"
                     )
-                    Surface(
-                        onClick = { onUpdateTextZoom(activeTab.textZoom + 10) },
-                        shape = RoundedCornerShape(10.dp),
-                        color = palette.cardBg,
-                        border = BorderStroke(1.dp, palette.cardBorder),
+                    HorizontalDivider(
+                        color = palette.cardBorder.copy(alpha = 0.55f),
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+                    ControlCenterSwitchRow(
+                        icon = NovaIcons.DarkMode,
+                        title = strings.darkModeTheme,
+                        subtitle = null,
+                        checked = isDarkMode,
+                        palette = palette,
+                        onCheckedChange = { onToggleDarkMode() },
+                        testTag = "menu_dark_mode_switch"
+                    )
+                    HorizontalDivider(
+                        color = palette.cardBorder.copy(alpha = 0.55f),
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+                    ControlCenterSwitchRow(
+                        icon = NovaIcons.Incognito,
+                        title = strings.incognitoLabel,
+                        subtitle = strings.nothingIsSavedSubtitle,
+                        checked = activeTab.isIncognito,
+                        palette = palette,
+                        onCheckedChange = { onToggleIncognito() },
+                        testTag = "menu_incognito_switch"
+                    )
+                    HorizontalDivider(
+                        color = palette.cardBorder.copy(alpha = 0.55f),
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+
+                    // Text zoom row aligned with switch rows above
+                    Row(
                         modifier = Modifier
-                            .size(34.dp)
-                            .testTag("text_zoom_increase")
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(NovaIcons.Add, "Increase Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(palette.cardElevatedBg)
+                                    .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(NovaIcons.TextFields, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
+                            }
+                            Text(
+                                text = strings.textZoomLabel,
+                                style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+                                color = palette.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
-                    }
-                    Surface(
-                        onClick = { onUpdateTextZoom(100) },
-                        shape = RoundedCornerShape(10.dp),
-                        color = palette.cardBg,
-                        border = BorderStroke(1.dp, palette.cardBorder),
-                        modifier = Modifier
-                            .height(34.dp)
-                            .testTag("text_zoom_reset")
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 10.dp)) {
-                            Text(strings.resetButton, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = palette.accentPrimary)
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Surface(
+                                onClick = { onUpdateTextZoom(activeTab.textZoom - 10) },
+                                shape = RoundedCornerShape(10.dp),
+                                color = palette.cardElevatedBg,
+                                border = BorderStroke(1.dp, palette.cardBorder),
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .testTag("text_zoom_decrease")
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(NovaIcons.Remove, "Decrease Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                            Text(
+                                text = "${activeTab.textZoom}%",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = palette.textPrimary,
+                                modifier = Modifier.widthIn(min = 40.dp),
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Surface(
+                                onClick = { onUpdateTextZoom(activeTab.textZoom + 10) },
+                                shape = RoundedCornerShape(10.dp),
+                                color = palette.cardElevatedBg,
+                                border = BorderStroke(1.dp, palette.cardBorder),
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .testTag("text_zoom_increase")
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(NovaIcons.Add, "Increase Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                            Surface(
+                                onClick = { onUpdateTextZoom(100) },
+                                shape = RoundedCornerShape(10.dp),
+                                color = palette.cardElevatedBg,
+                                border = BorderStroke(1.dp, palette.cardBorder),
+                                modifier = Modifier.testTag("text_zoom_reset")
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .height(32.dp)
+                                        .widthIn(min = 52.dp)
+                                        .padding(horizontal = 10.dp)
+                                ) {
+                                    Text(
+                                        text = strings.resetButton,
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontSize = 12.sp,
+                                            lineHeight = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 0.sp
+                                        ),
+                                        color = palette.accentPrimary,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Language selector
-            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Icon(NovaIcons.Translate, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
-                    Text(strings.languageSectionTitle, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = palette.textPrimary)
-                }
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(
-                        Triple(AppLanguage.SYSTEM, strings.languageSystemOption, "menu_language_system"),
-                        Triple(AppLanguage.ENGLISH, strings.languageEnglishOption, "menu_language_en"),
-                        Triple(AppLanguage.HINDI, strings.languageHindiOption, "menu_language_hi")
-                    ).forEach { (lang, label, tag) ->
-                        val isSelected = appLanguage == lang
-                        Surface(
-                            onClick = { onSelectAppLanguage(lang) },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) palette.activePillBg else palette.cardBg,
-                            border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) palette.activePillBorder else palette.cardBorder),
+            // Language selector card
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = palette.cardBg,
+                border = BorderStroke(1.dp, palette.cardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
                             modifier = Modifier
-                                .weight(1f)
-                                .testTag(tag)
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(palette.cardElevatedBg)
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium),
-                                color = if (isSelected) palette.accentPrimary else palette.textPrimary,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                            Icon(NovaIcons.Translate, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
+                        }
+                        Text(
+                            text = strings.languageSectionTitle,
+                            style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            Triple(AppLanguage.SYSTEM, strings.languageSystemOption, "menu_language_system"),
+                            Triple(AppLanguage.ENGLISH, strings.languageEnglishOption, "menu_language_en"),
+                            Triple(AppLanguage.HINDI, strings.languageHindiOption, "menu_language_hi")
+                        ).forEach { (lang, label, tag) ->
+                            val isSelected = appLanguage == lang
+                            Surface(
+                                onClick = { onSelectAppLanguage(lang) },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) palette.activePillBg else palette.cardElevatedBg,
+                                border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) palette.activePillBorder else palette.cardBorder),
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 9.dp, horizontal = 6.dp)
-                            )
+                                    .weight(1f)
+                                    .height(42.dp)
+                                    .testTag(tag)
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 8.dp)
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                                        ),
+                                        color = if (isSelected) palette.accentPrimary else palette.textPrimary,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
             if (!activeTab.isHomePage) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     PageToolBtn(
                         icon = if (isBookmarked) NovaIcons.Bookmark else NovaIcons.BookmarkBorder,
                         label = if (isBookmarked) strings.savedButton else strings.bookmarkButton,
@@ -1613,53 +1731,88 @@ fun BrowserMenuSheet(
                             .weight(1f)
                             .testTag("menu_bookmark_toggle_button")
                     )
-                    PageToolBtn(NovaIcons.Code, strings.inspectButton, false, palette, onOpenDevTools, Modifier.weight(1f).testTag("menu_devtools_button"))
-                    PageToolBtn(NovaIcons.Videocam, strings.videosButton, false, palette, onScanPageVideos, Modifier.weight(1f).testTag("menu_scan_videos_button"))
+                    PageToolBtn(
+                        icon = NovaIcons.Code,
+                        label = strings.inspectButton,
+                        active = false,
+                        palette = palette,
+                        onClick = onOpenDevTools,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("menu_devtools_button")
+                    )
+                    PageToolBtn(
+                        icon = NovaIcons.Videocam,
+                        label = strings.videosButton,
+                        active = false,
+                        palette = palette,
+                        onClick = onScanPageVideos,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("menu_scan_videos_button")
+                    )
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Surface(
                     onClick = onOpenFindInPage,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = palette.cardBg,
                     border = BorderStroke(1.dp, palette.cardBorder),
                     modifier = Modifier
                         .weight(1f)
+                        .height(48.dp)
                         .testTag("menu_find_in_page_button")
                 ) {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 14.dp),
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(NovaIcons.Search, null, tint = palette.accentPrimary, modifier = Modifier.size(17.dp))
+                        Icon(NovaIcons.Search, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(strings.findInPageButton, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = palette.textPrimary)
+                        Text(
+                            text = strings.findInPageButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.5.sp, fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
                 Surface(
                     onClick = onOpenClearData,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = palette.dangerBg,
                     border = BorderStroke(1.dp, palette.dangerBorder),
                     modifier = Modifier
                         .weight(1f)
+                        .height(48.dp)
                         .testTag("menu_clear_data_button")
                 ) {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 14.dp),
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(NovaIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(17.dp))
+                        Icon(NovaIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(strings.clearDataButton, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = palette.dangerRed)
+                        Text(
+                            text = strings.clearDataButton,
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.5.sp, fontWeight = FontWeight.Bold),
+                            color = palette.dangerRed,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -1678,19 +1831,27 @@ private fun PageToolBtn(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         color = if (active) palette.activePillBg else palette.cardBg,
-        border = BorderStroke(1.dp, if (active) palette.activePillBorder else palette.cardBorder),
-        modifier = modifier
+        border = BorderStroke(if (active) 1.5.dp else 1.dp, if (active) palette.activePillBorder else palette.cardBorder),
+        modifier = modifier.height(44.dp)
     ) {
         Row(
-            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(label, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold), color = palette.textPrimary, maxLines = 1)
+            Icon(icon, null, tint = palette.accentPrimary, modifier = Modifier.size(17.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold),
+                color = if (active) palette.accentPrimary else palette.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -1738,24 +1899,51 @@ private fun ControlCenterSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     testTag: String
 ) {
+    val strings = LocalNovaStrings.current
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 10.dp)
         ) {
-            Icon(icon, null, tint = palette.accentPrimary, modifier = Modifier.size(20.dp))
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(palette.cardElevatedBg)
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
+            }
             Column {
-                Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = palette.textPrimary)
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+                    color = palette.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 if (subtitle != null) {
+                    Spacer(modifier = Modifier.height(1.dp))
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp, letterSpacing = 0.6.sp),
-                        color = palette.textMuted
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 11.sp,
+                            letterSpacing = if (strings.isHindi) 0.sp else 0.25.sp
+                        ),
+                        color = palette.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -1872,12 +2060,16 @@ fun AddShortcutDialog(
 fun SslSecurityInfoDialog(
     tab: BrowserTab,
     certificateDetails: SslCertificateDetails?,
-    siteCookies: List<Pair<String, String>>,
+    siteCookies: List<SiteCookieEntry>,
+    siteConfig: SiteConfigSettings,
     isAdBlockEnabled: Boolean,
     isDarkMode: Boolean,
     onToggleAdBlock: () -> Unit,
     onToggleDesktopMode: () -> Unit,
     onToggleDarkMode: () -> Unit,
+    onUpdateSiteConfig: (reloadPage: Boolean, (SiteConfigSettings) -> SiteConfigSettings) -> Unit,
+    onResetSiteConfigAndData: () -> Unit,
+    onClearSingleCookie: (String) -> Unit,
     onCopyText: (String, String) -> Unit,
     onClearSiteCookies: () -> Unit,
     onDismiss: () -> Unit
@@ -1885,6 +2077,8 @@ fun SslSecurityInfoDialog(
     val strings = LocalNovaStrings.current
     val palette = rememberSheetPalette(isIncognito = tab.isIncognito)
     var selectedSection by remember { mutableIntStateOf(0) }
+    val cleanHost = remember(tab.url) { extractHostClean(tab.url) }
+    val effectiveAdBlockOn = isAdBlockEnabled && siteConfig.isAdBlockEnabled
 
     NovaBottomSheet(
         onDismissRequest = onDismiss,
@@ -1894,7 +2088,7 @@ fun SslSecurityInfoDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 380.dp, max = 560.dp)
+                .heightIn(min = 420.dp, max = 620.dp)
                 .padding(horizontal = 18.dp)
                 .padding(bottom = 24.dp)
         ) {
@@ -1906,19 +2100,19 @@ fun SslSecurityInfoDialog(
                 SheetHeaderIconBadge(icon = if (tab.isSecureSsl) NovaIcons.Lock else NovaIcons.Warning, palette = palette)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (tab.isSecureSsl) "Connection is Secure" else "Connection Not Secure",
+                        text = if (tab.isSecureSsl) strings.connSecureTitle else strings.connNotSecureTitle,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = palette.textPrimary
                     )
                     Text(
-                        text = extractHostClean(tab.url),
+                        text = cleanHost,
                         style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = palette.textSecondary
                     )
                 }
-                IconButton(onClick = { onCopyText("Website URL", tab.url) }, modifier = Modifier.size(34.dp)) {
+                IconButton(onClick = { onCopyText(strings.websiteLinkTitle, tab.url) }, modifier = Modifier.size(34.dp)) {
                     Icon(NovaIcons.ContentCopy, "Copy Full URL", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
                 }
             }
@@ -1926,9 +2120,9 @@ fun SslSecurityInfoDialog(
             Spacer(modifier = Modifier.height(14.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterPill("Certificate", selectedSection == 0, palette, { selectedSection = 0 }, Modifier.testTag("lock_tab_certificate"))
-                FilterPill("Cookies (${siteCookies.size})", selectedSection == 1, palette, { selectedSection = 1 }, Modifier.testTag("lock_tab_cookies"))
-                FilterPill("Site Config", selectedSection == 2, palette, { selectedSection = 2 }, Modifier.testTag("lock_tab_site_config"))
+                FilterPill(strings.tabCertificate, selectedSection == 0, palette, { selectedSection = 0 }, Modifier.testTag("lock_tab_certificate"))
+                FilterPill(strings.cookiesTabLabel(siteCookies.size), selectedSection == 1, palette, { selectedSection = 1 }, Modifier.testTag("lock_tab_cookies"))
+                FilterPill(strings.tabSiteConfig, selectedSection == 2, palette, { selectedSection = 2 }, Modifier.testTag("lock_tab_site_config"))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -1940,18 +2134,111 @@ fun SslSecurityInfoDialog(
                             .fillMaxWidth()
                             .weight(1f)
                             .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         if (certificateDetails != null) {
-                            CertificateFieldBlock("Issued To (Common Name)", certificateDetails.issuedToCommonName, palette, onCopyText)
-                            CertificateFieldBlock("Issued To Organization", certificateDetails.issuedToOrganization, palette, onCopyText)
-                            CertificateFieldBlock("Issued By (Authority)", certificateDetails.issuedByCommonName, palette, onCopyText)
-                            CertificateFieldBlock("Valid From", certificateDetails.validFrom, palette, onCopyText)
-                            CertificateFieldBlock("Expires On", certificateDetails.validUntil, palette, onCopyText)
-                            CertificateFieldBlock("SHA-256 Fingerprint", certificateDetails.sha256Fingerprint, palette, onCopyText, monospace = true)
+                            Text(
+                                text = strings.certTapToCopyHint,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = palette.textMuted,
+                                modifier = Modifier.padding(horizontal = 2.dp)
+                            )
+
+                            CertificateSectionCard(title = strings.certSectionSecurity, palette = palette) {
+                                CertificateFieldRow(strings.certProtocolLabel, certificateDetails.protocol, palette, onCopyText)
+                                if (certificateDetails.validityStatus.isNotBlank()) {
+                                    CertificateDivider(palette)
+                                    CertificateFieldRow(strings.certValidityStatusLabel, certificateDetails.validityStatus, palette, onCopyText)
+                                }
+                                if (certificateDetails.x509Version.isNotBlank()) {
+                                    CertificateDivider(palette)
+                                    CertificateFieldRow(strings.certVersionLabel, certificateDetails.x509Version, palette, onCopyText)
+                                }
+                                if (certificateDetails.keyUsage.isNotBlank()) {
+                                    CertificateDivider(palette)
+                                    CertificateFieldRow(strings.certKeyUsageLabel, certificateDetails.keyUsage, palette, onCopyText)
+                                }
+                            }
+
+                            CertificateSectionCard(title = strings.certSectionIssuedTo, palette = palette) {
+                                CertificateFieldRow(strings.certCommonNameLabel, certificateDetails.issuedToCommonName, palette, onCopyText)
+                                CertificateDivider(palette)
+                                CertificateFieldRow(strings.certOrganizationLabel, certificateDetails.issuedToOrganization, palette, onCopyText)
+                                CertificateDivider(palette)
+                                CertificateFieldRow(strings.certOrgUnitLabel, certificateDetails.issuedToOrganizationalUnit, palette, onCopyText)
+                                if (certificateDetails.issuedToCountry.isNotBlank()) {
+                                    CertificateDivider(palette)
+                                    CertificateFieldRow(strings.certCountryLabel, certificateDetails.issuedToCountry, palette, onCopyText)
+                                }
+                                if (certificateDetails.subjectDn.isNotBlank()) {
+                                    CertificateDivider(palette)
+                                    CertificateFieldRow(strings.certFullDnLabel, certificateDetails.subjectDn, palette, onCopyText, monospace = true)
+                                }
+                            }
+
+                            CertificateSectionCard(title = strings.certSectionIssuedBy, palette = palette) {
+                                CertificateFieldRow(strings.certCommonNameLabel, certificateDetails.issuedByCommonName, palette, onCopyText)
+                                CertificateDivider(palette)
+                                CertificateFieldRow(strings.certOrganizationLabel, certificateDetails.issuedByOrganization, palette, onCopyText)
+                                CertificateDivider(palette)
+                                CertificateFieldRow(strings.certOrgUnitLabel, certificateDetails.issuedByOrganizationalUnit, palette, onCopyText)
+                                if (certificateDetails.issuerDn.isNotBlank()) {
+                                    CertificateDivider(palette)
+                                    CertificateFieldRow(strings.certFullDnLabel, certificateDetails.issuerDn, palette, onCopyText, monospace = true)
+                                }
+                            }
+
+                            CertificateSectionCard(title = strings.certSectionValidity, palette = palette) {
+                                CertificateFieldRow(strings.certValidFromLabel, certificateDetails.validFrom, palette, onCopyText)
+                                CertificateDivider(palette)
+                                CertificateFieldRow(strings.certExpiresOnLabel, certificateDetails.validUntil, palette, onCopyText)
+                            }
+
+                            if (certificateDetails.subjectAltNames.isNotEmpty()) {
+                                CertificateSectionCard(
+                                    title = "${strings.certSectionSan} (${certificateDetails.subjectAltNames.size})",
+                                    palette = palette
+                                ) {
+                                    CertificateFieldRow(
+                                        label = "DNS / IP SANs",
+                                        value = certificateDetails.subjectAltNames.joinToString("\n"),
+                                        palette = palette,
+                                        onCopyText = onCopyText,
+                                        monospace = true
+                                    )
+                                }
+                            }
+
+                            CertificateSectionCard(title = strings.certSectionCrypto, palette = palette) {
+                                if (certificateDetails.publicKeyInfo.isNotBlank()) {
+                                    CertificateFieldRow(strings.certPublicKeyLabel, certificateDetails.publicKeyInfo, palette, onCopyText)
+                                    CertificateDivider(palette)
+                                }
+                                if (certificateDetails.signatureAlgorithm.isNotBlank()) {
+                                    CertificateFieldRow(strings.certSigAlgLabel, certificateDetails.signatureAlgorithm, palette, onCopyText)
+                                    CertificateDivider(palette)
+                                }
+                                CertificateFieldRow(strings.certSerialLabel, certificateDetails.serialNumber, palette, onCopyText, monospace = true)
+                                CertificateDivider(palette)
+                                CertificateFieldRow(strings.certSha256Label, certificateDetails.sha256Fingerprint, palette, onCopyText, monospace = true)
+                                if (certificateDetails.sha1Fingerprint.isNotBlank()) {
+                                    CertificateDivider(palette)
+                                    CertificateFieldRow(strings.certSha1Label, certificateDetails.sha1Fingerprint, palette, onCopyText, monospace = true)
+                                }
+                            }
                         } else {
-                            Surface(shape = RoundedCornerShape(16.dp), color = palette.cardBg, border = BorderStroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth()) {
-                                Text("No X.509 SSL certificate is attached to this page.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, modifier = Modifier.padding(16.dp))
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = palette.cardBg,
+                                border = BorderStroke(1.dp, palette.cardBorder),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = strings.certEmptyNotice,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.textSecondary,
+                                    modifier = Modifier.padding(16.dp)
+                                )
                             }
                         }
                     }
@@ -1964,16 +2251,47 @@ fun SslSecurityInfoDialog(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("${siteCookies.size} cookies stored", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = strings.cookiesStoredCount(siteCookies.size),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                    color = palette.textPrimary
+                                )
+                                Text(
+                                    text = when {
+                                        tab.isIncognito -> "${strings.incognitoLabel} • Disabled"
+                                        siteConfig.cookiePolicy == SiteCookiePolicy.ALLOW_ALL -> "${strings.siteCookiesTitle}: ${strings.siteCookieAllowAll}"
+                                        siteConfig.cookiePolicy == SiteCookiePolicy.BLOCK_THIRD_PARTY -> "${strings.siteCookiesTitle}: ${strings.siteCookieBlock3p}"
+                                        else -> "${strings.siteCookiesTitle}: ${strings.siteCookieBlockAll}"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.textSecondary
+                                )
+                            }
                             if (siteCookies.isNotEmpty()) {
-                                TextButton(onClick = onClearSiteCookies, modifier = Modifier.testTag("clear_site_cookies_button")) {
-                                    Text("Clear Site Cookies", color = palette.dangerRed)
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    TextButton(
+                                        onClick = {
+                                            val allRaw = siteCookies.joinToString("; ") { "${it.name}=${it.value}" }
+                                            onCopyText("Cookies ($cleanHost)", allRaw)
+                                        },
+                                        modifier = Modifier.testTag("copy_all_cookies_button")
+                                    ) {
+                                        Text(strings.copyAllButton, color = palette.accentPrimary, style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp))
+                                    }
+                                    TextButton(
+                                        onClick = onClearSiteCookies,
+                                        modifier = Modifier.testTag("clear_site_cookies_button")
+                                    ) {
+                                        Text(strings.clearAllButton, color = palette.dangerRed, style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp))
+                                    }
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(6.dp))
                         if (siteCookies.isEmpty()) {
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                Text("No cookies stored for this domain.", style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
+                                Text(strings.noCookiesDomain, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
                             }
                         } else {
                             Column(
@@ -1983,21 +2301,80 @@ fun SslSecurityInfoDialog(
                                     .weight(1f)
                                     .verticalScroll(rememberScrollState())
                             ) {
-                                siteCookies.take(80).forEach { (cookieName, cookieVal) ->
-                                    Surface(shape = RoundedCornerShape(14.dp), color = palette.cardBg, border = BorderStroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth()) {
-                                        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                siteCookies.forEach { cookie ->
+                                    Surface(
+                                        onClick = { onCopyText(cookie.name, "${cookie.name}=${cookie.value}") },
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = palette.cardBg,
+                                        border = BorderStroke(1.dp, palette.cardBorder),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Column(modifier = Modifier.weight(1f)) {
-                                                Text(cookieName, style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = palette.accentPrimary)
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = cookie.name,
+                                                        style = MaterialTheme.typography.labelMedium.copy(
+                                                            fontFamily = FontFamily.Monospace,
+                                                            fontWeight = FontWeight.Bold
+                                                        ),
+                                                        color = palette.accentPrimary,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        modifier = Modifier.weight(1f, fill = false)
+                                                    )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(6.dp),
+                                                        color = palette.cardElevatedBg,
+                                                        border = BorderStroke(1.dp, palette.cardBorder)
+                                                    ) {
+                                                        Text(
+                                                            text = "${cookie.byteSize} B",
+                                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                                fontFamily = FontFamily.Monospace,
+                                                                fontSize = 9.5.sp
+                                                            ),
+                                                            color = palette.textMuted,
+                                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                                                        )
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(3.dp))
                                                 Text(
-                                                    text = cookieVal.ifBlank { "(empty)" },
-                                                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
-                                                    maxLines = 2,
+                                                    text = cookie.value.ifBlank { "(empty)" },
+                                                    style = MaterialTheme.typography.bodySmall.copy(
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontSize = 11.sp
+                                                    ),
+                                                    maxLines = 3,
                                                     overflow = TextOverflow.Ellipsis,
                                                     color = palette.textPrimary
                                                 )
+                                                Text(
+                                                    text = cookie.domain,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                    color = palette.textMuted
+                                                )
                                             }
-                                            IconButton(onClick = { onCopyText(cookieName, "$cookieName=$cookieVal") }, modifier = Modifier.size(28.dp)) {
-                                                Icon(NovaIcons.ContentCopy, "Copy Cookie", tint = palette.accentPrimary, modifier = Modifier.size(14.dp))
+                                            IconButton(
+                                                onClick = { onCopyText(cookie.name, "${cookie.name}=${cookie.value}") },
+                                                modifier = Modifier.size(30.dp)
+                                            ) {
+                                                Icon(NovaIcons.ContentCopy, "Copy Cookie", tint = palette.accentPrimary, modifier = Modifier.size(15.dp))
+                                            }
+                                            IconButton(
+                                                onClick = { onClearSingleCookie(cookie.name) },
+                                                modifier = Modifier.size(30.dp)
+                                            ) {
+                                                Icon(NovaIcons.DeleteOutline, "Delete Cookie", tint = palette.dangerRed, modifier = Modifier.size(16.dp))
                                             }
                                         }
                                     }
@@ -2015,9 +2392,300 @@ fun SslSecurityInfoDialog(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        ControlCenterSwitchRow(NovaIcons.ShieldOutline, strings.adBlockShieldMenuTitle, "BLOCKS ADS & TELEMETRY", isAdBlockEnabled, palette, { onToggleAdBlock() }, "ssl_adblock_switch")
-                        ControlCenterSwitchRow(NovaIcons.DesktopWindows, strings.desktopSiteMode, "DESKTOP USER-AGENT", tab.isDesktopMode, palette, { onToggleDesktopMode() }, "ssl_desktop_switch")
-                        ControlCenterSwitchRow(NovaIcons.DarkMode, strings.darkModeTheme, "AMOLED DARK PALETTE", isDarkMode, palette, { onToggleDarkMode() }, "ssl_dark_switch")
+                        // Site domain summary badge
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.cardBg,
+                            border = BorderStroke(1.dp, palette.cardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                MonogramSiteBadge(label = cleanHost, url = tab.url)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = cleanHost,
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = palette.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = strings.siteConfigDomainNote,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.textSecondary
+                                    )
+                                }
+                            }
+                        }
+
+                        // Card 1: Chrome-style Content & Controls
+                        SectionHeaderLabel(strings.siteSectionControls, palette)
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = palette.cardBg,
+                            border = BorderStroke(1.dp, palette.cardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.ShieldOutline,
+                                    title = strings.adBlockShieldMenuTitle,
+                                    subtitle = "BLOCKS ADS & TELEMETRY",
+                                    checked = effectiveAdBlockOn,
+                                    palette = palette,
+                                    onCheckedChange = { checked ->
+                                        onUpdateSiteConfig(true) { it.copy(isAdBlockEnabled = checked) }
+                                        if (checked && !isAdBlockEnabled) {
+                                            onToggleAdBlock()
+                                        }
+                                    },
+                                    testTag = "ssl_adblock_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.DesktopWindows,
+                                    title = strings.desktopSiteMode,
+                                    subtitle = "DESKTOP USER-AGENT",
+                                    checked = tab.isDesktopMode,
+                                    palette = palette,
+                                    onCheckedChange = { onToggleDesktopMode() },
+                                    testTag = "ssl_desktop_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.DarkMode,
+                                    title = strings.darkModeTheme,
+                                    subtitle = "AMOLED DARK PALETTE",
+                                    checked = isDarkMode,
+                                    palette = palette,
+                                    onCheckedChange = { onToggleDarkMode() },
+                                    testTag = "ssl_dark_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.Code,
+                                    title = strings.siteJsTitle,
+                                    subtitle = strings.siteJsSub,
+                                    checked = siteConfig.javaScriptEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { enabled ->
+                                        onUpdateSiteConfig(true) { it.copy(javaScriptEnabled = enabled) }
+                                    },
+                                    testTag = "site_cfg_js_switch"
+                                )
+                                CertificateDivider(palette)
+                                SiteCookiePolicyRow(
+                                    title = strings.siteCookiesTitle,
+                                    policy = siteConfig.cookiePolicy,
+                                    allowAllLabel = strings.siteCookieAllowAll,
+                                    block3pLabel = strings.siteCookieBlock3p,
+                                    blockAllLabel = strings.siteCookieBlockAll,
+                                    palette = palette,
+                                    onSelectPolicy = { nextPolicy ->
+                                        onUpdateSiteConfig(true) { it.copy(cookiePolicy = nextPolicy) }
+                                    }
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.OpenInNew,
+                                    title = strings.sitePopupsTitle,
+                                    subtitle = strings.sitePopupsSub,
+                                    checked = siteConfig.popupsAllowed,
+                                    palette = palette,
+                                    onCheckedChange = { allowed ->
+                                        onUpdateSiteConfig(false) { it.copy(popupsAllowed = allowed) }
+                                    },
+                                    testTag = "site_cfg_popups_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.Image,
+                                    title = strings.siteImagesTitle,
+                                    subtitle = strings.siteImagesSub,
+                                    checked = siteConfig.imagesEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { enabled ->
+                                        onUpdateSiteConfig(true) { it.copy(imagesEnabled = enabled) }
+                                    },
+                                    testTag = "site_cfg_images_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.VolumeUp,
+                                    title = strings.siteSoundTitle,
+                                    subtitle = strings.siteSoundSub,
+                                    checked = siteConfig.soundEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { enabled ->
+                                        onUpdateSiteConfig(false) { it.copy(soundEnabled = enabled) }
+                                    },
+                                    testTag = "site_cfg_sound_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.PlayArrow,
+                                    title = strings.siteAutoplayTitle,
+                                    subtitle = strings.siteAutoplaySub,
+                                    checked = siteConfig.autoplayEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { enabled ->
+                                        onUpdateSiteConfig(false) { it.copy(autoplayEnabled = enabled) }
+                                    },
+                                    testTag = "site_cfg_autoplay_switch"
+                                )
+                            }
+                        }
+
+                        // Card 2: Chrome-style Permissions (Ask / Allow / Block)
+                        SectionHeaderLabel(strings.siteSectionPermissions, palette)
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = palette.cardBg,
+                            border = BorderStroke(1.dp, palette.cardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                SitePermissionModeRow(
+                                    icon = NovaIcons.LocationOn,
+                                    title = strings.siteLocationTitle,
+                                    mode = siteConfig.locationPermission,
+                                    askLabel = strings.sitePermAsk,
+                                    allowLabel = strings.sitePermAllow,
+                                    blockLabel = strings.sitePermBlock,
+                                    palette = palette,
+                                    testTagPrefix = "site_cfg_location",
+                                    onSelectMode = { mode ->
+                                        onUpdateSiteConfig(false) { it.copy(locationPermission = mode) }
+                                    }
+                                )
+                                CertificateDivider(palette)
+                                SitePermissionModeRow(
+                                    icon = NovaIcons.Videocam,
+                                    title = strings.siteCameraTitle,
+                                    mode = siteConfig.cameraPermission,
+                                    askLabel = strings.sitePermAsk,
+                                    allowLabel = strings.sitePermAllow,
+                                    blockLabel = strings.sitePermBlock,
+                                    palette = palette,
+                                    testTagPrefix = "site_cfg_camera",
+                                    onSelectMode = { mode ->
+                                        onUpdateSiteConfig(false) { it.copy(cameraPermission = mode) }
+                                    }
+                                )
+                                CertificateDivider(palette)
+                                SitePermissionModeRow(
+                                    icon = NovaIcons.Mic,
+                                    title = strings.siteMicTitle,
+                                    mode = siteConfig.microphonePermission,
+                                    askLabel = strings.sitePermAsk,
+                                    allowLabel = strings.sitePermAllow,
+                                    blockLabel = strings.sitePermBlock,
+                                    palette = palette,
+                                    testTagPrefix = "site_cfg_mic",
+                                    onSelectMode = { mode ->
+                                        onUpdateSiteConfig(false) { it.copy(microphonePermission = mode) }
+                                    }
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.ShieldCheck,
+                                    title = strings.siteDrmTitle,
+                                    subtitle = strings.siteDrmSub,
+                                    checked = siteConfig.protectedContentAllowed,
+                                    palette = palette,
+                                    onCheckedChange = { allowed ->
+                                        onUpdateSiteConfig(false) { it.copy(protectedContentAllowed = allowed) }
+                                    },
+                                    testTag = "site_cfg_drm_switch"
+                                )
+                            }
+                        }
+
+                        // Card 3: Chrome-style Storage & Security
+                        SectionHeaderLabel(strings.siteSectionSecurity, palette)
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = palette.cardBg,
+                            border = BorderStroke(1.dp, palette.cardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.Storage,
+                                    title = strings.siteDomStorageTitle,
+                                    subtitle = strings.siteDomStorageSub,
+                                    checked = siteConfig.domStorageEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { enabled ->
+                                        onUpdateSiteConfig(true) { it.copy(domStorageEnabled = enabled) }
+                                    },
+                                    testTag = "site_cfg_storage_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.Warning,
+                                    title = strings.siteMixedContentTitle,
+                                    subtitle = strings.siteMixedContentSub,
+                                    checked = siteConfig.insecureContentAllowed,
+                                    palette = palette,
+                                    onCheckedChange = { allowed ->
+                                        onUpdateSiteConfig(true) { it.copy(insecureContentAllowed = allowed) }
+                                    },
+                                    testTag = "site_cfg_mixed_content_switch"
+                                )
+                                CertificateDivider(palette)
+                                ControlCenterSwitchRow(
+                                    icon = NovaIcons.ShieldCheck,
+                                    title = strings.siteSafeBrowsingTitle,
+                                    subtitle = strings.siteSafeBrowsingSub,
+                                    checked = siteConfig.safeBrowsingEnabled,
+                                    palette = palette,
+                                    onCheckedChange = { enabled ->
+                                        onUpdateSiteConfig(false) { it.copy(safeBrowsingEnabled = enabled) }
+                                    },
+                                    testTag = "site_cfg_safe_browsing_switch"
+                                )
+                            }
+                        }
+
+                        // Reset & Clear site data button
+                        Surface(
+                            onClick = onResetSiteConfigAndData,
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.dangerBg,
+                            border = BorderStroke(1.dp, palette.dangerBorder),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("site_cfg_reset_button")
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(NovaIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = strings.siteResetAndClearButton,
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = if (strings.isHindi) 0.sp else 0.1.sp
+                                    ),
+                                    color = palette.dangerRed,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -2026,7 +2694,50 @@ fun SslSecurityInfoDialog(
 }
 
 @Composable
-private fun CertificateFieldBlock(
+private fun SectionHeaderLabel(title: String, palette: SheetVisualPalette) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.6.sp
+        ),
+        color = palette.textSecondary,
+        modifier = Modifier.padding(horizontal = 4.dp)
+    )
+}
+
+@Composable
+private fun CertificateDivider(palette: SheetVisualPalette) {
+    HorizontalDivider(
+        color = palette.cardBorder.copy(alpha = 0.55f),
+        modifier = Modifier.padding(horizontal = 14.dp)
+    )
+}
+
+@Composable
+private fun CertificateSectionCard(
+    title: String,
+    palette: SheetVisualPalette,
+    content: @Composable () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SectionHeaderLabel(title, palette)
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = palette.cardBg,
+            border = BorderStroke(1.dp, palette.cardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun CertificateFieldRow(
     label: String,
     value: String,
     palette: SheetVisualPalette,
@@ -2034,14 +2745,14 @@ private fun CertificateFieldBlock(
     monospace: Boolean = false
 ) {
     val cleanVal = value.ifBlank { "Unspecified" }
-    Surface(
-        onClick = { onCopyText(label, cleanVal) },
-        shape = RoundedCornerShape(14.dp),
-        color = palette.cardBg,
-        border = BorderStroke(1.dp, palette.cardBorder),
-        modifier = Modifier.fillMaxWidth()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCopyText(label, cleanVal) }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -2053,6 +2764,173 @@ private fun CertificateFieldBlock(
                 },
                 color = palette.textPrimary
             )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+            NovaIcons.ContentCopy,
+            contentDescription = "Copy $label",
+            tint = palette.accentPrimary.copy(alpha = 0.75f),
+            modifier = Modifier.size(14.dp)
+        )
+    }
+}
+
+@Composable
+private fun SiteCookiePolicyRow(
+    title: String,
+    policy: SiteCookiePolicy,
+    allowAllLabel: String,
+    block3pLabel: String,
+    blockAllLabel: String,
+    palette: SheetVisualPalette,
+    onSelectPolicy: (SiteCookiePolicy) -> Unit
+) {
+    val strings = LocalNovaStrings.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(palette.cardElevatedBg)
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(NovaIcons.Public, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+                color = palette.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf(
+                Triple(SiteCookiePolicy.ALLOW_ALL, allowAllLabel, "site_cfg_cookie_allow"),
+                Triple(SiteCookiePolicy.BLOCK_THIRD_PARTY, block3pLabel, "site_cfg_cookie_no3p"),
+                Triple(SiteCookiePolicy.BLOCK_ALL, blockAllLabel, "site_cfg_cookie_block")
+            ).forEach { (option, label, tag) ->
+                val selected = policy == option
+                Surface(
+                    onClick = { onSelectPolicy(option) },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (selected) palette.activePillBg else palette.cardElevatedBg,
+                    border = BorderStroke(if (selected) 1.5.dp else 1.dp, if (selected) palette.activePillBorder else palette.cardBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                        .testTag(tag)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontSize = 11.5.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                letterSpacing = if (strings.isHindi) 0.sp else 0.1.sp
+                            ),
+                            color = if (selected) palette.accentPrimary else palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SitePermissionModeRow(
+    icon: ImageVector,
+    title: String,
+    mode: SitePermissionMode,
+    askLabel: String,
+    allowLabel: String,
+    blockLabel: String,
+    palette: SheetVisualPalette,
+    testTagPrefix: String,
+    onSelectMode: (SitePermissionMode) -> Unit
+) {
+    val strings = LocalNovaStrings.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(palette.cardElevatedBg)
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+                color = palette.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf(
+                Triple(SitePermissionMode.ASK, askLabel, "${testTagPrefix}_ask"),
+                Triple(SitePermissionMode.ALLOW, allowLabel, "${testTagPrefix}_allow"),
+                Triple(SitePermissionMode.BLOCK, blockLabel, "${testTagPrefix}_block")
+            ).forEach { (option, label, tag) ->
+                val selected = mode == option
+                Surface(
+                    onClick = { onSelectMode(option) },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (selected) palette.activePillBg else palette.cardElevatedBg,
+                    border = BorderStroke(if (selected) 1.5.dp else 1.dp, if (selected) palette.activePillBorder else palette.cardBorder),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                        .testTag(tag)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontSize = 11.5.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                letterSpacing = if (strings.isHindi) 0.sp else 0.1.sp
+                            ),
+                            color = if (selected) palette.accentPrimary else palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -2103,9 +2981,11 @@ fun BlockedAdsSheet(
 
     val currentTabBlockedCount = remember(blockedAds, activeTabId) { blockedAds.count { it.tabId == activeTabId } }
     val currentSiteHost = remember(currentSiteUrl, blockedAds, activeTabId) {
-        val fromUrl = extractHostClean(currentSiteUrl)
-        if (fromUrl.isNotBlank() && !fromUrl.startsWith("nova:")) fromUrl
-        else blockedAds.firstOrNull { it.tabId == activeTabId }?.pageDomain.orEmpty().ifBlank { "google.com" }
+        val isInternalHome = currentSiteUrl.startsWith("netra://", ignoreCase = true) ||
+            currentSiteUrl.startsWith("nova://", ignoreCase = true)
+        val fromUrl = if (isInternalHome) "" else extractHostClean(currentSiteUrl)
+        if (fromUrl.isNotBlank()) fromUrl
+        else blockedAds.firstOrNull { it.tabId == activeTabId }?.pageDomain.orEmpty().ifBlank { "Netra" }
     }
     val activeModeLabel = strings.adBlockModeLabel(adBlockMode)
 
@@ -2276,7 +3156,7 @@ fun BlockedAdsSheet(
                         .verticalScroll(rememberScrollState())
                         .testTag("active_filter_rules_list")
                 ) {
-                    activeRules.take(150).forEach { ruleItem ->
+                    activeRules.forEach { ruleItem ->
                         Surface(
                             onClick = { onCopyAdUrl(ruleItem.rule) },
                             shape = RoundedCornerShape(14.dp),
@@ -2331,8 +3211,8 @@ fun BlockedAdsSheet(
                         Text(
                             text = when (adBlockMode) {
                                 AdBlockMode.MINIMAL -> strings.shieldMinimalEmptyDesc(activeRules.size)
-                                AdBlockMode.PRO -> strings.shieldProEmptyDesc(activeRules.size)
-                                AdBlockMode.MAX -> strings.shieldMaxEmptyDesc(activeRules.size)
+                                AdBlockMode.PRO -> strings.shieldProEmptyDesc(activeRules.size, minimalTotal)
+                                AdBlockMode.MAX -> strings.shieldMaxEmptyDesc(activeRules.size, proTotal)
                             },
                             style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
                             color = palette.textSecondary,
@@ -2349,7 +3229,7 @@ fun BlockedAdsSheet(
                         .heightIn(min = 180.dp, max = 270.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    filteredEntries.take(120).forEach { item ->
+                    filteredEntries.take(200).forEach { item ->
                         Surface(
                             onClick = { onCopyAdUrl(item.adUrl) },
                             shape = RoundedCornerShape(16.dp),

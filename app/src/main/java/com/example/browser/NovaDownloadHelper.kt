@@ -83,7 +83,24 @@ class NovaDownloadHelper(
 
     companion object {
         private const val CHANNEL_ID = "nova_video_downloads"
-        const val SUBFOLDER_VIDEOS = "NovaBrowser/Videos"
+        private const val MAX_HTTP_REDIRECTS = 8
+        const val SUBFOLDER_VIDEOS = "Netra/Videos"
+
+        internal fun parseContentRangeTotalBytes(contentRange: String?): Long {
+            if (contentRange.isNullOrBlank() || !contentRange.contains('/')) return -1L
+            val totalPart = contentRange.substringAfterLast('/').trim()
+            val parsedTotal = totalPart.toLongOrNull() ?: return -1L
+            return if (parsedTotal > 0L) parsedTotal else -1L
+        }
+
+        internal fun resolveRedirectUrl(baseUrl: String, location: String?): String? {
+            val loc = location?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+            return try {
+                URL(URL(baseUrl), loc).toExternalForm().replace(" ", "%20")
+            } catch (_: Exception) {
+                null
+            }
+        }
 
         private val permissiveSslSocketFactory: SSLSocketFactory? by lazy {
             try {
@@ -116,11 +133,13 @@ class NovaDownloadHelper(
         cookies: String?,
         profile: HeaderProfile,
         rangeHeaderValue: String?,
-        usePermissiveSsl: Boolean
+        usePermissiveSsl: Boolean,
+        method: String = "GET",
+        includeOrigin: Boolean = true
     ): HttpURLConnection {
         val safeUrl = videoUrl.trim().replace(" ", "%20")
         val conn = (URL(safeUrl).openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
+            requestMethod = method
             connectTimeout = 15_000
             readTimeout = 35_000
             instanceFollowRedirects = true
@@ -149,7 +168,7 @@ class NovaDownloadHelper(
                 } else if (videoOrigin != null) {
                     conn.setRequestProperty("Referer", "$videoOrigin/")
                 }
-                if (pageOrigin != null) {
+                if (includeOrigin && pageOrigin != null) {
                     conn.setRequestProperty("Origin", pageOrigin)
                 }
                 if (!rangeHeaderValue.isNullOrBlank()) {
@@ -159,7 +178,9 @@ class NovaDownloadHelper(
             HeaderProfile.VIDEO_ORIGIN_REFERER_WITH_RANGE -> {
                 if (videoOrigin != null) {
                     conn.setRequestProperty("Referer", "$videoOrigin/")
-                    conn.setRequestProperty("Origin", videoOrigin)
+                    if (includeOrigin) {
+                        conn.setRequestProperty("Origin", videoOrigin)
+                    }
                 }
                 if (!rangeHeaderValue.isNullOrBlank()) {
                     conn.setRequestProperty("Range", rangeHeaderValue)
@@ -173,6 +194,8 @@ class NovaDownloadHelper(
             HeaderProfile.PAGE_REFERER_NO_RANGE -> {
                 if (pageUrl.startsWith("http")) {
                     conn.setRequestProperty("Referer", pageUrl)
+                } else if (videoOrigin != null) {
+                    conn.setRequestProperty("Referer", "$videoOrigin/")
                 }
             }
             HeaderProfile.NO_REFERER_NO_RANGE -> Unit
@@ -180,46 +203,135 @@ class NovaDownloadHelper(
         return conn
     }
 
-    private fun <T> executeWithSslFallback(
+    private fun connectSingleHopWithSslFallback(
+        url: String,
+        pageUrl: String,
+        userAgent: String,
+        cookies: String?,
+        profile: HeaderProfile,
+        rangeHeaderValue: String?,
+        method: String,
+        includeOrigin: Boolean
+    ): HttpURLConnection {
+        val firstConn = openConfiguredConnection(
+            videoUrl = url,
+            pageUrl = pageUrl,
+            userAgent = userAgent,
+            cookies = cookies,
+            profile = profile,
+            rangeHeaderValue = rangeHeaderValue,
+            usePermissiveSsl = false,
+            method = method,
+            includeOrigin = includeOrigin
+        )
+        return try {
+            firstConn.connect()
+            firstConn.responseCode
+            firstConn
+        } catch (_: SSLException) {
+            firstConn.disconnect()
+            val fallbackConn = openConfiguredConnection(
+                videoUrl = url,
+                pageUrl = pageUrl,
+                userAgent = userAgent,
+                cookies = cookies,
+                profile = profile,
+                rangeHeaderValue = rangeHeaderValue,
+                usePermissiveSsl = true,
+                method = method,
+                includeOrigin = includeOrigin
+            )
+            try {
+                fallbackConn.connect()
+                fallbackConn.responseCode
+                fallbackConn
+            } catch (e: Exception) {
+                fallbackConn.disconnect()
+                throw e
+            }
+        } catch (e: Exception) {
+            firstConn.disconnect()
+            throw e
+        }
+    }
+
+    private fun <T> executeHttpRequestWithRedirects(
         videoUrl: String,
         pageUrl: String,
         userAgent: String,
         cookies: String?,
         profile: HeaderProfile,
         rangeHeaderValue: String?,
-        block: (HttpURLConnection) -> T
+        method: String = "GET",
+        block: (HttpURLConnection, String) -> T
     ): T {
-        val firstConn = openConfiguredConnection(
-            videoUrl = videoUrl,
-            pageUrl = pageUrl,
-            userAgent = userAgent,
-            cookies = cookies,
-            profile = profile,
-            rangeHeaderValue = rangeHeaderValue,
-            usePermissiveSsl = false
-        )
-        return try {
-            firstConn.connect()
-            block(firstConn)
-        } catch (_: SSLException) {
-            firstConn.disconnect()
-            val fallbackConn = openConfiguredConnection(
-                videoUrl = videoUrl,
-                pageUrl = pageUrl,
-                userAgent = userAgent,
-                cookies = cookies,
-                profile = profile,
-                rangeHeaderValue = rangeHeaderValue,
-                usePermissiveSsl = true
-            )
-            try {
-                fallbackConn.connect()
-                block(fallbackConn)
-            } finally {
-                fallbackConn.disconnect()
+        var currentUrl = videoUrl.trim().replace(" ", "%20")
+        var currentCookies = cookies
+        var includeOrigin = true
+        var activeConn: HttpURLConnection? = null
+
+        try {
+            var hop = 0
+            while (true) {
+                val conn = connectSingleHopWithSslFallback(
+                    url = currentUrl,
+                    pageUrl = pageUrl,
+                    userAgent = userAgent,
+                    cookies = currentCookies,
+                    profile = profile,
+                    rangeHeaderValue = rangeHeaderValue,
+                    method = method,
+                    includeOrigin = includeOrigin
+                )
+                activeConn = conn
+
+                try {
+                    val setCookieHeaders = conn.headerFields?.entries
+                        ?.firstOrNull { it.key.equals("Set-Cookie", ignoreCase = true) }
+                        ?.value
+                    if (!setCookieHeaders.isNullOrEmpty()) {
+                        val cm = CookieManager.getInstance()
+                        setCookieHeaders.forEach { cookieVal ->
+                            if (!cookieVal.isNullOrBlank()) {
+                                cm.setCookie(currentUrl, cookieVal)
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+
+                val code = conn.responseCode
+                val isRedirect = code == HttpURLConnection.HTTP_MOVED_PERM ||
+                    code == HttpURLConnection.HTTP_MOVED_TEMP ||
+                    code == HttpURLConnection.HTTP_SEE_OTHER ||
+                    code == 307 ||
+                    code == 308
+
+                if (isRedirect && hop < MAX_HTTP_REDIRECTS) {
+                    val location = conn.getHeaderField("Location")
+                    val nextUrl = resolveRedirectUrl(currentUrl, location)
+                    if (nextUrl != null && nextUrl != currentUrl) {
+                        val oldOrigin = extractOrigin(currentUrl)
+                        val newOrigin = extractOrigin(nextUrl)
+                        if (oldOrigin != null && newOrigin != null && oldOrigin != newOrigin) {
+                            includeOrigin = false
+                        }
+                        conn.disconnect()
+                        activeConn = null
+                        currentUrl = nextUrl
+                        currentCookies = getMergedCookies(currentUrl, pageUrl) ?: currentCookies
+                        hop++
+                        continue
+                    }
+                }
+
+                return block(conn, currentUrl)
             }
         } finally {
-            firstConn.disconnect()
+            try {
+                activeConn?.disconnect()
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -227,10 +339,10 @@ class NovaDownloadHelper(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Nova Video Downloads",
+                "Netra Video Downloads",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows progress for Nova Browser MP4 video downloads"
+                description = "Shows progress for Netra MP4 video downloads"
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -354,16 +466,13 @@ class NovaDownloadHelper(
     }
 
     private fun extractTotalBytesFromConnection(conn: HttpURLConnection, code: Int, wasSmallRangeProbe: Boolean): Long {
-        val contentRange = conn.getHeaderField("Content-Range")
-        if (!contentRange.isNullOrBlank() && contentRange.contains('/')) {
-            val totalPart = contentRange.substringAfterLast('/').trim()
-            val parsedTotal = totalPart.toLongOrNull()
-            if (parsedTotal != null && parsedTotal > 0L) {
-                return parsedTotal
-            }
+        val parsedRangeTotal = parseContentRangeTotalBytes(conn.getHeaderField("Content-Range"))
+        if (parsedRangeTotal > 0L) {
+            return parsedRangeTotal
         }
         if (code == 200 || !wasSmallRangeProbe) {
             val cLen = conn.getHeaderField("Content-Length")?.trim()?.toLongOrNull()
+                ?: conn.getHeaderField("X-Content-Length")?.trim()?.toLongOrNull()
                 ?: conn.contentLengthLong
             if (cLen > 100L) {
                 return cLen
@@ -387,7 +496,7 @@ class NovaDownloadHelper(
 
         val cookies = getMergedCookies(videoUrl, pageUrl)
 
-        val profilesToTry = listOf(
+        val probeProfiles = listOf(
             HeaderProfile.PAGE_REFERER_WITH_RANGE,
             HeaderProfile.VIDEO_ORIGIN_REFERER_WITH_RANGE,
             HeaderProfile.NO_REFERER_WITH_RANGE,
@@ -395,42 +504,46 @@ class NovaDownloadHelper(
             HeaderProfile.NO_REFERER_NO_RANGE
         )
 
-        for (profile in profilesToTry) {
+        for (profile in probeProfiles) {
             try {
-                val isRangeProbe = profile == HeaderProfile.PAGE_REFERER_WITH_RANGE ||
-                    profile == HeaderProfile.VIDEO_ORIGIN_REFERER_WITH_RANGE ||
-                    profile == HeaderProfile.NO_REFERER_WITH_RANGE
+                val isRangeProbe = profile != HeaderProfile.PAGE_REFERER_NO_RANGE &&
+                    profile != HeaderProfile.NO_REFERER_NO_RANGE
 
-                val probeResult = executeWithSslFallback(
+                val probeResult = executeHttpRequestWithRedirects(
                     videoUrl = videoUrl,
                     pageUrl = pageUrl,
                     userAgent = userAgent,
                     cookies = cookies,
                     profile = profile,
-                    rangeHeaderValue = if (isRangeProbe) "bytes=0-1" else null
-                ) { conn ->
+                    rangeHeaderValue = if (isRangeProbe) "bytes=0-1" else null,
+                    method = "GET"
+                ) { conn, finalUrl ->
                     val code = conn.responseCode
-                    if (code == 200 || code == 206) {
+                    if (code == 200 || code == 206 || code == 416) {
                         val cType = conn.contentType?.substringBefore(';')?.trim()
                         if (cType != null && cType.equals("text/html", ignoreCase = true)) {
                             null
                         } else {
-                            winningProfileCache[videoUrl] = profile
                             val totalBytes = extractTotalBytesFromConnection(
                                 conn = conn,
                                 code = code,
-                                wasSmallRangeProbe = isRangeProbe && code == 206
+                                wasSmallRangeProbe = isRangeProbe && (code == 206 || code == 416)
                             )
-                            val isStreaming = BrowserUrlUtils.isProtectedOrStreamingUrl(videoUrl, cType)
-                            if (totalBytes > 0L || !isRangeProbe) {
-                                VideoProbeResult(
-                                    contentLength = totalBytes,
-                                    contentType = cType?.ifBlank { "video/mp4" } ?: "video/mp4",
-                                    isDirectMp4 = !isStreaming,
-                                    isStreamingOrProtected = isStreaming
-                                )
-                            } else {
+                            if (code == 416 && totalBytes <= 0L) {
                                 null
+                            } else {
+                                winningProfileCache[videoUrl] = profile
+                                val isStreaming = BrowserUrlUtils.isProtectedOrStreamingUrl(finalUrl, cType)
+                                if (totalBytes > 0L || !isRangeProbe) {
+                                    VideoProbeResult(
+                                        contentLength = totalBytes,
+                                        contentType = cType?.ifBlank { "video/mp4" } ?: "video/mp4",
+                                        isDirectMp4 = !isStreaming,
+                                        isStreamingOrProtected = isStreaming
+                                    )
+                                } else {
+                                    null
+                                }
                             }
                         }
                     } else {
@@ -539,35 +652,23 @@ class NovaDownloadHelper(
         val job = scope.launch(Dispatchers.IO) {
             try {
                 val winningProfile = winningProfileCache[item.url]
-                val preferReferer = when (winningProfile) {
-                    HeaderProfile.NO_REFERER_WITH_RANGE,
-                    HeaderProfile.NO_REFERER_NO_RANGE -> false
-                    else -> true
-                }
-                val customReferer = when (winningProfile) {
-                    HeaderProfile.VIDEO_ORIGIN_REFERER_WITH_RANGE -> extractOrigin(item.url)?.let { "$it/" }
+                val pageReferer = item.referer?.takeIf { it.startsWith("http") }
+                val videoOriginReferer = extractOrigin(item.url)?.let { "$it/" }
+
+                val refererToUse = when (winningProfile) {
                     HeaderProfile.NO_REFERER_WITH_RANGE,
                     HeaderProfile.NO_REFERER_NO_RANGE -> null
-                    else -> item.referer?.takeIf { it.startsWith("http") }
+                    HeaderProfile.VIDEO_ORIGIN_REFERER_WITH_RANGE -> videoOriginReferer ?: pageReferer
+                    else -> pageReferer ?: videoOriginReferer
                 }
 
                 // --- STAGE 1: ANDROID SYSTEM DOWNLOAD MANAGER ---
-                val dmFirstAttempt = runSystemDownloadManagerAttempt(
-                    item = item,
-                    refererHeader = if (preferReferer) customReferer else null
-                )
-                if (dmFirstAttempt) {
-                    return@launch
+                var dmSuccess = runSystemDownloadManagerAttempt(item = item, refererHeader = refererToUse)
+                if (!dmSuccess && refererToUse != null && isActive) {
+                    dmSuccess = runSystemDownloadManagerAttempt(item = item, refererHeader = null)
                 }
-
-                if (preferReferer && !customReferer.isNullOrBlank() && isActive) {
-                    val dmSecondAttempt = runSystemDownloadManagerAttempt(
-                        item = item,
-                        refererHeader = null
-                    )
-                    if (dmSecondAttempt) {
-                        return@launch
-                    }
+                if (dmSuccess) {
+                    return@launch
                 }
 
                 // --- STAGE 2: MULTI-PROFILE HTTP STREAMING ---
@@ -605,11 +706,13 @@ class NovaDownloadHelper(
 
     private suspend fun runSystemDownloadManagerAttempt(
         item: DownloadItemEntity,
-        refererHeader: String?
+        refererHeader: String?,
+        forcePrivateDest: Boolean = false
     ): Boolean {
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager ?: return false
         var sysId = -1L
-        return try {
+        var retryWithPrivateDest = false
+        val result = try {
             val safeUrl = item.url.trim().replace(" ", "%20")
             val uri = Uri.parse(safeUrl)
             val scheme = uri.scheme?.lowercase(Locale.US)
@@ -627,19 +730,21 @@ class NovaDownloadHelper(
             } catch (_: Exception) {
             }
 
-            val directCookie = getDirectCookieForUrl(item.url) ?: item.cookies
+            val directCookie = getMergedCookies(item.url, item.referer.orEmpty())
+                ?: getDirectCookieForUrl(item.url)
+                ?: item.cookies
             val effectiveUa = item.userAgent.ifBlank { NovaWebViewPool.MOBILE_USER_AGENT }
 
             val request = DownloadManager.Request(uri).apply {
                 setTitle(item.fileName)
-                setDescription("Nova Browser Video • ${item.domain}")
+                setDescription("Netra Video • ${item.domain}")
                 setMimeType("video/mp4")
                 setAllowedOverMetered(true)
                 setAllowedOverRoaming(true)
                 setVisibleInDownloadsUi(true)
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 addRequestHeader("User-Agent", effectiveUa)
-                addRequestHeader("Accept", "video/mp4,video/*;q=0.9,*/*;q=0.8")
+                addRequestHeader("Accept", "video/mp4,video/webm,video/*;q=0.9,*/*;q=0.8")
                 if (!directCookie.isNullOrBlank()) {
                     addRequestHeader("Cookie", directCookie)
                 }
@@ -648,13 +753,19 @@ class NovaDownloadHelper(
                 }
             }
 
+            var usedPrivateDest = forcePrivateDest
             var targetFilePath = getPublicVideoFile(item.fileName).absolutePath
-            try {
-                request.setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS,
-                    "$SUBFOLDER_VIDEOS/${item.fileName}"
-                )
-            } catch (_: Exception) {
+            if (!forcePrivateDest) {
+                try {
+                    request.setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS,
+                        "$SUBFOLDER_VIDEOS/${item.fileName}"
+                    )
+                } catch (_: Exception) {
+                    usedPrivateDest = true
+                }
+            }
+            if (usedPrivateDest) {
                 val fallbackFile = getWritableVideoFile(item.fileName)
                 targetFilePath = fallbackFile.absolutePath
                 request.setDestinationInExternalFilesDir(
@@ -680,6 +791,7 @@ class NovaDownloadHelper(
             var lastProgressChangeMs = startTimeMs
             var lastDownloadedBytes = 0L
 
+            var finalAttemptSuccess = false
             while (scope.isActive) {
                 delay(350L)
                 val cursor: Cursor = dm.query(query) ?: break
@@ -692,11 +804,13 @@ class NovaDownloadHelper(
                         return@use
                     }
                     val statusIdx = c.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    val reasonIdx = c.getColumnIndex(DownloadManager.COLUMN_REASON)
                     val downIdx = c.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
                     val totalIdx = c.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
                     val localUriIdx = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
 
                     val status = if (statusIdx >= 0) c.getInt(statusIdx) else DownloadManager.STATUS_RUNNING
+                    val reasonCode = if (reasonIdx >= 0) c.getInt(reasonIdx) else -1
                     val downloaded = if (downIdx >= 0) c.getLong(downIdx).coerceAtLeast(0L) else 0L
                     val totalFromDm = if (totalIdx >= 0) c.getLong(totalIdx) else -1L
                     val bestTotal = if (totalFromDm > 0L) totalFromDm else currentItem.totalBytes
@@ -709,11 +823,23 @@ class NovaDownloadHelper(
                     when (status) {
                         DownloadManager.STATUS_SUCCESSFUL -> {
                             val localUriStr = if (localUriIdx >= 0) c.getString(localUriIdx) else null
-                            val resolvedPath = resolveDownloadedFilePath(localUriStr, targetFilePath, item.fileName)
+                            var resolvedPath = resolveDownloadedFilePath(localUriStr, targetFilePath, item.fileName)
+                            if (usedPrivateDest) {
+                                val srcFile = File(resolvedPath)
+                                if (srcFile.exists() && srcFile.length() > 0L) {
+                                    val exportedUri = exportToPublicDownloads(srcFile, item.fileName)
+                                    val pubFile = getPublicVideoFile(item.fileName)
+                                    resolvedPath = when {
+                                        pubFile.exists() && pubFile.length() > 0L -> pubFile.absolutePath
+                                        exportedUri != null -> exportedUri.toString()
+                                        else -> resolvedPath
+                                    }
+                                }
+                            }
                             val finalBytes = when {
                                 downloaded > 0L -> downloaded
                                 bestTotal > 0L -> bestTotal
-                                File(resolvedPath).exists() -> File(resolvedPath).length()
+                                !resolvedPath.startsWith("content://") && File(resolvedPath).exists() -> File(resolvedPath).length()
                                 else -> currentItem.downloadedBytes
                             }
                             currentItem = currentItem.copy(
@@ -729,6 +855,14 @@ class NovaDownloadHelper(
                         }
 
                         DownloadManager.STATUS_FAILED -> {
+                            if (!usedPrivateDest && (
+                                    reasonCode == DownloadManager.ERROR_FILE_ERROR ||
+                                        reasonCode == DownloadManager.ERROR_UNKNOWN ||
+                                        reasonCode == DownloadManager.ERROR_UNHANDLED_HTTP_CODE
+                                    )
+                            ) {
+                                retryWithPrivateDest = true
+                            }
                             try {
                                 dm.remove(sysId)
                             } catch (_: Exception) {
@@ -769,10 +903,11 @@ class NovaDownloadHelper(
                 }
 
                 if (shouldBreak) {
-                    return succeeded
+                    finalAttemptSuccess = succeeded
+                    break
                 }
             }
-            false
+            finalAttemptSuccess
         } catch (_: Exception) {
             if (sysId > 0L) {
                 try {
@@ -782,6 +917,15 @@ class NovaDownloadHelper(
             }
             false
         }
+
+        if (!result && retryWithPrivateDest && !forcePrivateDest && scope.isActive) {
+            return runSystemDownloadManagerAttempt(
+                item = item,
+                refererHeader = refererHeader,
+                forcePrivateDest = true
+            )
+        }
+        return result
     }
 
     private fun resolveDownloadedFilePath(
@@ -809,8 +953,6 @@ class NovaDownloadHelper(
     private suspend fun runHttpStreamingAttempt(item: DownloadItemEntity): Boolean {
         val file = getWritableVideoFile(item.fileName)
         file.parentFile?.mkdirs()
-        val freshCookies = getMergedCookies(item.url, item.referer.orEmpty()).takeIf { !it.isNullOrBlank() }
-            ?: item.cookies
 
         val allProfiles = listOf(
             HeaderProfile.PAGE_REFERER_WITH_RANGE,
@@ -826,6 +968,9 @@ class NovaDownloadHelper(
             allProfiles
         }
 
+        val freshCookies = getMergedCookies(item.url, item.referer.orEmpty()).takeIf { !it.isNullOrBlank() }
+            ?: item.cookies
+
         for (profile in orderedProfiles) {
             if (!scope.isActive) return false
             try {
@@ -836,127 +981,128 @@ class NovaDownloadHelper(
                     else -> null
                 }
 
-                val completed = executeWithSslFallback(
+                var downloadedTotalBytes = item.totalBytes
+                var streamedBytes = 0L
+
+                val completed = executeHttpRequestWithRedirects(
                     videoUrl = item.url,
                     pageUrl = item.referer.orEmpty(),
                     userAgent = item.userAgent,
                     cookies = freshCookies,
                     profile = profile,
-                    rangeHeaderValue = rangeHeader
-                ) { conn ->
-                    val code = conn.responseCode
-                    if (code !in 200..299 && code != 206) {
-                        return@executeWithSslFallback false
-                    }
-                    val responseMime = conn.contentType?.substringBefore(';')?.trim()
-                    if (responseMime != null && responseMime.equals("text/html", ignoreCase = true)) {
-                        return@executeWithSslFallback false
-                    }
-                    if (BrowserUrlUtils.isProtectedOrStreamingUrl(item.url, responseMime)) {
-                        return@executeWithSslFallback false
-                    }
+                    rangeHeaderValue = rangeHeader,
+                    method = "GET"
+                ) { conn, finalUrl ->
+                        val code = conn.responseCode
+                        if (code !in 200..299 && code != 206) {
+                            return@executeHttpRequestWithRedirects false
+                        }
+                        val responseMime = conn.contentType?.substringBefore(';')?.trim()
+                        if (responseMime != null && responseMime.equals("text/html", ignoreCase = true)) {
+                            return@executeHttpRequestWithRedirects false
+                        }
+                        if (BrowserUrlUtils.isProtectedOrStreamingUrl(finalUrl, responseMime)) {
+                            return@executeHttpRequestWithRedirects false
+                        }
 
-                    val totalFromHeaders = extractTotalBytesFromConnection(
-                        conn = conn,
-                        code = code,
-                        wasSmallRangeProbe = false
-                    )
-                    val contentLen = conn.contentLengthLong
-                    val totalBytes = when {
-                        totalFromHeaders > 0L -> totalFromHeaders
-                        contentLen > 0L -> contentLen
-                        else -> item.totalBytes
-                    }
-
-                    scope.launch(Dispatchers.IO) {
-                        repository.updateDownload(
-                            item.copy(
-                                systemDownloadId = -1L,
-                                filePath = file.absolutePath,
-                                status = DownloadStatus.RUNNING.name,
-                                downloadedBytes = 0L,
-                                totalBytes = totalBytes,
-                                errorReason = null
-                            )
+                        val totalFromHeaders = extractTotalBytesFromConnection(
+                            conn = conn,
+                            code = code,
+                            wasSmallRangeProbe = false
                         )
-                    }
-
-                    val raf = RandomAccessFile(file, "rw")
-                    raf.setLength(0)
-                    raf.seek(0)
-
-                    var currentBytes = 0L
-                    val buffer = ByteArray(64 * 1024)
-                    var lastUpdateMs = 0L
-
-                    conn.inputStream.use { input ->
-                        raf.use { output ->
-                            while (scope.isActive) {
-                                val read = input.read(buffer)
-                                if (read == -1) break
-                                output.write(buffer, 0, read)
-                                currentBytes += read
-                                val now = System.currentTimeMillis()
-                                if (now - lastUpdateMs > 240L) {
-                                    lastUpdateMs = now
-                                    val snapBytes = currentBytes
-                                    scope.launch(Dispatchers.IO) {
-                                        repository.updateDownload(
-                                            item.copy(
-                                                systemDownloadId = -1L,
-                                                filePath = file.absolutePath,
-                                                status = DownloadStatus.RUNNING.name,
-                                                downloadedBytes = snapBytes,
-                                                totalBytes = totalBytes,
-                                                errorReason = null
-                                            )
-                                        )
-                                    }
-                                    val pct = if (totalBytes > 0L) {
-                                        ((currentBytes * 100L) / totalBytes).toInt().coerceIn(1, 99)
-                                    } else {
-                                        50
-                                    }
-                                    postDownloadNotification(item.id.toInt(), item.fileName, pct, false, null)
-                                }
-                            }
+                        val contentLen = conn.contentLengthLong
+                        val totalBytes = when {
+                            totalFromHeaders > 0L -> totalFromHeaders
+                            contentLen > 0L -> contentLen
+                            else -> item.totalBytes
                         }
-                    }
+                        downloadedTotalBytes = totalBytes
 
-                    if (scope.isActive && currentBytes > 0L) {
-                        exportToPublicDownloads(file, item.fileName)
-                        val pubFile = getPublicVideoFile(item.fileName)
-                        val finalPath = if (pubFile.exists() && pubFile.length() > 0L) {
-                            pubFile.absolutePath
-                        } else {
-                            file.absolutePath
-                        }
-                        val snapFinalBytes = currentBytes
                         scope.launch(Dispatchers.IO) {
                             repository.updateDownload(
                                 item.copy(
                                     systemDownloadId = -1L,
-                                    filePath = finalPath,
-                                    status = DownloadStatus.COMPLETED.name,
-                                    downloadedBytes = snapFinalBytes,
-                                    totalBytes = if (totalBytes > 0L) totalBytes else snapFinalBytes,
+                                    filePath = file.absolutePath,
+                                    status = DownloadStatus.RUNNING.name,
+                                    downloadedBytes = 0L,
+                                    totalBytes = totalBytes,
                                     errorReason = null
                                 )
                             )
                         }
-                        postDownloadNotification(item.id.toInt(), item.fileName, 100, true, null)
-                        true
-                    } else {
-                        false
-                    }
-                }
 
-                if (completed) return true
-            } catch (_: Exception) {
+                        val raf = RandomAccessFile(file, "rw")
+                        raf.setLength(0)
+                        raf.seek(0)
+
+                        var currentBytes = 0L
+                        val buffer = ByteArray(64 * 1024)
+                        var lastUpdateMs = 0L
+
+                        conn.inputStream.use { input ->
+                            raf.use { output ->
+                                while (scope.isActive) {
+                                    val read = input.read(buffer)
+                                    if (read == -1) break
+                                    output.write(buffer, 0, read)
+                                    currentBytes += read
+                                    val now = System.currentTimeMillis()
+                                    if (now - lastUpdateMs > 240L) {
+                                        lastUpdateMs = now
+                                        val snapBytes = currentBytes
+                                        scope.launch(Dispatchers.IO) {
+                                            repository.updateDownload(
+                                                item.copy(
+                                                    systemDownloadId = -1L,
+                                                    filePath = file.absolutePath,
+                                                    status = DownloadStatus.RUNNING.name,
+                                                    downloadedBytes = snapBytes,
+                                                    totalBytes = totalBytes,
+                                                    errorReason = null
+                                                )
+                                            )
+                                        }
+                                        val pct = if (totalBytes > 0L) {
+                                            ((currentBytes * 100L) / totalBytes).toInt().coerceIn(1, 99)
+                                        } else {
+                                            50
+                                        }
+                                        postDownloadNotification(item.id.toInt(), item.fileName, pct, false, null)
+                                    }
+                                }
+                            }
+                        }
+
+                        streamedBytes = currentBytes
+                        scope.isActive && currentBytes > 0L
+                    }
+
+                    if (completed) {
+                        val exportedUri = exportToPublicDownloads(file, item.fileName)
+                        val pubFile = getPublicVideoFile(item.fileName)
+                        val finalPath = when {
+                            pubFile.exists() && pubFile.length() > 0L -> pubFile.absolutePath
+                            exportedUri != null -> exportedUri.toString()
+                            else -> file.absolutePath
+                        }
+                        repository.updateDownload(
+                            item.copy(
+                                systemDownloadId = -1L,
+                                filePath = finalPath,
+                                status = DownloadStatus.COMPLETED.name,
+                                downloadedBytes = streamedBytes,
+                                totalBytes = if (downloadedTotalBytes > 0L) downloadedTotalBytes else streamedBytes,
+                                errorReason = null
+                            )
+                        )
+                        postDownloadNotification(item.id.toInt(), item.fileName, 100, true, null)
+                        return true
+                    }
+                } catch (_: Exception) {
+                }
             }
+            return false
         }
-        return false
-    }
 
     private suspend fun runWebViewStreamBridgeAttempt(item: DownloadItemEntity): Boolean {
         val trigger = webViewStreamTrigger ?: return false
@@ -1073,12 +1219,12 @@ class NovaDownloadHelper(
             val file = File(item.filePath)
             val finalSize = if (file.exists() && file.length() > 0L) file.length() else totalLoadedBytes
             if (finalSize > 0L) {
-                exportToPublicDownloads(file, item.fileName)
+                val exportedUri = exportToPublicDownloads(file, item.fileName)
                 val pubFile = getPublicVideoFile(item.fileName)
-                val finalPath = if (pubFile.exists() && pubFile.length() > 0L) {
-                    pubFile.absolutePath
-                } else {
-                    file.absolutePath
+                val finalPath = when {
+                    pubFile.exists() && pubFile.length() > 0L -> pubFile.absolutePath
+                    exportedUri != null -> exportedUri.toString()
+                    else -> file.absolutePath
                 }
                 repository.updateDownload(
                     item.copy(
@@ -1114,8 +1260,12 @@ class NovaDownloadHelper(
                 }
             }
             try {
-                val f = File(item.filePath)
-                if (f.exists()) f.delete()
+                if (item.filePath.startsWith("content://")) {
+                    context.contentResolver.delete(Uri.parse(item.filePath), null, null)
+                } else {
+                    val f = File(item.filePath)
+                    if (f.exists()) f.delete()
+                }
                 val pub = getPublicVideoFile(item.fileName)
                 if (pub.exists()) pub.delete()
                 val ext = getWritableVideoFile(item.fileName)
@@ -1136,6 +1286,10 @@ class NovaDownloadHelper(
                     contentUri = dm.getUriForDownloadedFile(item.systemDownloadId)
                 } catch (_: Exception) {
                 }
+            }
+
+            if (contentUri == null && item.filePath.startsWith("content://")) {
+                contentUri = Uri.parse(item.filePath)
             }
 
             if (contentUri == null) {
@@ -1194,7 +1348,7 @@ class NovaDownloadHelper(
                     .setOngoing(false)
             } else {
                 builder.setSmallIcon(android.R.drawable.stat_sys_download_done)
-                    .setContentText("Saved to Download/NovaBrowser/Videos/$fileName")
+                    .setContentText("Saved to Download/Netra/Videos/$fileName")
                     .setProgress(0, 0, false)
                     .setOngoing(false)
             }

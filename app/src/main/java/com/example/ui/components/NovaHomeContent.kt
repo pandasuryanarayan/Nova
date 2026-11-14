@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +81,20 @@ fun NovaHomeContent(
     var homeSearchQuery by remember { mutableStateOf("") }
     var editingShortcut by remember { mutableStateOf<QuickShortcutEntity?>(null) }
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val localView = LocalView.current
     val shortcutRows = remember(shortcuts) { shortcuts.chunked(4) }
+
+    fun submitHomeSearch() {
+        val q = homeSearchQuery.trim()
+        if (q.isNotBlank()) {
+            homeSearchQuery = ""
+            dismissSoftKeyboard(localView)
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+            onSearchOrLoadUrl(q)
+        }
+    }
 
     val incognitoAccent = Color(0xFF00E5FF)
     val incognitoPillBg = if (isIncognito) {
@@ -136,28 +151,28 @@ fun NovaHomeContent(
                             .size(72.dp)
                             .clip(RoundedCornerShape(22.dp))
                             .background(
-                                color = if (isIncognito) Color(0xFF0B1021) else Color(0xFF3E1800),
+                                color = Color.Black,
                                 shape = RoundedCornerShape(22.dp)
                             )
                             .border(
-                                width = 1.8.dp,
+                                width = 1.6.dp,
                                 brush = Brush.linearGradient(
                                     colors = if (isIncognito) {
                                         listOf(Color(0xFF00E5FF), Color(0xFF8C62FF))
                                     } else {
-                                        listOf(Color(0xFFFF6D00), Color(0xFFFFAB40))
+                                        listOf(Color(0xFFFFFFFF).copy(alpha = 0.28f), Color(0xFFFF6D00).copy(alpha = 0.65f))
                                     }
                                 ),
                                 shape = RoundedCornerShape(22.dp)
                             )
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.img_nova_launcher_fg),
-                            contentDescription = "Nova Browser Logo",
-                            contentScale = ContentScale.Crop,
+                            painter = painterResource(id = R.drawable.ic_netra_logo),
+                            contentDescription = "Netra Logo",
+                            contentScale = ContentScale.Fit,
                             modifier = Modifier
-                                .size(72.dp)
-                                .clip(RoundedCornerShape(22.dp))
+                                .size(70.dp)
+                                .clip(RoundedCornerShape(20.dp))
                         )
                     }
                 }
@@ -167,12 +182,17 @@ fun NovaHomeContent(
                 Text(
                     text = if (isIncognito) strings.appTitlePrivate else strings.appTitleStandard,
                     style = MaterialTheme.typography.headlineLarge.copy(
-                        fontSize = 31.sp,
-                        letterSpacing = (-0.5).sp
+                        fontSize = if (isIncognito && strings.isHindi) 27.sp else 31.sp,
+                        lineHeight = 42.sp,
+                        letterSpacing = if (strings.isHindi) 0.sp else (-0.5).sp
                     ),
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -190,24 +210,17 @@ fun NovaHomeContent(
                     value = homeSearchQuery,
                     onValueChange = { homeSearchQuery = it },
                     placeholder = strings.searchPlaceholder,
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(30.dp),
                     containerColor = MaterialTheme.colorScheme.surface,
-                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
+                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f),
                     imeAction = EditorInfo.IME_ACTION_GO,
-                    onImeAction = {
-                        if (homeSearchQuery.isNotBlank()) {
-                            val q = homeSearchQuery
-                            homeSearchQuery = ""
-                            focusManager.clearFocus()
-                            onSearchOrLoadUrl(q)
-                        }
-                    },
+                    onImeAction = { submitHomeSearch() },
                     leadingIcon = {
                         Icon(
                             imageVector = NovaIcons.Search,
                             contentDescription = "Search",
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     },
                     trailingIcon = if (homeSearchQuery.isNotBlank()) {
@@ -215,29 +228,24 @@ fun NovaHomeContent(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
                                     onClick = { homeSearchQuery = "" },
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
                                         imageVector = NovaIcons.Close,
                                         contentDescription = "Clear",
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                                 IconButton(
-                                    onClick = {
-                                        val q = homeSearchQuery
-                                        homeSearchQuery = ""
-                                        focusManager.clearFocus()
-                                        onSearchOrLoadUrl(q)
-                                    },
-                                    modifier = Modifier.size(34.dp)
+                                    onClick = { submitHomeSearch() },
+                                    modifier = Modifier.size(38.dp)
                                 ) {
                                     Icon(
                                         imageVector = NovaIcons.PlayCircleFilled,
                                         contentDescription = "Go",
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
@@ -245,7 +253,11 @@ fun NovaHomeContent(
                     } else {
                         null
                     },
-                    textSizeSp = 15f,
+                    textSizeSp = 16f,
+                    minHeight = 58.dp,
+                    borderWidth = 1.4.dp,
+                    horizontalPadding = 16.dp,
+                    verticalPadding = 11.dp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("home_search_input")

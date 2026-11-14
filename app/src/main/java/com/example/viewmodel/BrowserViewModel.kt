@@ -4,6 +4,8 @@ import android.app.Application
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.view.View
+import android.webkit.GeolocationPermissions
+import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,7 +35,11 @@ import com.example.data.DownloadItemEntity
 import com.example.data.HistoryEntity
 import com.example.data.NOVA_HOME_URL
 import com.example.data.NovaDatabase
+import com.example.data.PendingWebPermissionRequest
 import com.example.data.QuickShortcutEntity
+import com.example.data.SiteConfigSettings
+import com.example.data.SitePermissionMode
+import com.example.data.WebPermissionKind
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +57,7 @@ import org.json.JSONObject
 import org.json.JSONTokener
 
 data class BrowserUiState(
-    val tabs: List<BrowserTab> = listOf(BrowserTab(title = "Nova Home", url = NOVA_HOME_URL)),
+    val tabs: List<BrowserTab> = listOf(BrowserTab(title = "Netra Home", url = NOVA_HOME_URL)),
     val activeTabId: String = "",
     val activeSheet: ActiveSheet = ActiveSheet.NONE,
     val detectedVideo: DetectedVideoInfo? = null,
@@ -63,7 +69,8 @@ data class BrowserUiState(
     val fullscreenCallback: WebChromeClient.CustomViewCallback? = null,
     val backgroundMedia: BackgroundMediaState = BackgroundMediaState(),
     val devToolsState: DevToolsState = DevToolsState(),
-    val blockedAdsLog: List<BlockedAdEntry> = emptyList()
+    val blockedAdsLog: List<BlockedAdEntry> = emptyList(),
+    val pendingWebPermission: PendingWebPermissionRequest? = null
 ) {
     val activeTab: BrowserTab
         get() = tabs.find { it.id == activeTabId } ?: tabs.first()
@@ -74,7 +81,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val repository = BrowserRepository(application, database.browserDao())
     val downloadHelper = NovaDownloadHelper(application, repository, viewModelScope)
 
-    private val initialTab = BrowserTab(title = "Nova Home", url = NOVA_HOME_URL)
+    private val initialTab = BrowserTab(title = "Netra Home", url = NOVA_HOME_URL)
 
     private val _uiState = MutableStateFlow(
         BrowserUiState(
@@ -88,6 +95,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = BrowserPreferences()
+    )
+
+    val siteConfigs: StateFlow<Map<String, SiteConfigSettings>> = repository.siteConfigsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
     )
 
     val bookmarks: StateFlow<List<BookmarkEntity>> = repository.bookmarksFlow.stateIn(
@@ -118,6 +131,11 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     val toastEvents = _toastEvents.asSharedFlow()
 
     private var backgroundMediaPlayer: MediaPlayer? = null
+    private var pendingGeoCallback: GeolocationPermissions.Callback? = null
+    private var pendingGeoOrigin: String = ""
+    private var pendingWebPermissionRequestObj: PermissionRequest? = null
+    private var pendingPermissionKind: WebPermissionKind? = null
+    private var pendingPermissionDomain: String = ""
 
     val webViewPool = NovaWebViewPool(
         context = application.applicationContext,
@@ -137,7 +155,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         },
         onHistoryVisited = { tabId, title, url ->
             val tab = _uiState.value.tabs.find { it.id == tabId }
-            if (tab != null && !tab.isIncognito && !url.startsWith("nova://")) {
+            if (tab != null && !tab.isIncognito && !url.startsWith("netra://") && !url.startsWith("nova://")) {
                 viewModelScope.launch {
                     repository.recordHistory(title, url, BrowserUrlUtils.extractDomain(url))
                 }
@@ -237,7 +255,24 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         },
         isAdBlockEnabledProvider = { preferences.value.isAdBlockEnabled },
         adBlockModeProvider = { preferences.value.adBlockMode },
-        isDarkModeEnabledProvider = { preferences.value.isDarkMode }
+        isDarkModeEnabledProvider = { preferences.value.isDarkMode },
+        siteConfigProvider = { domain -> repository.getSiteConfig(domain) },
+        onGeolocationPermissionRequested = { domain, origin, callback ->
+            handleGeolocationPermissionRequested(domain, origin, callback)
+        },
+        onWebPermissionRequested = { domain, request ->
+            handleWebPermissionRequested(domain, request)
+        },
+        onWebPermissionCanceled = { canceledReq ->
+            if (pendingWebPermissionRequestObj == canceledReq) {
+                pendingWebPermissionRequestObj = null
+                pendingPermissionKind = null
+                _uiState.update { it.copy(pendingWebPermission = null) }
+            }
+        },
+        onPopupBlocked = { domain ->
+            emitToast("Pop-up blocked on $domain")
+        }
     )
 
     init {
@@ -286,6 +321,189 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun clearBlockedAdsLog() {
         _uiState.update { it.copy(blockedAdsLog = emptyList()) }
         emitToast("Cleared blocked ads log")
+    }
+
+    // --- Chrome-Style Site Config & Web Permission Handling ---
+
+    fun getSiteConfigForUrl(url: String): SiteConfigSettings {
+        val domain = BrowserUrlUtils.extractDomain(url)
+        return repository.getSiteConfig(domain)
+    }
+
+    fun updateSiteConfig(
+        url: String,
+        reloadPage: Boolean = false,
+        transform: (SiteConfigSettings) -> SiteConfigSettings
+    ) {
+        val domain = BrowserUrlUtils.extractDomain(url)
+        val current = repository.getSiteConfig(domain)
+        val updated = transform(current).copy(domain = domain.trim().lowercase().removePrefix("www."))
+        repository.saveSiteConfig(updated)
+        val active = _uiState.value.activeTab
+        webViewPool.applySiteConfigNow(active.id, updated, reloadPage = reloadPage)
+    }
+
+    fun resetSiteConfigAndClearData(url: String) {
+        val domain = BrowserUrlUtils.extractDomain(url)
+        repository.resetSiteConfig(domain)
+        val resetConfig = repository.getSiteConfig(domain)
+        val active = _uiState.value.activeTab
+        webViewPool.clearSiteCookies(url, active.id)
+        webViewPool.applySiteConfigNow(active.id, resetConfig, reloadPage = true)
+        emitToast("Site permissions reset & data cleared")
+    }
+
+    fun clearSingleSiteCookie(url: String, cookieName: String) {
+        webViewPool.clearSingleSiteCookie(url, cookieName)
+    }
+
+    fun clearAllSiteCookiesAndStorage(url: String) {
+        val active = _uiState.value.activeTab
+        webViewPool.clearSiteCookies(url, active.id)
+    }
+
+    private fun handleGeolocationPermissionRequested(
+        domain: String,
+        origin: String,
+        callback: GeolocationPermissions.Callback
+    ) {
+        val cfg = repository.getSiteConfig(domain)
+        if (cfg.locationPermission == SitePermissionMode.BLOCK) {
+            callback.invoke(origin, false, false)
+            return
+        }
+        pendingGeoCallback?.invoke(pendingGeoOrigin, false, false)
+        pendingGeoCallback = callback
+        pendingGeoOrigin = origin
+        pendingWebPermissionRequestObj = null
+        pendingPermissionKind = WebPermissionKind.LOCATION
+        pendingPermissionDomain = domain
+        _uiState.update {
+            it.copy(
+                pendingWebPermission = PendingWebPermissionRequest(
+                    domain = domain,
+                    origin = origin,
+                    kind = WebPermissionKind.LOCATION,
+                    isPreAllowed = cfg.locationPermission == SitePermissionMode.ALLOW
+                )
+            )
+        }
+    }
+
+    private fun handleWebPermissionRequested(domain: String, request: PermissionRequest) {
+        val resources = request.resources.orEmpty().toList()
+        val wantsCam = resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+        val wantsMic = resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
+        val wantsDrm = resources.contains(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)
+        val cfg = repository.getSiteConfig(domain)
+
+        if (!wantsCam && !wantsMic) {
+            if (wantsDrm && cfg.protectedContentAllowed) {
+                request.grant(arrayOf(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID))
+            } else {
+                request.deny()
+            }
+            return
+        }
+
+        val camBlocked = wantsCam && cfg.cameraPermission == SitePermissionMode.BLOCK
+        val micBlocked = wantsMic && cfg.microphonePermission == SitePermissionMode.BLOCK
+        if ((wantsCam && !wantsMic && camBlocked) ||
+            (wantsMic && !wantsCam && micBlocked) ||
+            (wantsCam && wantsMic && camBlocked && micBlocked)
+        ) {
+            request.deny()
+            return
+        }
+
+        val kind = when {
+            wantsCam && wantsMic && !camBlocked && !micBlocked -> WebPermissionKind.CAMERA_AND_MICROPHONE
+            wantsCam && !camBlocked -> WebPermissionKind.CAMERA
+            else -> WebPermissionKind.MICROPHONE
+        }
+
+        val preAllowed = when (kind) {
+            WebPermissionKind.CAMERA -> cfg.cameraPermission == SitePermissionMode.ALLOW
+            WebPermissionKind.MICROPHONE -> cfg.microphonePermission == SitePermissionMode.ALLOW
+            WebPermissionKind.CAMERA_AND_MICROPHONE ->
+                cfg.cameraPermission == SitePermissionMode.ALLOW &&
+                    cfg.microphonePermission == SitePermissionMode.ALLOW
+            WebPermissionKind.LOCATION -> cfg.locationPermission == SitePermissionMode.ALLOW
+        }
+
+        pendingWebPermissionRequestObj?.deny()
+        pendingGeoCallback = null
+        pendingWebPermissionRequestObj = request
+        pendingPermissionKind = kind
+        pendingPermissionDomain = domain
+        _uiState.update {
+            it.copy(
+                pendingWebPermission = PendingWebPermissionRequest(
+                    domain = domain,
+                    origin = request.origin?.toString().orEmpty(),
+                    kind = kind,
+                    isPreAllowed = preAllowed
+                )
+            )
+        }
+    }
+
+    fun resolvePendingWebPermission(userAllowed: Boolean, osGranted: Boolean) {
+        val kind = pendingPermissionKind
+        val domain = pendingPermissionDomain
+        val geoCb = pendingGeoCallback
+        val geoOrigin = pendingGeoOrigin
+        val webReq = pendingWebPermissionRequestObj
+
+        pendingGeoCallback = null
+        pendingGeoOrigin = ""
+        pendingWebPermissionRequestObj = null
+        pendingPermissionKind = null
+        pendingPermissionDomain = ""
+        _uiState.update { it.copy(pendingWebPermission = null) }
+
+        val granted = userAllowed && osGranted
+        val mode = if (userAllowed) SitePermissionMode.ALLOW else SitePermissionMode.BLOCK
+
+        if (domain.isNotBlank() && kind != null) {
+            val current = repository.getSiteConfig(domain)
+            val updated = when (kind) {
+                WebPermissionKind.LOCATION -> current.copy(locationPermission = mode)
+                WebPermissionKind.CAMERA -> current.copy(cameraPermission = mode)
+                WebPermissionKind.MICROPHONE -> current.copy(microphonePermission = mode)
+                WebPermissionKind.CAMERA_AND_MICROPHONE -> current.copy(
+                    cameraPermission = mode,
+                    microphonePermission = mode
+                )
+            }
+            repository.saveSiteConfig(updated)
+        }
+
+        if (geoCb != null) {
+            geoCb.invoke(geoOrigin, granted, granted)
+        }
+        if (webReq != null) {
+            if (granted) {
+                val allowedResources = webReq.resources.orEmpty().filter { res ->
+                    when (res) {
+                        PermissionRequest.RESOURCE_VIDEO_CAPTURE ->
+                            kind == WebPermissionKind.CAMERA || kind == WebPermissionKind.CAMERA_AND_MICROPHONE
+                        PermissionRequest.RESOURCE_AUDIO_CAPTURE ->
+                            kind == WebPermissionKind.MICROPHONE || kind == WebPermissionKind.CAMERA_AND_MICROPHONE
+                        PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID ->
+                            repository.getSiteConfig(domain).protectedContentAllowed
+                        else -> false
+                    }
+                }.toTypedArray()
+                if (allowedResources.isNotEmpty()) {
+                    webReq.grant(allowedResources)
+                } else {
+                    webReq.deny()
+                }
+            } else {
+                webReq.deny()
+            }
+        }
     }
 
     // --- Desktop-Style Browser Inspect (DevTools: Elements, Sources, Console, Network ONLY) ---
@@ -769,13 +987,17 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Tab Management ---
 
-    fun openNewTab(url: String = NOVA_HOME_URL, isIncognito: Boolean = false) {
+    fun openNewTab(
+        url: String = NOVA_HOME_URL,
+        isIncognito: Boolean = false,
+        referer: String? = null
+    ) {
         val defaultZoom = preferences.value.defaultTextZoom
         val normalizedUrl = if (url == NOVA_HOME_URL) NOVA_HOME_URL else BrowserUrlUtils.normalizeInputToUrl(url)
         val newTab = BrowserTab(
             url = normalizedUrl,
             title = if (normalizedUrl == NOVA_HOME_URL) {
-                if (isIncognito) "Private Home" else "Nova Home"
+                if (isIncognito) "Private Home" else "Netra Home"
             } else {
                 BrowserUrlUtils.extractDomain(normalizedUrl)
             },
@@ -790,7 +1012,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             )
         }
         if (!newTab.isHomePage) {
-            webViewPool.loadUrl(newTab, normalizedUrl)
+            webViewPool.loadUrl(newTab, normalizedUrl, referer)
         }
     }
 
@@ -836,7 +1058,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             val remaining = state.tabs.filterNot { it.id == tabId }
             if (remaining.isEmpty()) {
                 val fresh = BrowserTab(
-                    title = "Nova Home",
+                    title = "Netra Home",
                     url = NOVA_HOME_URL,
                     textZoom = preferences.value.defaultTextZoom
                 )
@@ -859,7 +1081,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             updateTabById(current.id) {
                 it.copy(
                     isIncognito = nextIncognito,
-                    title = if (nextIncognito) "Private Home" else "Nova Home"
+                    title = if (nextIncognito) "Private Home" else "Netra Home"
                 )
             }
         } else if (current.isIncognito) {
@@ -888,7 +1110,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         updateTabById(active.id) {
             it.copy(
                 url = targetUrl,
-                title = if (targetUrl == NOVA_HOME_URL) "Nova Home" else BrowserUrlUtils.extractDomain(targetUrl),
+                title = if (targetUrl == NOVA_HOME_URL) "Netra Home" else BrowserUrlUtils.extractDomain(targetUrl),
                 isLoading = targetUrl != NOVA_HOME_URL,
                 progress = if (targetUrl == NOVA_HOME_URL) 0 else 15
             )
@@ -954,7 +1176,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         updateTabById(active.id) {
             it.copy(
                 url = NOVA_HOME_URL,
-                title = if (it.isIncognito) "Private Home" else "Nova Home",
+                title = if (it.isIncognito) "Private Home" else "Netra Home",
                 isLoading = false,
                 progress = 0
             )
@@ -1013,14 +1235,16 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun selectAdBlockMode(mode: AdBlockMode) {
         viewModelScope.launch {
-            repository.setAdBlockMode(mode)
-            val active = _uiState.value.activeTab
-            if (!active.isHomePage) {
-                webViewPool.getWebView(active.id)?.evaluateJavascript(
-                    AdBlocker.buildCosmeticAdShieldJs(mode),
-                    null
-                )
+            if (!preferences.value.isAdBlockEnabled) {
+                repository.setAdBlockEnabled(true)
             }
+            repository.setAdBlockMode(mode)
+            val shieldJs = AdBlocker.buildCosmeticAdShieldJs(mode)
+            _uiState.value.tabs
+                .filter { !it.isHomePage }
+                .forEach { tab ->
+                    webViewPool.getWebView(tab.id)?.evaluateJavascript(shieldJs, null)
+                }
             val totalRules = AdBlocker.getTotalRuleCount(mode)
             emitToast("${mode.displayName} Activated ($totalRules filter rules)")
         }
@@ -1207,8 +1431,15 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         if (contentLength <= 0L) return
         _uiState.update { currentState ->
             val currentVideo = currentState.detectedVideo ?: return@update currentState
+            val cleanTarget = videoUrl.substringBefore('#').trim().trimEnd('/')
             val updatedQualities = currentVideo.qualities.map { qItem ->
-                if (qItem.url == videoUrl) {
+                val cleanQ = qItem.url.substringBefore('#').trim().trimEnd('/')
+                val matches = qItem.url == videoUrl ||
+                    cleanQ == cleanTarget ||
+                    cleanQ.replace(" ", "%20") == cleanTarget.replace(" ", "%20") ||
+                    cleanTarget.contains(cleanQ) || cleanQ.contains(cleanTarget) ||
+                    currentVideo.qualities.size == 1
+                if (matches) {
                     qItem.copy(
                         estimatedBytes = maxOf(qItem.estimatedBytes, contentLength),
                         probedContentType = contentType?.takeIf { it.isNotBlank() } ?: qItem.probedContentType ?: qItem.mimeType,
@@ -1266,7 +1497,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
                     val updatedQualities = currentVideo.qualities.mapIndexed { qIdx, qItem ->
                         if (qIdx == index) {
-                            val bestSize = if (probe.contentLength > 0L) probe.contentLength else qItem.estimatedBytes
+                            val bestSize = if (probe.contentLength > 0L) maxOf(qItem.estimatedBytes, probe.contentLength) else qItem.estimatedBytes
                             qItem.copy(
                                 estimatedBytes = bestSize,
                                 probedContentType = probe.contentType ?: qItem.probedContentType ?: qItem.mimeType,
@@ -1441,7 +1672,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 prepareAsync()
             }
             backgroundMediaPlayer = mp
-            emitToast("Playing in background • Keep browsing freely")
+            emitToast("Playing in background • Continue using Netra freely")
         } catch (e: Exception) {
             emitToast("Background playback error: ${e.localizedMessage ?: "Unsupported format"}")
             stopBackgroundPlayer()

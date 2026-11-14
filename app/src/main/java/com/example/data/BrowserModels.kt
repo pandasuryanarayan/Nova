@@ -2,8 +2,8 @@ package com.example.data
 
 import java.util.UUID
 
-const val NOVA_HOME_URL = "nova://home"
-const val NOVA_VIDEO_LAB_URL = "nova://video-lab"
+const val NOVA_HOME_URL = "netra://home"
+const val NOVA_VIDEO_LAB_URL = "netra://video-lab"
 
 data class BookmarkEntity(
     val id: Long = 0,
@@ -158,20 +158,109 @@ data class SslCertificateDetails(
     val issuedToCommonName: String = "",
     val issuedToOrganization: String = "",
     val issuedToOrganizationalUnit: String = "",
+    val issuedToCountry: String = "",
+    val subjectDn: String = "",
     val issuedByCommonName: String = "",
     val issuedByOrganization: String = "",
     val issuedByOrganizationalUnit: String = "",
+    val issuerDn: String = "",
     val validFrom: String = "",
     val validUntil: String = "",
+    val validityStatus: String = "",
     val sha256Fingerprint: String = "",
+    val sha1Fingerprint: String = "",
     val serialNumber: String = "",
-    val protocol: String = "TLS 1.3 / HTTPS"
+    val signatureAlgorithm: String = "",
+    val publicKeyInfo: String = "",
+    val x509Version: String = "",
+    val keyUsage: String = "",
+    val subjectAltNames: List<String> = emptyList(),
+    val protocol: String = "TLS 1.3 / HTTPS",
+    val hasCertificateObject: Boolean = false
+)
+
+data class SiteCookieEntry(
+    val name: String,
+    val value: String,
+    val domain: String,
+    val byteSize: Int = name.encodeToByteArray().size + value.encodeToByteArray().size
+)
+
+enum class SitePermissionMode {
+    ASK,
+    ALLOW,
+    BLOCK;
+
+    companion object {
+        fun fromName(name: String?): SitePermissionMode =
+            entries.find { it.name.equals(name, ignoreCase = true) } ?: ASK
+    }
+}
+
+enum class SiteCookiePolicy {
+    ALLOW_ALL,
+    BLOCK_THIRD_PARTY,
+    BLOCK_ALL;
+
+    companion object {
+        fun fromName(name: String?): SiteCookiePolicy =
+            entries.find { it.name.equals(name, ignoreCase = true) } ?: ALLOW_ALL
+    }
+}
+
+data class SiteConfigSettings(
+    val domain: String,
+    val isAdBlockEnabled: Boolean = true,
+    val javaScriptEnabled: Boolean = true,
+    val cookiePolicy: SiteCookiePolicy = SiteCookiePolicy.ALLOW_ALL,
+    val popupsAllowed: Boolean = false,
+    val imagesEnabled: Boolean = true,
+    val soundEnabled: Boolean = true,
+    val autoplayEnabled: Boolean = true,
+    val domStorageEnabled: Boolean = true,
+    val locationPermission: SitePermissionMode = SitePermissionMode.ASK,
+    val cameraPermission: SitePermissionMode = SitePermissionMode.ASK,
+    val microphonePermission: SitePermissionMode = SitePermissionMode.ASK,
+    val protectedContentAllowed: Boolean = true,
+    val insecureContentAllowed: Boolean = true,
+    val safeBrowsingEnabled: Boolean = true
+) {
+    val isDefault: Boolean
+        get() = isAdBlockEnabled &&
+            javaScriptEnabled &&
+            cookiePolicy == SiteCookiePolicy.ALLOW_ALL &&
+            !popupsAllowed &&
+            imagesEnabled &&
+            soundEnabled &&
+            autoplayEnabled &&
+            domStorageEnabled &&
+            locationPermission == SitePermissionMode.ASK &&
+            cameraPermission == SitePermissionMode.ASK &&
+            microphonePermission == SitePermissionMode.ASK &&
+            protectedContentAllowed &&
+            insecureContentAllowed &&
+            safeBrowsingEnabled
+}
+
+enum class WebPermissionKind {
+    LOCATION,
+    CAMERA,
+    MICROPHONE,
+    CAMERA_AND_MICROPHONE
+}
+
+data class PendingWebPermissionRequest(
+    val id: String = UUID.randomUUID().toString(),
+    val domain: String,
+    val origin: String,
+    val kind: WebPermissionKind,
+    val isPreAllowed: Boolean = false
 )
 
 data class BrowserTab(
     val id: String = UUID.randomUUID().toString(),
     val url: String = NOVA_HOME_URL,
-    val title: String = "Nova Home",
+    val title: String = "Netra Home",
     val isLoading: Boolean = false,
     val progress: Int = 0,
     val canGoBack: Boolean = false,

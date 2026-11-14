@@ -6,6 +6,8 @@ import android.text.InputType
 import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.KeyEvent
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -16,6 +18,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,8 +35,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,7 +48,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -49,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
@@ -57,6 +67,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -67,9 +83,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlin.math.roundToInt
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Popup
@@ -86,6 +105,7 @@ fun Text(
     fontFamily: FontFamily? = null,
     textAlign: TextAlign? = null,
     overflow: TextOverflow = TextOverflow.Clip,
+    softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     style: TextStyle = MaterialTheme.typography.bodyMedium
 ) {
@@ -103,6 +123,7 @@ fun Text(
         modifier = modifier,
         style = mergedStyle,
         overflow = overflow,
+        softWrap = softWrap,
         maxLines = maxLines
     )
 }
@@ -405,6 +426,55 @@ fun NovaBottomSheet(
 ) {
     BackHandler(onBack = onDismissRequest)
     val noRipple = remember { MutableInteractionSource() }
+    val density = LocalDensity.current
+    val dismissThresholdPx = remember(density) { with(density) { 84.dp.toPx() } }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+
+    val finishDrag: (Float) -> Unit = { velocityY ->
+        if (dragOffsetPx > dismissThresholdPx || (dragOffsetPx > 24f && velocityY > 750f)) {
+            dragOffsetPx = 0f
+            onDismissRequest()
+        } else {
+            dragOffsetPx = 0f
+        }
+    }
+
+    val sheetNestedScroll = remember(dismissThresholdPx) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (dragOffsetPx > 0f && available.y < 0f) {
+                    val consumed = maxOf(available.y, -dragOffsetPx)
+                    dragOffsetPx += consumed
+                    return Offset(0f, consumed)
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && available.y > 0f) {
+                    dragOffsetPx += available.y
+                    return Offset(0f, available.y)
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                if (dragOffsetPx > 0f) {
+                    finishDrag(available.y)
+                    return available
+                }
+                return Velocity.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                if (dragOffsetPx > 0f) {
+                    finishDrag(available.y)
+                }
+                return Velocity.Zero
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -419,6 +489,8 @@ fun NovaBottomSheet(
             modifier = modifier
                 .fillMaxWidth()
                 .widthIn(max = 640.dp)
+                .offset { IntOffset(0, dragOffsetPx.roundToInt()) }
+                .nestedScroll(sheetNestedScroll)
                 .clickable(interactionSource = noRipple, indication = null) {}
         ) {
             Column(
@@ -430,14 +502,21 @@ fun NovaBottomSheet(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 10.dp, bottom = 8.dp),
+                        .draggable(
+                            orientation = Orientation.Vertical,
+                            state = rememberDraggableState { delta ->
+                                dragOffsetPx = (dragOffsetPx + delta).coerceAtLeast(0f)
+                            },
+                            onDragStopped = { velocity -> finishDrag(velocity) }
+                        )
+                        .padding(top = 12.dp, bottom = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(width = 36.dp, height = 4.dp)
+                            .size(width = 40.dp, height = 4.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.36f))
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.40f))
                     )
                 }
                 content()
@@ -543,6 +622,24 @@ fun DropdownMenuItem(
     }
 }
 
+fun dismissSoftKeyboard(view: View?) {
+    if (view == null) return
+    try {
+        val focusedChild = view.findFocus()
+        focusedChild?.clearFocus()
+        view.clearFocus()
+        val rootView = view.rootView
+        rootView?.findFocus()?.clearFocus()
+        val imm = view.context.getSystemService(InputMethodManager::class.java)
+        if (imm != null) {
+            focusedChild?.windowToken?.let { imm.hideSoftInputFromWindow(it, 0) }
+            view.windowToken?.let { imm.hideSoftInputFromWindow(it, 0) }
+            rootView?.windowToken?.let { imm.hideSoftInputFromWindow(it, 0) }
+        }
+    } catch (_: Exception) {
+    }
+}
+
 @Composable
 fun NovaEditText(
     value: String,
@@ -561,11 +658,30 @@ fun NovaEditText(
     onImeAction: (() -> Unit)? = null,
     requestFocusOnMount: Boolean = false,
     monospace: Boolean = false,
-    textSizeSp: Float = 14f
+    textSizeSp: Float = 14f,
+    minHeight: Dp = 48.dp,
+    borderWidth: Dp = 1.dp,
+    horizontalPadding: Dp = 14.dp,
+    verticalPadding: Dp = 10.dp
 ) {
     val latestOnValueChange by rememberUpdatedState(onValueChange)
     val latestOnImeAction by rememberUpdatedState(onImeAction)
+    val focusManager = LocalFocusManager.current
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
+    val latestFocusManager by rememberUpdatedState(focusManager)
+    val latestKeyboardController by rememberUpdatedState(softwareKeyboardController)
     var lastText by remember { mutableStateOf(value) }
+    var editTextRef by remember { mutableStateOf<EditText?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            editTextRef?.let { et ->
+                et.clearFocus()
+                dismissSoftKeyboard(et)
+            }
+            latestKeyboardController?.hide()
+        }
+    }
 
     Column(modifier = modifier) {
         if (!label.isNullOrBlank()) {
@@ -580,20 +696,23 @@ fun NovaEditText(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = minHeight)
                 .clip(shape)
                 .background(containerColor, shape)
-                .border(1.dp, borderColor, shape)
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .border(borderWidth, borderColor, shape)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
         ) {
             if (leadingIcon != null) {
                 leadingIcon()
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
             }
             AndroidView(
                 factory = { ctx ->
+                    val vPadPx = (10f * ctx.resources.displayMetrics.density).toInt()
                     EditText(ctx).apply {
+                        editTextRef = this
                         background = null
-                        setPadding(0, 8, 0, 8)
+                        setPadding(0, vPadPx, 0, vPadPx)
                         isSingleLine = true
                         maxLines = 1
                         gravity = Gravity.CENTER_VERTICAL
@@ -617,11 +736,41 @@ fun NovaEditText(
                                 }
                             }
                         })
-                        setOnEditorActionListener { _, actionId, _ ->
-                            if (actionId == imeAction || actionId == EditorInfo.IME_ACTION_DONE ||
-                                actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_SEND
-                            ) {
+                        setOnEditorActionListener { v, actionId, event ->
+                            val isHandledAction = actionId == imeAction ||
+                                actionId == EditorInfo.IME_ACTION_DONE ||
+                                actionId == EditorInfo.IME_ACTION_GO ||
+                                actionId == EditorInfo.IME_ACTION_SEARCH ||
+                                actionId == EditorInfo.IME_ACTION_SEND ||
+                                actionId == EditorInfo.IME_ACTION_NEXT ||
+                                actionId == EditorInfo.IME_ACTION_UNSPECIFIED
+                            if (isHandledAction) {
+                                if (event != null && event.action != KeyEvent.ACTION_DOWN) {
+                                    return@setOnEditorActionListener true
+                                }
+                                val et = (v as? EditText) ?: this
+                                et.clearFocus()
+                                dismissSoftKeyboard(et)
+                                latestFocusManager.clearFocus(force = true)
+                                latestKeyboardController?.hide()
                                 latestOnImeAction?.invoke()
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        setOnKeyListener { v, keyCode, event ->
+                            if ((keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) &&
+                                event != null
+                            ) {
+                                if (event.action == KeyEvent.ACTION_DOWN) {
+                                    val et = (v as? EditText) ?: this
+                                    et.clearFocus()
+                                    dismissSoftKeyboard(et)
+                                    latestFocusManager.clearFocus(force = true)
+                                    latestKeyboardController?.hide()
+                                    latestOnImeAction?.invoke()
+                                }
                                 true
                             } else {
                                 false
@@ -637,8 +786,10 @@ fun NovaEditText(
                     }
                 },
                 update = { et ->
+                    editTextRef = et
                     et.setTextColor(textColor.toArgb())
                     et.setHintTextColor(hintColor.toArgb())
+                    if (et.imeOptions != imeAction) et.imeOptions = imeAction
                     if (et.hint?.toString() != placeholder) et.hint = placeholder
                     if (et.text?.toString() != value) {
                         lastText = value
