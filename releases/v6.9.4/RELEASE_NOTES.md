@@ -13,15 +13,16 @@
 - **"All Tabs" Header with Non-Truncating Default & Private Icon Counts:**
   - Renamed **`Open Tabs`** to **`All Tabs`** (`सभी टैब` in Hindi).
   - Replaced the text subtitle (`4 ACTIVE • 1 PRIVATE`) with a compact, non-truncating icon-and-count row displaying the Default Tabs count with the world icon (`Public`), a separator dot (`•`), and the Private Tabs count with the private icon (`Incognito`).
-- **75% Screen Height Tabs Page, 50% Group Popup, Blurred Tab Screen & Matching Incognito Top Border:**
+- **75% Screen Height Tabs Page, 50% Group Popup, Blurred Tab Screen & Automatic Private/Default Text Inversion:**
   - Increased the Tabs Switcher sheet height to **75%** of the screen (`Modifier.fillMaxHeight(0.75f)`), with a crisp `1.5.dp` accent border (`palette.activePillBorder`) along the top and sides above `"All Tabs"` in both Default and Incognito modes (matching the Group Popup border).
   - Sized the Group Popup (`tab_group_popup`) to **50%** of the screen height (`0.67f` of the 75% sheet), centered vertically with clear space above and below it.
   - Applied a `10.dp` blur (`Modifier.blur(10.dp)`) and translucent frosted tint (`palette.sheetBg.copy(alpha = 0.42f)`) to the 75% Tab Page when the Group Popup opens so the entire 75% Tab Page boundary and content remain clearly visible behind the popup.
+  - Fixed `rememberSheetPalette` so switching between **Default Tabs** and **Private Tabs** inside the Tab Switcher immediately inverts all text (`All Tabs`, tab counts, button labels, tab titles, website hostnames, group titles, and rename inputs) and accent colors (`#FFF2F6FF` / `#FFB4C6E4` + cyan `#FF00E5FF` on dark navy in Private Tabs mode; `#FF1A1410` / `#FF5A4E46` + warm orange `#FFFF6D00` in Default Light mode).
 
 ## Signed Release APK Verification (`v6.9.4`)
 - **File:** `releases/v6.9.4/Netra-v6.9.4-release.apk`
 - **Package Name:** `com.suryatech.browser.netra`
 - **Version:** `6.9.4` (`versionCode = 19`)
-- **APK Size:** `1,019,343 bytes` (**995.5 KB** compressed; **1.93 MB** installed uncompressed payload)
-- **SHA-256 Checksum:** `8a2ebafdea027243ac59de79a6e967e88c22282b643d28c1cb6b759e3a25d6a4`
+- **APK Size:** `1,020,011 bytes` (**996.1 KB** compressed; **1.93 MB** installed uncompressed payload)
+- **SHA-256 Checksum:** `2459e39a1639cd39db9722516b4df32b1dd9d38eb81dd04fb1c8418db43d60b2`
 - **Signing Certificate (V1/V2/V3):** `CN=Nova Browser, OU=Mobile, O=Nova, L=SF, ST=CA, C=US` (`SHA-256: c585099e00ff5e42e727ae4f0cd2921799950805233b2914f0c63e8bb9362203`)

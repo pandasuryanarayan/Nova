@@ -109,31 +109,57 @@ internal data class SheetVisualPalette(
 )
 
 @Composable
-internal fun rememberSheetPalette(isIncognito: Boolean = false): SheetVisualPalette {
+internal fun rememberSheetPalette(
+    isIncognito: Boolean = false,
+    isDarkMode: Boolean = false
+): SheetVisualPalette {
     val scheme = MaterialTheme.colorScheme
-    val isAmoledDark = !isIncognito && scheme.background == Color.Black
+    val isAmoledDark = !isIncognito && (isDarkMode || scheme.background == Color.Black)
     val isDark = isIncognito || isAmoledDark
-    val accentPrimary = scheme.primary
-    val accentSecondary = scheme.secondary
+    val accentPrimary = when {
+        isIncognito -> Color(0xFF00E5FF)
+        isAmoledDark -> Color(0xFFFF8A3D)
+        else -> Color(0xFFFF6D00)
+    }
+    val accentSecondary = when {
+        isIncognito -> Color(0xFF9E6BFF)
+        isAmoledDark -> Color(0xFFFF6D00)
+        else -> Color(0xFFFF8A3D)
+    }
     val sheetBg = when {
         isIncognito -> Color(0xFF0C1120)
         isAmoledDark -> Color(0xFF050507)
-        else -> scheme.background
+        else -> Color(0xFFFFF8F4)
     }
     val cardBg = when {
         isIncognito -> Color(0xFF131B2E)
         isAmoledDark -> Color(0xFF101014)
-        else -> scheme.surface
+        else -> Color(0xFFFFFFFF)
     }
     val cardElevatedBg = when {
         isIncognito -> Color(0xFF19233B)
         isAmoledDark -> Color(0xFF18181F)
-        else -> scheme.surfaceVariant.copy(alpha = 0.65f)
+        else -> Color(0xFFFFEFE6)
     }
     val cardBorder = when {
         isIncognito -> Color(0xFF273657)
         isAmoledDark -> Color(0xFF282832)
-        else -> scheme.outline.copy(alpha = 0.42f)
+        else -> Color(0xFFE6C8B8)
+    }
+    val textPrimary = when {
+        isIncognito -> Color(0xFFF2F6FF)
+        isAmoledDark -> Color(0xFFF5F5F7)
+        else -> Color(0xFF1A1410)
+    }
+    val textSecondary = when {
+        isIncognito -> Color(0xFFB4C6E4)
+        isAmoledDark -> Color(0xFFB4B4C0)
+        else -> Color(0xFF5A4E46)
+    }
+    val textMuted = when {
+        isIncognito -> Color(0xFF8EA4C8)
+        isAmoledDark -> Color(0xFF8E8E9E)
+        else -> Color(0xFF7A6B61)
     }
     return SheetVisualPalette(
         sheetBg = sheetBg,
@@ -149,9 +175,9 @@ internal fun rememberSheetPalette(isIncognito: Boolean = false): SheetVisualPale
         accentGradient = Brush.horizontalGradient(listOf(accentPrimary, accentSecondary)),
         activePillBg = accentPrimary.copy(alpha = if (isDark) 0.24f else 0.14f),
         activePillBorder = accentPrimary.copy(alpha = 0.72f),
-        textPrimary = scheme.onSurface,
-        textSecondary = scheme.onSurfaceVariant,
-        textMuted = scheme.onSurfaceVariant.copy(alpha = 0.75f),
+        textPrimary = textPrimary,
+        textSecondary = textSecondary,
+        textMuted = textMuted,
         dangerRed = Color(0xFFE53935),
         dangerBg = Color(0xFFE53935).copy(alpha = 0.12f),
         dangerBorder = Color(0xFFE53935).copy(alpha = 0.38f)
@@ -560,6 +586,7 @@ fun TabsSwitcherSheet(
     tabGroups: List<TabGroup> = emptyList(),
     openGroupPopupId: String? = null,
     activeTabId: String,
+    isDarkMode: Boolean = false,
     onSelectTab: (String) -> Unit,
     onCloseTab: (String) -> Unit,
     onCloseAllTabs: () -> Unit,
@@ -580,8 +607,7 @@ fun TabsSwitcherSheet(
     var showPrivateTabs by remember {
         mutableStateOf(tabs.find { it.id == activeTabId }?.isIncognito == true)
     }
-    val isIncognitoContext = showPrivateTabs || tabs.find { it.id == activeTabId }?.isIncognito == true
-    val palette = rememberSheetPalette(isIncognito = isIncognitoContext)
+    val palette = rememberSheetPalette(isIncognito = showPrivateTabs, isDarkMode = isDarkMode)
 
     LaunchedEffect(openGroupPopupId) {
         if (openGroupPopupId != null) {
@@ -1066,6 +1092,10 @@ fun TabsSwitcherSheet(
                                             value = draftGroupName,
                                             onValueChange = { draftGroupName = it },
                                             placeholder = "Group 1",
+                                            containerColor = palette.cardElevatedBg,
+                                            borderColor = palette.activePillBorder,
+                                            textColor = palette.textPrimary,
+                                            hintColor = palette.textMuted,
                                             requestFocusOnMount = true,
                                             onImeAction = {
                                                 onRenameTabGroup(activeOpenGroup.id, draftGroupName.ifBlank { "Group 1" })

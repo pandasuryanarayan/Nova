@@ -62,6 +62,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
@@ -483,9 +484,10 @@ fun NovaBottomSheet(
             .clickable(interactionSource = noRipple, indication = null, onClick = onDismissRequest),
         contentAlignment = Alignment.BottomCenter
     ) {
+        val isDarkContainer = (containerColor.red + containerColor.green + containerColor.blue) < 1.0f
         Surface(
             color = containerColor,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = if (isDarkContainer) Color(0xFFF2F6FF) else Color(0xFF1A1410),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             border = border,
             modifier = modifier
@@ -518,7 +520,7 @@ fun NovaBottomSheet(
                         modifier = Modifier
                             .size(width = 42.dp, height = 4.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.68f))
+                            .background(border?.brush ?: SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.68f)))
                     )
                 }
                 content()

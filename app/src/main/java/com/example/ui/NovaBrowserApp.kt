@@ -481,6 +481,7 @@ fun NovaBrowserApp(
                                 tabGroups = uiState.tabGroups,
                                 openGroupPopupId = uiState.openGroupPopupId,
                                 activeTabId = uiState.activeTabId,
+                                isDarkMode = preferences.isDarkMode,
                                 onSelectTab = viewModel::switchTab,
                                 onCloseTab = viewModel::closeTab,
                                 onCloseAllTabs = viewModel::closeAllTabs,

@@ -57,8 +57,8 @@ A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed rele
 | **Release Notes** | [`releases/v6.9.4/RELEASE_NOTES.md`](releases/v6.9.4/RELEASE_NOTES.md) |
 | **Application ID** | `com.suryatech.browser.netra` |
 | **Version** | `6.9.4` (`versionCode = 19`) |
-| **APK Size** | `1,019,343 bytes` (**995.5 KB** — `< 1 MiB`; **1.93 MB** installed) |
-| **SHA-256 Checksum** | `8a2ebafdea027243ac59de79a6e967e88c22282b643d28c1cb6b759e3a25d6a4` |
+| **APK Size** | `1,020,011 bytes` (**996.1 KB** — `< 1 MiB`; **1.93 MB** installed) |
+| **SHA-256 Checksum** | `2459e39a1639cd39db9722516b4df32b1dd9d38eb81dd04fb1c8418db43d60b2` |
 | **Signing Certificate** | `CN=Nova Browser, OU=Mobile, O=Nova, L=SF, ST=CA, C=US` |
 | **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`, `localeFilters = [en, hi]`, lightweight vector icons & native system typography) |
 
