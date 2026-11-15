@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -576,10 +577,11 @@ fun TabsSwitcherSheet(
     onDismiss: () -> Unit
 ) {
     val strings = LocalNovaStrings.current
-    val palette = rememberSheetPalette()
     var showPrivateTabs by remember {
         mutableStateOf(tabs.find { it.id == activeTabId }?.isIncognito == true)
     }
+    val isIncognitoContext = showPrivateTabs || tabs.find { it.id == activeTabId }?.isIncognito == true
+    val palette = rememberSheetPalette(isIncognito = isIncognitoContext)
 
     LaunchedEffect(openGroupPopupId) {
         if (openGroupPopupId != null) {
@@ -629,12 +631,14 @@ fun TabsSwitcherSheet(
 
     val defaultTabsCount = remember(tabs) { tabs.count { !it.isIncognito } }
     val privateTabsCount = remember(tabs) { tabs.count { it.isIncognito } }
+    val isGroupPopupOpen = activeOpenGroup != null && activeOpenGroupTabs.isNotEmpty()
 
     NovaBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
+        border = BorderStroke(1.5.dp, palette.activePillBorder),
         modifier = Modifier
-            .fillMaxHeight(0.70f)
+            .fillMaxHeight(0.75f)
             .testTag("tabs_switcher_sheet")
     ) {
         Box(
@@ -645,6 +649,7 @@ fun TabsSwitcherSheet(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .blur(if (isGroupPopupOpen) 10.dp else 0.dp)
                     .padding(horizontal = 18.dp)
                     .padding(bottom = 18.dp)
             ) {
@@ -1011,7 +1016,7 @@ fun TabsSwitcherSheet(
                 }
             }
 
-            if (activeOpenGroup != null && activeOpenGroupTabs.isNotEmpty()) {
+            if (isGroupPopupOpen && activeOpenGroup != null) {
                 var isEditingGroupName by remember(activeOpenGroup.id) { mutableStateOf(false) }
                 var draftGroupName by remember(activeOpenGroup.id, activeOpenGroup.name) {
                     mutableStateOf(activeOpenGroup.name)
@@ -1026,9 +1031,9 @@ fun TabsSwitcherSheet(
                     modifier = Modifier
                         .fillMaxSize()
                         .zIndex(40f)
-                        .background(Color.Black.copy(alpha = 0.72f))
+                        .background(palette.sheetBg.copy(alpha = 0.42f))
                         .clickable { onOpenTabGroupPopup(null) }
-                        .padding(horizontal = 14.dp, vertical = 18.dp),
+                        .padding(horizontal = 14.dp, vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
@@ -1038,7 +1043,7 @@ fun TabsSwitcherSheet(
                         border = BorderStroke(1.5.dp, palette.activePillBorder),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillMaxHeight(0.68f)
+                            .fillMaxHeight(0.67f)
                             .testTag("tab_group_popup")
                     ) {
                         Column(

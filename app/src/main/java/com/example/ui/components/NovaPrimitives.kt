@@ -421,6 +421,7 @@ fun Checkbox(
 fun NovaBottomSheet(
     onDismissRequest: () -> Unit,
     containerColor: Color = MaterialTheme.colorScheme.surface,
+    border: BorderStroke? = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -486,6 +487,7 @@ fun NovaBottomSheet(
             color = containerColor,
             contentColor = MaterialTheme.colorScheme.onSurface,
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            border = border,
             modifier = modifier
                 .fillMaxWidth()
                 .widthIn(max = 640.dp)
@@ -514,9 +516,9 @@ fun NovaBottomSheet(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(width = 40.dp, height = 4.dp)
+                            .size(width = 42.dp, height = 4.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.40f))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.68f))
                     )
                 }
                 content()
