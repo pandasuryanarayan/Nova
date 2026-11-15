@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
-class BrowserDao(private val dbHelper: NovaSqliteHelper) {
+class BrowserDao(private val dbHelper: NetraSqliteHelper) {
     private val _bookmarks = MutableStateFlow<List<BookmarkEntity>>(emptyList())
     private val _history = MutableStateFlow<List<HistoryEntity>>(emptyList())
     private val _shortcuts = MutableStateFlow<List<QuickShortcutEntity>>(emptyList())
@@ -283,7 +283,7 @@ class BrowserDao(private val dbHelper: NovaSqliteHelper) {
         }
 }
 
-class NovaSqliteHelper(context: Context) : SQLiteOpenHelper(context, "nova_browser.db", null, 2) {
+class NetraSqliteHelper(context: Context) : SQLiteOpenHelper(context, "netra_browser.db", null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE IF NOT EXISTS bookmarks (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, domain TEXT NOT NULL, createdAt INTEGER NOT NULL)")
         db.execSQL("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, domain TEXT NOT NULL, visitedAt INTEGER NOT NULL)")
@@ -296,18 +296,18 @@ class NovaSqliteHelper(context: Context) : SQLiteOpenHelper(context, "nova_brows
     }
 }
 
-class NovaDatabase private constructor(context: Context) {
-    private val dao = BrowserDao(NovaSqliteHelper(context.applicationContext))
+class NetraDatabase private constructor(context: Context) {
+    private val dao = BrowserDao(NetraSqliteHelper(context.applicationContext))
 
     fun browserDao(): BrowserDao = dao
 
     companion object {
         @Volatile
-        private var INSTANCE: NovaDatabase? = null
+        private var INSTANCE: NetraDatabase? = null
 
-        fun getInstance(context: Context): NovaDatabase {
+        fun getInstance(context: Context): NetraDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: NovaDatabase(context).also { INSTANCE = it }
+                INSTANCE ?: NetraDatabase(context).also { INSTANCE = it }
             }
         }
 

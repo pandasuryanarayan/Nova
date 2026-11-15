@@ -32,8 +32,8 @@ import com.example.data.BlockedAdEntry
 import com.example.data.BrowserTab
 import com.example.data.DetectedVideoInfo
 import com.example.data.DetectedVideoQuality
-import com.example.data.NOVA_HOME_URL
-import com.example.data.NOVA_VIDEO_LAB_URL
+import com.example.data.NETRA_HOME_URL
+import com.example.data.NETRA_VIDEO_LAB_URL
 import com.example.data.SiteConfigSettings
 import com.example.data.SiteCookieEntry
 import com.example.data.SiteCookiePolicy
@@ -50,7 +50,7 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import org.json.JSONObject
 
-class NovaWebViewPool(
+class NetraWebViewPool(
     private val context: Context,
     private val onTabStateUpdated: (
         tabId: String,
@@ -306,8 +306,7 @@ class NovaWebViewPool(
         val domain = BrowserUrlUtils.extractDomain(tab.url).ifBlank { tab.url }
         val wv = webViews[tab.id]
         val cert = wv?.certificate
-        val isInternal = tab.url.startsWith("netra://", ignoreCase = true) ||
-            tab.url.startsWith("nova://", ignoreCase = true)
+        val isInternal = tab.url.startsWith("netra://", ignoreCase = true)
         val isHttps = tab.url.startsWith("https://", ignoreCase = true) || isInternal
 
         if (cert == null) {
@@ -458,7 +457,7 @@ class NovaWebViewPool(
         getSiteCookieDetails(url).map { it.name to it.value }
 
     fun getSiteCookieDetails(url: String): List<SiteCookieEntry> {
-        if (url.isBlank() || url.startsWith("netra://") || url.startsWith("nova://")) return emptyList()
+        if (url.isBlank() || url.startsWith("netra://")) return emptyList()
         return try {
             val cookieManager = CookieManager.getInstance()
             val parsedHost = try { Uri.parse(url).host.orEmpty() } catch (_: Exception) { "" }
@@ -521,7 +520,7 @@ class NovaWebViewPool(
     }
 
     fun clearSingleSiteCookie(url: String, cookieName: String) {
-        if (url.isBlank() || url.startsWith("netra://") || url.startsWith("nova://")) return
+        if (url.isBlank() || url.startsWith("netra://")) return
         try {
             val cookieManager = CookieManager.getInstance()
             expireCookieAcrossDomains(cookieManager, url, cookieName)
@@ -531,7 +530,7 @@ class NovaWebViewPool(
     }
 
     fun clearSiteCookies(url: String, tabId: String? = null) {
-        if (url.isBlank() || url.startsWith("netra://") || url.startsWith("nova://")) return
+        if (url.isBlank() || url.startsWith("netra://")) return
         try {
             val cookieManager = CookieManager.getInstance()
             val cookies = getSiteCookieDetails(url)
@@ -593,10 +592,10 @@ class NovaWebViewPool(
         tabStates[tab.id] = tab
         applyTabSettings(webView, tab)
         when (targetUrl) {
-            NOVA_HOME_URL -> {
+            NETRA_HOME_URL -> {
                 webView.onPause()
             }
-            NOVA_VIDEO_LAB_URL -> {
+            NETRA_VIDEO_LAB_URL -> {
                 webView.onResume()
                 webView.loadUrl(ASSET_VIDEO_LAB_URL)
             }
@@ -887,7 +886,7 @@ class NovaWebViewPool(
 
         // Attach JavaScript Bridge for Long-Press Video Detection + Size Prober + Stream Downloader + DOM Ad Shield
         webView.addJavascriptInterface(
-            NovaJsBridge(
+            NetraJsBridge(
                 onVideoPayloadJson = { jsonStr ->
                     mainHandler.post {
                         parseVideoPayload(jsonStr)?.let { info ->
@@ -925,7 +924,7 @@ class NovaWebViewPool(
                 onDomAdBlockedJson = { jsonStr ->
                     val currentUrl = tabStates[tabId]?.url.orEmpty()
                     val perSiteAdBlock = siteConfigProvider(BrowserUrlUtils.extractDomain(currentUrl)).isAdBlockEnabled
-                    if (!isAdBlockEnabledProvider() || !perSiteAdBlock) return@NovaJsBridge
+                    if (!isAdBlockEnabledProvider() || !perSiteAdBlock) return@NetraJsBridge
                     mainHandler.post {
                         try {
                             val obj = JSONObject(jsonStr)
@@ -944,12 +943,12 @@ class NovaWebViewPool(
                     }
                 }
             ),
-            "NovaVideoBridge"
+            "NetraVideoBridge"
         )
 
         // Attach JavaScript Bridge for Desktop-Grade DevTools Inspector
         webView.addJavascriptInterface(
-            NovaDevToolsJsBridge(
+            NetraDevToolsJsBridge(
                 onElementSelected = { jsonStr ->
                     mainHandler.post {
                         onDevToolsElementSelectedJson(tabId, jsonStr)
@@ -966,7 +965,7 @@ class NovaWebViewPool(
                     }
                 }
             ),
-            "NovaDevToolsBridge"
+            "NetraDevToolsBridge"
         )
 
         var lastTouchCssX = 0f
@@ -1023,7 +1022,7 @@ class NovaWebViewPool(
             }
 
             wv.evaluateJavascript(
-                "(function(){ return window.__novaInspectVideoAtLastTouch ? window.__novaInspectVideoAtLastTouch(${lastTouchCssX}, ${lastTouchCssY}) : ''; })();",
+                "(function(){ return window.__netraInspectVideoAtLastTouch ? window.__netraInspectVideoAtLastTouch(${lastTouchCssX}, ${lastTouchCssY}) : ''; })();",
                 null
             )
 
@@ -1071,7 +1070,7 @@ class NovaWebViewPool(
                 request: WebResourceRequest?
             ): Boolean {
                 val target = request?.url?.toString() ?: return false
-                if (target.equals(NOVA_VIDEO_LAB_URL, ignoreCase = true)) {
+                if (target.equals(NETRA_VIDEO_LAB_URL, ignoreCase = true)) {
                     view?.loadUrl(ASSET_VIDEO_LAB_URL)
                     return true
                 }
@@ -1104,7 +1103,7 @@ class NovaWebViewPool(
                 if (view != null && mappedUrl.isNotBlank()) {
                     applySiteConfig(view, updatedTab, siteConfigProvider(BrowserUrlUtils.extractDomain(mappedUrl)))
                 }
-                val isInternalPage = mappedUrl.startsWith("netra://") || mappedUrl.startsWith("nova://")
+                val isInternalPage = mappedUrl.startsWith("netra://")
                 val isSsl = mappedUrl.startsWith("https://") || isInternalPage
                 val sslDesc = when {
                     isInternalPage -> "Netra Internal Verified Page"
@@ -1134,7 +1133,7 @@ class NovaWebViewPool(
                 val liveTab = tabStates[tabId] ?: initialTab
                 val mappedUrl = mapDisplayUrl(url ?: "")
                 val cert = view?.certificate
-                val isInternalPage = mappedUrl.startsWith("netra://") || mappedUrl.startsWith("nova://")
+                val isInternalPage = mappedUrl.startsWith("netra://")
                 val isSsl = (mappedUrl.startsWith("https://") && cert != null) ||
                     mappedUrl.startsWith("https://") ||
                     isInternalPage
@@ -1232,7 +1231,7 @@ class NovaWebViewPool(
                 if (newProgress >= 75) {
                     val liveTab = tabStates[tabId] ?: initialTab
                     val currentUrl = view?.url ?: liveTab.url
-                    if (!currentUrl.startsWith("netra://") && !currentUrl.startsWith("nova://")) {
+                    if (!currentUrl.startsWith("netra://")) {
                         TabPreviewCache.captureWebView(context, tabId, currentUrl, view, liveTab.isIncognito)
                     }
                 }
@@ -1461,7 +1460,7 @@ class NovaWebViewPool(
 
     private fun mapDisplayUrl(rawUrl: String): String {
         return if (rawUrl == ASSET_VIDEO_LAB_URL) {
-            NOVA_VIDEO_LAB_URL
+            NETRA_VIDEO_LAB_URL
         } else {
             rawUrl
         }
@@ -1591,7 +1590,7 @@ class NovaWebViewPool(
         }
     }
 
-    private class NovaJsBridge(
+    private class NetraJsBridge(
         private val onVideoPayloadJson: (String) -> Unit,
         private val onVideoSizeProbedJson: (String) -> Unit,
         private val onChunk: (Long, String, Long, Long) -> Unit,
@@ -1630,7 +1629,7 @@ class NovaWebViewPool(
         }
     }
 
-    private class NovaDevToolsJsBridge(
+    private class NetraDevToolsJsBridge(
         private val onElementSelected: (String) -> Unit,
         private val onConsoleLog: (String) -> Unit,
         private val onNetworkEntry: (String) -> Unit

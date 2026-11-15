@@ -9,7 +9,7 @@ val SpaceGroteskFontFamily = FontFamily.SansSerif
 val PlusJakartaSansFontFamily = FontFamily.SansSerif
 val JetBrainsMonoFontFamily = FontFamily.Monospace
 
-data class NovaTypography(
+data class NetraTypography(
     val headlineLarge: TextStyle = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
         fontWeight = FontWeight.Bold,
@@ -80,4 +80,4 @@ data class NovaTypography(
     )
 )
 
-val Typography = NovaTypography()
+val Typography = NetraTypography()

@@ -11,8 +11,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.browser.AdBlocker
 import com.example.browser.BrowserUrlUtils
-import com.example.browser.NovaDownloadHelper
-import com.example.browser.NovaWebViewPool
+import com.example.browser.NetraDownloadHelper
+import com.example.browser.NetraWebViewPool
 import com.example.data.ActiveSheet
 import com.example.data.AdBlockMode
 import com.example.data.AppLanguage
@@ -33,8 +33,8 @@ import com.example.data.DomSelectedElementDetail
 import com.example.data.DomTreeNodeItem
 import com.example.data.DownloadItemEntity
 import com.example.data.HistoryEntity
-import com.example.data.NOVA_HOME_URL
-import com.example.data.NovaDatabase
+import com.example.data.NETRA_HOME_URL
+import com.example.data.NetraDatabase
 import com.example.data.PendingWebPermissionRequest
 import com.example.data.QuickShortcutEntity
 import com.example.data.SiteConfigSettings
@@ -58,7 +58,7 @@ import org.json.JSONObject
 import org.json.JSONTokener
 
 data class BrowserUiState(
-    val tabs: List<BrowserTab> = listOf(BrowserTab(title = "Netra Home", url = NOVA_HOME_URL)),
+    val tabs: List<BrowserTab> = listOf(BrowserTab(title = "Netra Home", url = NETRA_HOME_URL)),
     val tabGroups: List<TabGroup> = emptyList(),
     val openGroupPopupId: String? = null,
     val activeTabId: String = "",
@@ -80,11 +80,11 @@ data class BrowserUiState(
 }
 
 class BrowserViewModel(application: Application) : AndroidViewModel(application) {
-    private val database = NovaDatabase.getInstance(application)
+    private val database = NetraDatabase.getInstance(application)
     private val repository = BrowserRepository(application, database.browserDao())
-    val downloadHelper = NovaDownloadHelper(application, repository, viewModelScope)
+    val downloadHelper = NetraDownloadHelper(application, repository, viewModelScope)
 
-    private val initialTab = BrowserTab(title = "Netra Home", url = NOVA_HOME_URL)
+    private val initialTab = BrowserTab(title = "Netra Home", url = NETRA_HOME_URL)
 
     private val _uiState = MutableStateFlow(
         BrowserUiState(
@@ -121,7 +121,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     val shortcuts: StateFlow<List<QuickShortcutEntity>> = repository.shortcutsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = NovaDatabase.defaultShortcuts()
+        initialValue = NetraDatabase.defaultShortcuts()
     )
 
     val downloads: StateFlow<List<DownloadItemEntity>> = repository.downloadsFlow.stateIn(
@@ -140,7 +140,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private var pendingPermissionKind: WebPermissionKind? = null
     private var pendingPermissionDomain: String = ""
 
-    val webViewPool = NovaWebViewPool(
+    val webViewPool = NetraWebViewPool(
         context = application.applicationContext,
         onTabStateUpdated = { tabId, url, title, isLoading, progress, canGoBack, canGoForward, isSecureSsl, sslSummary ->
             updateTabById(tabId) { current ->
@@ -158,7 +158,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         },
         onHistoryVisited = { tabId, title, url ->
             val tab = _uiState.value.tabs.find { it.id == tabId }
-            if (tab != null && !tab.isIncognito && !url.startsWith("netra://") && !url.startsWith("nova://")) {
+            if (tab != null && !tab.isIncognito && !url.startsWith("netra://")) {
                 viewModelScope.launch {
                     repository.recordHistory(title, url, BrowserUrlUtils.extractDomain(url))
                 }
@@ -288,7 +288,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 val qUrl = JSONObject.quote(videoUrl)
                 wv.post {
                     wv.evaluateJavascript(
-                        "(function(){ if(window.__novaDownloadVideoViaWebView) { window.__novaDownloadVideoViaWebView($downloadId, $qUrl); } else if(window.NovaVideoBridge && window.NovaVideoBridge.onWebViewDownloadError) { window.NovaVideoBridge.onWebViewDownloadError($downloadId, 'WebView stream bridge unavailable'); } })();",
+                        "(function(){ if(window.__netraDownloadVideoViaWebView) { window.__netraDownloadVideoViaWebView($downloadId, $qUrl); } else if(window.NetraVideoBridge && window.NetraVideoBridge.onWebViewDownloadError) { window.NetraVideoBridge.onWebViewDownloadError($downloadId, 'WebView stream bridge unavailable'); } })();",
                         null
                     )
                 }
@@ -569,7 +569,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
         val wv = webViewPool.getWebView(_uiState.value.activeTab.id) ?: return
         wv.evaluateJavascript(
-            "(function(){ if(window.__novaDevToolsSetInspectMode) window.__novaDevToolsSetInspectMode($nextMode); })();",
+            "(function(){ if(window.__netraDevToolsSetInspectMode) window.__netraDevToolsSetInspectMode($nextMode); })();",
             null
         )
         if (nextMode) {
@@ -580,7 +580,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private fun disableInspectPickerInWebView() {
         val wv = webViewPool.getWebView(_uiState.value.activeTab.id) ?: return
         wv.evaluateJavascript(
-            "(function(){ if(window.__novaDevToolsSetInspectMode) window.__novaDevToolsSetInspectMode(false); })();",
+            "(function(){ if(window.__netraDevToolsSetInspectMode) window.__netraDevToolsSetInspectMode(false); })();",
             null
         )
     }
@@ -588,7 +588,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun refreshDevTools() {
         val wv = webViewPool.getWebView(_uiState.value.activeTab.id) ?: return
         wv.evaluateJavascript(
-            "(function(){ return window.__novaDevToolsRefreshAll ? window.__novaDevToolsRefreshAll() : (window.__novaDevToolsGetDomTree ? window.__novaDevToolsGetDomTree() : '[]'); })();"
+            "(function(){ return window.__netraDevToolsRefreshAll ? window.__netraDevToolsRefreshAll() : (window.__netraDevToolsGetDomTree ? window.__netraDevToolsGetDomTree() : '[]'); })();"
         ) { rawJson ->
             val unquoted = unquoteEvaluateJsResult(rawJson)
             val parsedNodes = parseDomTreeJson(unquoted)
@@ -604,7 +604,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
 
         wv.evaluateJavascript(
-            "(function(){ return window.__novaDevToolsGetSources ? window.__novaDevToolsGetSources() : '[]'; })();"
+            "(function(){ return window.__netraDevToolsGetSources ? window.__netraDevToolsGetSources() : '[]'; })();"
         ) { rawJson ->
             val unquoted = unquoteEvaluateJsResult(rawJson)
             val parsedSources = parseSourcesJson(unquoted)
@@ -629,7 +629,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val wv = webViewPool.getWebView(_uiState.value.activeTab.id) ?: return
         val qNodeId = JSONObject.quote(nodeId)
         wv.evaluateJavascript(
-            "(function(){ return window.__novaDevToolsSelectNodeById ? window.__novaDevToolsSelectNodeById($qNodeId) : ''; })();"
+            "(function(){ return window.__netraDevToolsSelectNodeById ? window.__netraDevToolsSelectNodeById($qNodeId) : ''; })();"
         ) { rawJson ->
             val unquoted = unquoteEvaluateJsResult(rawJson)
             parseSelectedElementJson(unquoted)?.let { detail ->
@@ -657,7 +657,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val qAttrVal = JSONObject.quote(attrValue)
 
         wv.evaluateJavascript(
-            "(function(){ return window.__novaDevToolsApplyElementEdit ? window.__novaDevToolsApplyElementEdit($qNodeId, $qStyle, $qText, $qAttrName, $qAttrVal) : ''; })();"
+            "(function(){ return window.__netraDevToolsApplyElementEdit ? window.__netraDevToolsApplyElementEdit($qNodeId, $qStyle, $qText, $qAttrName, $qAttrVal) : ''; })();"
         ) { rawJson ->
             val unquoted = unquoteEvaluateJsResult(rawJson)
             parseSelectedElementJson(unquoted)?.let { updatedDetail ->
@@ -676,7 +676,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val wv = webViewPool.getWebView(_uiState.value.activeTab.id) ?: return
         val qNodeId = JSONObject.quote(nodeId)
         wv.evaluateJavascript(
-            "(function(){ return window.__novaDevToolsDeleteNode ? window.__novaDevToolsDeleteNode($qNodeId) : false; })();"
+            "(function(){ return window.__netraDevToolsDeleteNode ? window.__netraDevToolsDeleteNode($qNodeId) : false; })();"
         ) {
             emitToast("Element removed from DOM")
             _uiState.update { state ->
@@ -1156,7 +1156,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             if (remaining.isEmpty()) {
                 val fresh = BrowserTab(
                     title = "Netra Home",
-                    url = NOVA_HOME_URL,
+                    url = NETRA_HOME_URL,
                     textZoom = preferences.value.defaultTextZoom
                 )
                 state.copy(
@@ -1182,17 +1182,17 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun openNewTab(
-        url: String = NOVA_HOME_URL,
+        url: String = NETRA_HOME_URL,
         isIncognito: Boolean = false,
         referer: String? = null,
         groupId: String? = null
     ) {
         webViewPool.captureTabPreview(_uiState.value.activeTab)
         val defaultZoom = preferences.value.defaultTextZoom
-        val normalizedUrl = if (url == NOVA_HOME_URL) NOVA_HOME_URL else BrowserUrlUtils.normalizeInputToUrl(url)
+        val normalizedUrl = if (url == NETRA_HOME_URL) NETRA_HOME_URL else BrowserUrlUtils.normalizeInputToUrl(url)
         val newTab = BrowserTab(
             url = normalizedUrl,
-            title = if (normalizedUrl == NOVA_HOME_URL) {
+            title = if (normalizedUrl == NETRA_HOME_URL) {
                 if (isIncognito) "Private Home" else "Netra Home"
             } else {
                 BrowserUrlUtils.extractDomain(normalizedUrl)
@@ -1261,7 +1261,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             if (remainingRaw.isEmpty()) {
                 val fresh = BrowserTab(
                     title = "Netra Home",
-                    url = NOVA_HOME_URL,
+                    url = NETRA_HOME_URL,
                     textZoom = preferences.value.defaultTextZoom
                 )
                 state.copy(
@@ -1302,7 +1302,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         val defaultZoom = preferences.value.defaultTextZoom
         val fresh = BrowserTab(
             title = "Netra Home",
-            url = NOVA_HOME_URL,
+            url = NETRA_HOME_URL,
             textZoom = defaultZoom
         )
         _uiState.update { state ->
@@ -1327,7 +1327,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         if (existingTargetTab != null) {
             switchTab(existingTargetTab.id)
         } else {
-            openNewTab(url = NOVA_HOME_URL, isIncognito = nextIncognito)
+            openNewTab(url = NETRA_HOME_URL, isIncognito = nextIncognito)
         }
         emitToast(if (nextIncognito) "Incognito Mode Activated" else "Standard Mode Restored")
     }
@@ -1340,9 +1340,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         updateTabById(active.id) {
             it.copy(
                 url = targetUrl,
-                title = if (targetUrl == NOVA_HOME_URL) "Netra Home" else BrowserUrlUtils.extractDomain(targetUrl),
-                isLoading = targetUrl != NOVA_HOME_URL,
-                progress = if (targetUrl == NOVA_HOME_URL) 0 else 15
+                title = if (targetUrl == NETRA_HOME_URL) "Netra Home" else BrowserUrlUtils.extractDomain(targetUrl),
+                isLoading = targetUrl != NETRA_HOME_URL,
+                progress = if (targetUrl == NETRA_HOME_URL) 0 else 15
             )
         }
         webViewPool.loadUrl(active.copy(url = targetUrl), targetUrl)
@@ -1405,7 +1405,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         closeDevTools()
         updateTabById(active.id) {
             it.copy(
-                url = NOVA_HOME_URL,
+                url = NETRA_HOME_URL,
                 title = if (it.isIncognito) "Private Home" else "Netra Home",
                 isLoading = false,
                 progress = 0
@@ -1710,7 +1710,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 val qUrl = JSONObject.quote(quality.url)
                 wv.post {
                     wv.evaluateJavascript(
-                        "(function(){ if(window.__novaProbeVideoSizeInWebView) window.__novaProbeVideoSizeInWebView($qUrl); })();",
+                        "(function(){ if(window.__netraProbeVideoSizeInWebView) window.__netraProbeVideoSizeInWebView($qUrl); })();",
                         null
                     )
                 }
@@ -1797,7 +1797,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             return
         }
         val wv = webViewPool.getWebView(active.id) ?: return
-        wv.evaluateJavascript("(function(){ return window.__novaScanAllPageVideos ? window.__novaScanAllPageVideos() : '[]'; })();") { rawResult ->
+        wv.evaluateJavascript("(function(){ return window.__netraScanAllPageVideos ? window.__netraScanAllPageVideos() : '[]'; })();") { rawResult ->
             try {
                 val unquoted = unquoteEvaluateJsResult(rawResult)
                 val arr = JSONArray(unquoted.ifBlank { "[]" })

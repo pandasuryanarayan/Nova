@@ -1,8 +1,8 @@
 (function () {
-if (window.__novaDevToolsInstalled) {
+if (window.__netraDevToolsInstalled) {
 return;
 }
-window.__novaDevToolsInstalled = true;
+window.__netraDevToolsInstalled = true;
 var nodeCounter = 1;
 var inspectPickerActive = false;
 var selectedNodeId = null;
@@ -11,17 +11,17 @@ var tooltipEl = null;
 var reportedResourceNames = {};
 function getOrAssignNodeId(el) {
 if (!el || el.nodeType !== 1) return '';
-var existing = el.getAttribute('data-nova-id');
+var existing = el.getAttribute('data-netra-id');
 if (existing) return existing;
-var assigned = 'nova-node-' + (nodeCounter++);
-el.setAttribute('data-nova-id', assigned);
+var assigned = 'netra-node-' + (nodeCounter++);
+el.setAttribute('data-netra-id', assigned);
 return assigned;
 }
 function ensureOverlayElements() {
 if (!document.body) return;
 if (!overlayEl || !document.body.contains(overlayEl)) {
 overlayEl = document.createElement('div');
-overlayEl.id = '__nova_devtools_overlay__';
+overlayEl.id = '__netra_devtools_overlay__';
 overlayEl.style.cssText = [
 'position:fixed',
 'pointer-events:none',
@@ -37,7 +37,7 @@ document.body.appendChild(overlayEl);
 }
 if (!tooltipEl || !document.body.contains(tooltipEl)) {
 tooltipEl = document.createElement('div');
-tooltipEl.id = '__nova_devtools_tooltip__';
+tooltipEl.id = '__netra_devtools_tooltip__';
 tooltipEl.style.cssText = [
 'position:fixed',
 'pointer-events:none',
@@ -60,7 +60,7 @@ document.body.appendChild(tooltipEl);
 function buildElementSelectorLabel(el) {
 if (!el || !el.tagName) return 'element';
 var label = el.tagName.toLowerCase();
-if (el.id && el.id.indexOf('__nova_') !== 0) {
+if (el.id && el.id.indexOf('__netra_') !== 0) {
 label += '#' + el.id;
 }
 if (el.className && typeof el.className === 'string') {
@@ -110,7 +110,7 @@ var attrs = [];
 if (el.attributes) {
 for (var i = 0; i < el.attributes.length; i++) {
 var a = el.attributes[i];
-if (a.name !== 'data-nova-id') {
+if (a.name !== 'data-netra-id') {
 attrs.push({ name: a.name, value: a.value });
 }
 }
@@ -137,7 +137,7 @@ while (curr && curr.nodeType === 1 && breadcrumbs.length < 8) {
 breadcrumbs.unshift(buildElementSelectorLabel(curr));
 curr = curr.parentElement;
 }
-var cleanOuterHtml = (el.outerHTML || '').replace(/\s*data-nova-id="[^"]*"/g, '');
+var cleanOuterHtml = (el.outerHTML || '').replace(/\s*data-netra-id="[^"]*"/g, '');
 if (cleanOuterHtml.length > 4000) {
 cleanOuterHtml = cleanOuterHtml.slice(0, 4000) + '\n<!-- truncated -->';
 }
@@ -162,18 +162,18 @@ attributes: attrs,
 computedStyles: computedList
 };
 }
-window.__novaDevToolsSetInspectMode = function (enabled) {
+window.__netraDevToolsSetInspectMode = function (enabled) {
 inspectPickerActive = !!enabled;
 if (!inspectPickerActive) {
 hideHighlightOverlay();
 }
 return inspectPickerActive;
 };
-window.__novaDevToolsGetDomTree = function () {
+window.__netraDevToolsGetDomTree = function () {
 var nodes = [];
 function walk(el, depth) {
 if (!el || el.nodeType !== 1 || depth > 9 || nodes.length >= 260) return;
-if (el.id === '__nova_devtools_overlay__' || el.id === '__nova_devtools_tooltip__') return;
+if (el.id === '__netra_devtools_overlay__' || el.id === '__netra_devtools_tooltip__') return;
 var nodeId = getOrAssignNodeId(el);
 var textPreview = '';
 for (var c = 0; c < el.childNodes.length; c++) {
@@ -204,23 +204,23 @@ walk(document.documentElement, 0);
 }
 return JSON.stringify(nodes);
 };
-window.__novaDevToolsSelectNodeById = function (nodeId) {
-var el = document.querySelector('[data-nova-id="' + nodeId + '"]');
+window.__netraDevToolsSelectNodeById = function (nodeId) {
+var el = document.querySelector('[data-netra-id="' + nodeId + '"]');
 if (!el) return '';
 try {
 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 } catch (e) {}
 highlightElementOnPage(el, 2500);
 var detail = inspectDomElementDetail(el);
-if (detail && window.NovaDevToolsBridge && window.NovaDevToolsBridge.onElementSelected) {
+if (detail && window.NetraDevToolsBridge && window.NetraDevToolsBridge.onElementSelected) {
 var json = JSON.stringify(detail);
-window.NovaDevToolsBridge.onElementSelected(json);
+window.NetraDevToolsBridge.onElementSelected(json);
 return json;
 }
 return '';
 };
-window.__novaDevToolsApplyElementEdit = function (nodeId, newInlineStyle, newTextContent, attrName, attrValue) {
-var el = document.querySelector('[data-nova-id="' + nodeId + '"]');
+window.__netraDevToolsApplyElementEdit = function (nodeId, newInlineStyle, newTextContent, attrName, attrValue) {
+var el = document.querySelector('[data-netra-id="' + nodeId + '"]');
 if (!el) return '';
 if (typeof newInlineStyle === 'string') {
 el.setAttribute('style', newInlineStyle);
@@ -233,15 +233,15 @@ el.setAttribute(attrName.trim(), attrValue || '');
 }
 highlightElementOnPage(el, 1800);
 var updated = inspectDomElementDetail(el);
-if (updated && window.NovaDevToolsBridge && window.NovaDevToolsBridge.onElementSelected) {
+if (updated && window.NetraDevToolsBridge && window.NetraDevToolsBridge.onElementSelected) {
 var json = JSON.stringify(updated);
-window.NovaDevToolsBridge.onElementSelected(json);
+window.NetraDevToolsBridge.onElementSelected(json);
 return json;
 }
 return '';
 };
-window.__novaDevToolsDeleteNode = function (nodeId) {
-var el = document.querySelector('[data-nova-id="' + nodeId + '"]');
+window.__netraDevToolsDeleteNode = function (nodeId) {
+var el = document.querySelector('[data-netra-id="' + nodeId + '"]');
 if (el && el.parentElement && el.tagName.toLowerCase() !== 'html' && el.tagName.toLowerCase() !== 'body') {
 el.parentElement.removeChild(el);
 hideHighlightOverlay();
@@ -252,14 +252,14 @@ return false;
 document.addEventListener('click', function (e) {
 if (!inspectPickerActive) return;
 var target = e.target;
-if (!target || target.id === '__nova_devtools_overlay__' || target.id === '__nova_devtools_tooltip__') return;
+if (!target || target.id === '__netra_devtools_overlay__' || target.id === '__netra_devtools_tooltip__') return;
 e.preventDefault();
 e.stopPropagation();
 highlightElementOnPage(target, 3000);
 var detail = inspectDomElementDetail(target);
 inspectPickerActive = false;
-if (detail && window.NovaDevToolsBridge && window.NovaDevToolsBridge.onElementSelected) {
-window.NovaDevToolsBridge.onElementSelected(JSON.stringify(detail));
+if (detail && window.NetraDevToolsBridge && window.NetraDevToolsBridge.onElementSelected) {
+window.NetraDevToolsBridge.onElementSelected(JSON.stringify(detail));
 }
 return false;
 }, true);
@@ -267,13 +267,13 @@ document.addEventListener('touchmove', function (e) {
 if (!inspectPickerActive || !e.touches || e.touches.length === 0) return;
 var t = e.touches[0];
 var el = document.elementFromPoint(t.clientX, t.clientY);
-if (el && el.id !== '__nova_devtools_overlay__' && el.id !== '__nova_devtools_tooltip__') {
+if (el && el.id !== '__netra_devtools_overlay__' && el.id !== '__netra_devtools_tooltip__') {
 highlightElementOnPage(el, 0);
 }
 }, { capture: true, passive: true });
-window.__novaDevToolsGetSources = function () {
+window.__netraDevToolsGetSources = function () {
 var sources = [];
-var docHtml = document.documentElement ? document.documentElement.outerHTML.replace(/\s*data-nova-id="[^"]*"/g, '') : '';
+var docHtml = document.documentElement ? document.documentElement.outerHTML.replace(/\s*data-netra-id="[^"]*"/g, '') : '';
 sources.push({
 id: 'doc-main-html',
 name: (window.location.pathname && window.location.pathname !== '/') ? window.location.pathname.split('/').pop() || 'index.html' : 'index.html (Document)',
@@ -338,7 +338,7 @@ content: '// External Script: ' + src + '\n// Loading source preview...'
 });
 } else {
 var jsCode = (sc.textContent || '').trim();
-if (jsCode.length > 0 && jsCode.indexOf('__novaDevToolsInstalled') === -1 && jsCode.indexOf('__novaVideoDetectorInstalled') === -1) {
+if (jsCode.length > 0 && jsCode.indexOf('__netraDevToolsInstalled') === -1 && jsCode.indexOf('__netraVideoDetectorInstalled') === -1) {
 sources.push({
 id: 'inline-js-' + (j + 1),
 name: 'inline-script-' + (j + 1) + '.js',
@@ -378,8 +378,8 @@ message: parts.join(' '),
 source: sourceAndLine || window.location.hostname || 'page',
 timestamp: Date.now()
 };
-if (window.NovaDevToolsBridge && typeof window.NovaDevToolsBridge.onConsoleLog === 'function') {
-window.NovaDevToolsBridge.onConsoleLog(JSON.stringify(payload));
+if (window.NetraDevToolsBridge && typeof window.NetraDevToolsBridge.onConsoleLog === 'function') {
+window.NetraDevToolsBridge.onConsoleLog(JSON.stringify(payload));
 }
 } catch (e) {}
 }
@@ -401,8 +401,8 @@ emitConsoleToAndroid('ERROR', ['Unhandled Promise Rejection:', e.reason], 'Promi
 });
 function sendNetworkEntry(entryObj) {
 try {
-if (window.NovaDevToolsBridge && typeof window.NovaDevToolsBridge.onNetworkEntry === 'function') {
-window.NovaDevToolsBridge.onNetworkEntry(JSON.stringify(entryObj));
+if (window.NetraDevToolsBridge && typeof window.NetraDevToolsBridge.onNetworkEntry === 'function') {
+window.NetraDevToolsBridge.onNetworkEntry(JSON.stringify(entryObj));
 }
 } catch (e) {}
 }
@@ -463,8 +463,8 @@ if (typeof window.XMLHttpRequest === 'function') {
 var origOpen = XMLHttpRequest.prototype.open;
 var origSend = XMLHttpRequest.prototype.send;
 XMLHttpRequest.prototype.open = function (method, url) {
-this.__novaMethod = (method || 'GET').toUpperCase();
-this.__novaUrl = String(url || '');
+this.__netraMethod = (method || 'GET').toUpperCase();
+this.__netraUrl = String(url || '');
 return origOpen.apply(this, arguments);
 };
 XMLHttpRequest.prototype.send = function () {
@@ -481,8 +481,8 @@ preview = (xhr.responseText || '').slice(0, 1500);
 }
 } catch (e) {}
 sendNetworkEntry({
-url: xhr.__novaUrl || window.location.href,
-method: xhr.__novaMethod || 'GET',
+url: xhr.__netraUrl || window.location.href,
+method: xhr.__netraMethod || 'GET',
 status: xhr.status || 200,
 initiatorType: 'xhr',
 mimeType: cType || 'application/json',
@@ -545,8 +545,8 @@ flushPerformanceResources();
 perfObs.observe({ entryTypes: ['resource', 'navigation'] });
 } catch (e) {}
 }
-window.__novaDevToolsRefreshAll = function () {
+window.__netraDevToolsRefreshAll = function () {
 flushPerformanceResources();
-return window.__novaDevToolsGetDomTree();
+return window.__netraDevToolsGetDomTree();
 };
 })();

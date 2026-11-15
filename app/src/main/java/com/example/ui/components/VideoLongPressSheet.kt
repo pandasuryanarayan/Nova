@@ -40,7 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.browser.BrowserUrlUtils
 import com.example.data.DetectedVideoInfo
-import com.example.ui.icons.NovaIcons
+import com.example.ui.icons.NetraIcons
 import com.example.ui.theme.MaterialTheme
 import java.net.HttpURLConnection
 import java.net.URL
@@ -66,7 +66,7 @@ fun VideoLongPressBottomSheet(
             selectedQuality.probedContentType ?: selectedQuality.mimeType
         )
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
         modifier = Modifier.testTag("video_long_press_sheet")
@@ -88,7 +88,7 @@ fun VideoLongPressBottomSheet(
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
-                            imageVector = NovaIcons.Videocam,
+                            imageVector = NetraIcons.Videocam,
                             contentDescription = "Detected Video",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp)
@@ -180,7 +180,7 @@ fun VideoLongPressBottomSheet(
                 }
 
                 Icon(
-                    imageVector = NovaIcons.PlayCircleFilled,
+                    imageVector = NetraIcons.PlayCircleFilled,
                     contentDescription = null,
                     tint = Color.White.copy(alpha = 0.85f),
                     modifier = Modifier
@@ -281,7 +281,7 @@ fun VideoLongPressBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = NovaIcons.HighQuality,
+                        imageVector = NetraIcons.HighQuality,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
@@ -320,7 +320,7 @@ fun VideoLongPressBottomSheet(
                             ) {
                                 if (isSelected) {
                                     Icon(
-                                        imageVector = NovaIcons.CheckCircle,
+                                        imageVector = NetraIcons.CheckCircle,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(15.dp)
@@ -353,7 +353,7 @@ fun VideoLongPressBottomSheet(
                         modifier = Modifier.padding(12.dp)
                     ) {
                         Icon(
-                            imageVector = NovaIcons.Lock,
+                            imageVector = NetraIcons.Lock,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(20.dp)
@@ -382,7 +382,7 @@ fun VideoLongPressBottomSheet(
                     .testTag("download_video_mp4_button")
             ) {
                 Icon(
-                    imageVector = NovaIcons.Download,
+                    imageVector = NetraIcons.Download,
                     contentDescription = "Download Video MP4",
                     tint = if (isProtectedOrStreaming) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(20.dp)
@@ -411,7 +411,7 @@ fun VideoLongPressBottomSheet(
                         .testTag("copy_video_link_button")
                 ) {
                     Icon(
-                        imageVector = NovaIcons.ContentCopy,
+                        imageVector = NetraIcons.ContentCopy,
                         contentDescription = "Copy Video Link",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
@@ -433,7 +433,7 @@ fun VideoLongPressBottomSheet(
                         .testTag("open_video_new_tab_button")
                 ) {
                     Icon(
-                        imageVector = NovaIcons.OpenInNew,
+                        imageVector = NetraIcons.OpenInNew,
                         contentDescription = "Open Video in New Tab",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
@@ -458,7 +458,7 @@ fun VideoLongPressBottomSheet(
                     .testTag("play_in_background_button")
             ) {
                 Icon(
-                    imageVector = NovaIcons.Headphones,
+                    imageVector = NetraIcons.Headphones,
                     contentDescription = "Play in Background",
                     tint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.size(19.dp)

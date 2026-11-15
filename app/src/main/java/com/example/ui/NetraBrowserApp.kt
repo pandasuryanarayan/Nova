@@ -73,17 +73,17 @@ import com.example.ui.components.DevToolsInspectorPanel
 import com.example.ui.components.DownloadsManagerSheet
 import com.example.ui.components.FindInPageTopBar
 import com.example.ui.components.HistorySheet
-import com.example.ui.components.NovaHomeContent
+import com.example.ui.components.NetraHomeContent
 import com.example.ui.components.SslSecurityInfoDialog
 import com.example.ui.components.TabsSwitcherSheet
 import com.example.ui.components.Text
 import com.example.ui.components.TextButton
 import com.example.ui.components.TopWebsiteHeaderBar
 import com.example.ui.components.VideoLongPressBottomSheet
-import com.example.ui.i18n.ProvideNovaStrings
-import com.example.ui.i18n.novaStrings
+import com.example.ui.i18n.ProvideNetraStrings
+import com.example.ui.i18n.netraStrings
 import com.example.ui.theme.MaterialTheme
-import com.example.ui.theme.NovaBrowserTheme
+import com.example.ui.theme.NetraBrowserTheme
 import com.example.viewmodel.BrowserViewModel
 import kotlinx.coroutines.delay
 
@@ -92,7 +92,7 @@ import android.graphics.drawable.AnimatedVectorDrawable
 import android.widget.ImageView
 
 @Composable
-fun NovaBrowserApp(
+fun NetraBrowserApp(
     viewModel: BrowserViewModel
 ) {
     val context = LocalContext.current
@@ -240,8 +240,8 @@ fun NovaBrowserApp(
         viewModel.goBack()
     }
 
-    ProvideNovaStrings(appLanguage = preferences.appLanguage) {
-        NovaBrowserTheme(
+    ProvideNetraStrings(appLanguage = preferences.appLanguage) {
+        NetraBrowserTheme(
             darkTheme = preferences.isDarkMode,
             isIncognito = activeTab.isIncognito
         ) {
@@ -320,7 +320,7 @@ fun NovaBrowserApp(
                                 .fillMaxWidth()
                         ) {
                             if (activeTab.isHomePage) {
-                                NovaHomeContent(
+                                NetraHomeContent(
                                     isIncognito = activeTab.isIncognito,
                                     isAdBlockEnabled = preferences.isAdBlockEnabled,
                                     adBlockMode = preferences.adBlockMode,
@@ -698,12 +698,12 @@ fun NovaBrowserApp(
                     val pendingPerm = uiState.pendingWebPermission
                     if (pendingPerm != null && !pendingPerm.isPreAllowed) {
                         val resourceLabel = when (pendingPerm.kind) {
-                            WebPermissionKind.LOCATION -> if (novaStrings.isHindi) "आपकी लोकेशन" else "your location"
-                            WebPermissionKind.CAMERA -> if (novaStrings.isHindi) "आपका कैमरा" else "your camera"
-                            WebPermissionKind.MICROPHONE -> if (novaStrings.isHindi) "आपका माइक्रोफ़ोन" else "your microphone"
-                            WebPermissionKind.CAMERA_AND_MICROPHONE -> if (novaStrings.isHindi) "आपका कैमरा और माइक्रोफ़ोन" else "your camera and microphone"
+                            WebPermissionKind.LOCATION -> if (netraStrings.isHindi) "आपकी लोकेशन" else "your location"
+                            WebPermissionKind.CAMERA -> if (netraStrings.isHindi) "आपका कैमरा" else "your camera"
+                            WebPermissionKind.MICROPHONE -> if (netraStrings.isHindi) "आपका माइक्रोफ़ोन" else "your microphone"
+                            WebPermissionKind.CAMERA_AND_MICROPHONE -> if (netraStrings.isHindi) "आपका कैमरा और माइक्रोफ़ोन" else "your camera and microphone"
                         }
-                        val promptTitle = if (novaStrings.isHindi) {
+                        val promptTitle = if (netraStrings.isHindi) {
                             "${pendingPerm.domain} $resourceLabel का उपयोग करना चाहता है"
                         } else {
                             "${pendingPerm.domain} wants to use $resourceLabel"
@@ -715,7 +715,7 @@ fun NovaBrowserApp(
                             title = { Text(promptTitle, fontWeight = FontWeight.Bold) },
                             text = {
                                 Text(
-                                    text = if (novaStrings.isHindi) {
+                                    text = if (netraStrings.isHindi) {
                                         "आप साइट सेटिंग में जाकर कभी भी यह अनुमति बदल सकते हैं।"
                                     } else {
                                         "You can change this anytime in Site Config."
@@ -727,7 +727,7 @@ fun NovaBrowserApp(
                                 Button(
                                     onClick = { requestOsPermissionsForWebKind(pendingPerm.kind) },
                                     modifier = Modifier.testTag("web_perm_allow_button")
-                                ) { Text(novaStrings.sitePermAllow) }
+                                ) { Text(netraStrings.sitePermAllow) }
                             },
                             dismissButton = {
                                 TextButton(
@@ -735,7 +735,7 @@ fun NovaBrowserApp(
                                         viewModel.resolvePendingWebPermission(userAllowed = false, osGranted = false)
                                     },
                                     modifier = Modifier.testTag("web_perm_block_button")
-                                ) { Text(novaStrings.sitePermBlock) }
+                                ) { Text(netraStrings.sitePermBlock) }
                             }
                         )
                     }

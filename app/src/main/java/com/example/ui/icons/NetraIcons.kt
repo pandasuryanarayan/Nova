@@ -21,7 +21,7 @@ private fun icon(idx: Int, name: String, path: String, autoMirror: Boolean = fal
         fill = SolidColor(Color.Black)
     ).build().also { iconCache[idx] = it }
 
-object NovaIcons {
+object NetraIcons {
     val Add: ImageVector get() = icon(0, "Add", "M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
     val AdsClick: ImageVector get() = icon(1, "AdsClick", "M11,2v2.07C7.38,4.53 4.53,7.38 4.07,11H2v2h2.07c0.46,3.62 3.31,6.47 6.93,6.93V22h2v-2.07c3.62,-0.46 6.47,-3.31 6.93,-6.93H22v-2h-2.07C19.47,7.38 16.62,4.53 13,4.07V2h-2zM12,8c2.21,0 4,1.79 4,4s-1.79,4 -4,4 -4,-1.79 -4,-4 1.79,-4 4,-4z")
     val ArrowBack: ImageVector get() = icon(2, "ArrowBack", "M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z", true)

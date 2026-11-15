@@ -93,7 +93,7 @@ import kotlin.math.roundToInt
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Popup
-import com.example.ui.icons.NovaIcons
+import com.example.ui.icons.NetraIcons
 import com.example.ui.theme.LocalContentColor
 import com.example.ui.theme.MaterialTheme
 
@@ -408,7 +408,7 @@ fun Checkbox(
         ) {
             if (checked) {
                 Icon(
-                    imageVector = NovaIcons.Check,
+                    imageVector = NetraIcons.Check,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(14.dp)
@@ -419,7 +419,7 @@ fun Checkbox(
 }
 
 @Composable
-fun NovaBottomSheet(
+fun NetraBottomSheet(
     onDismissRequest: () -> Unit,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     border: BorderStroke? = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
@@ -645,7 +645,7 @@ fun dismissSoftKeyboard(view: View?) {
 }
 
 @Composable
-fun NovaEditText(
+fun NetraEditText(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String = "",

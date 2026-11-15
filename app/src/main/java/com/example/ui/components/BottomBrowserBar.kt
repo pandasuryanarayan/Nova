@@ -47,9 +47,9 @@ import androidx.compose.ui.unit.sp
 import com.example.browser.BrowserUrlUtils
 import com.example.data.BackgroundMediaState
 import com.example.data.BrowserTab
-import com.example.data.NOVA_HOME_URL
-import com.example.ui.i18n.novaStrings
-import com.example.ui.icons.NovaIcons
+import com.example.data.NETRA_HOME_URL
+import com.example.ui.i18n.netraStrings
+import com.example.ui.icons.NetraIcons
 import com.example.ui.theme.JetBrainsMonoFontFamily
 import com.example.ui.theme.MaterialTheme
 
@@ -67,7 +67,7 @@ fun TopWebsiteHeaderBar(
     var isUrlDropdownExpanded by remember(activeTab.id) { mutableStateOf(false) }
     var isEditingTopUrl by remember(activeTab.id) { mutableStateOf(false) }
     var urlInputText by remember(activeTab.url) {
-        mutableStateOf(if (activeTab.url == NOVA_HOME_URL) "" else activeTab.url)
+        mutableStateOf(if (activeTab.url == NETRA_HOME_URL) "" else activeTab.url)
     }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -87,13 +87,13 @@ fun TopWebsiteHeaderBar(
 
     LaunchedEffect(isEditingTopUrl) {
         if (isEditingTopUrl) {
-            urlInputText = if (activeTab.url == NOVA_HOME_URL) "" else activeTab.url
+            urlInputText = if (activeTab.url == NETRA_HOME_URL) "" else activeTab.url
         }
     }
 
     val websiteTitle = remember(activeTab.title, activeTab.url) {
         activeTab.title
-            .takeIf { it.isNotBlank() && it != NOVA_HOME_URL }
+            .takeIf { it.isNotBlank() && it != NETRA_HOME_URL }
             ?: BrowserUrlUtils.extractDomain(activeTab.url).ifBlank { activeTab.url }
     }
 
@@ -127,10 +127,10 @@ fun TopWebsiteHeaderBar(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
-                NovaEditText(
+                NetraEditText(
                     value = urlInputText,
                     onValueChange = { urlInputText = it },
-                    placeholder = novaStrings.searchOrTypeUrlPlaceholder,
+                    placeholder = netraStrings.searchOrTypeUrlPlaceholder,
                     shape = RoundedCornerShape(18.dp),
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     borderColor = MaterialTheme.colorScheme.primary,
@@ -150,7 +150,7 @@ fun TopWebsiteHeaderBar(
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
-                                        imageVector = NovaIcons.Close,
+                                        imageVector = NetraIcons.Close,
                                         contentDescription = "Clear URL",
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(18.dp)
@@ -161,7 +161,7 @@ fun TopWebsiteHeaderBar(
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
-                                        imageVector = NovaIcons.Send,
+                                        imageVector = NetraIcons.Send,
                                         contentDescription = "Go",
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
@@ -189,7 +189,7 @@ fun TopWebsiteHeaderBar(
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
-                        imageVector = NovaIcons.Close,
+                        imageVector = NetraIcons.Close,
                         contentDescription = "Cancel URL Edit",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
@@ -227,7 +227,7 @@ fun TopWebsiteHeaderBar(
                             .background(lockBgColor, RoundedCornerShape(10.dp))
                     ) {
                         Icon(
-                            imageVector = if (activeTab.isSecureSsl) NovaIcons.Lock else NovaIcons.Warning,
+                            imageVector = if (activeTab.isSecureSsl) NetraIcons.Lock else NetraIcons.Warning,
                             contentDescription = "Site Security, Certificate, Cookies & Configuration",
                             tint = lockTint,
                             modifier = Modifier.size(18.dp)
@@ -274,7 +274,7 @@ fun TopWebsiteHeaderBar(
                             .background(bookmarkBgColor, RoundedCornerShape(10.dp))
                     ) {
                         Icon(
-                            imageVector = if (isBookmarked) NovaIcons.Bookmark else NovaIcons.BookmarkBorder,
+                            imageVector = if (isBookmarked) NetraIcons.Bookmark else NetraIcons.BookmarkBorder,
                             contentDescription = if (isBookmarked) "Remove Bookmark" else "Bookmark This Website",
                             tint = bookmarkTint,
                             modifier = Modifier.size(18.dp)
@@ -297,7 +297,7 @@ fun TopWebsiteHeaderBar(
                             .background(dropdownBgColor, RoundedCornerShape(10.dp))
                     ) {
                         Icon(
-                            imageVector = if (isUrlDropdownExpanded) NovaIcons.KeyboardArrowUp else NovaIcons.KeyboardArrowDown,
+                            imageVector = if (isUrlDropdownExpanded) NetraIcons.KeyboardArrowUp else NetraIcons.KeyboardArrowDown,
                             contentDescription = if (isUrlDropdownExpanded) "Hide Website Link" else "Show Website Link",
                             tint = if (isUrlDropdownExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
@@ -328,7 +328,7 @@ fun TopWebsiteHeaderBar(
                         .padding(horizontal = 2.dp)
                 ) {
                     Text(
-                        text = novaStrings.websiteLinkTitle,
+                        text = netraStrings.websiteLinkTitle,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
@@ -339,19 +339,19 @@ fun TopWebsiteHeaderBar(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         UrlActionSmallBtn(
-                            icon = NovaIcons.ContentCopy,
+                            icon = NetraIcons.ContentCopy,
                             contentDesc = "Copy Link",
                             onClick = { onCopyUrlClick(activeTab.url) },
                             tag = "falldown_copy_url_button"
                         )
                         UrlActionSmallBtn(
-                            icon = NovaIcons.Edit,
+                            icon = NetraIcons.Edit,
                             contentDesc = "Edit Link",
                             onClick = { isEditingTopUrl = true },
                             tag = "falldown_edit_url_button"
                         )
                         UrlActionSmallBtn(
-                            icon = NovaIcons.Share,
+                            icon = NetraIcons.Share,
                             contentDesc = "Share Link",
                             onClick = { onShareUrlClick(websiteTitle, activeTab.url) },
                             tag = "falldown_share_url_button"
@@ -439,7 +439,7 @@ fun BottomBrowserBar(
     onOpenMenuClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val strings = novaStrings
+    val strings = netraStrings
     val accentColor = MaterialTheme.colorScheme.primary
 
     Column(
@@ -461,7 +461,7 @@ fun BottomBrowserBar(
                     .padding(horizontal = 8.dp)
             ) {
                 BottomNavTabItem(
-                    icon = NovaIcons.HomeFilled,
+                    icon = NetraIcons.HomeFilled,
                     label = strings.navHome,
                     isSelected = true,
                     badgeCount = null,
@@ -472,7 +472,7 @@ fun BottomBrowserBar(
                 )
 
                 BottomNavTabItem(
-                    icon = NovaIcons.Bookmarks,
+                    icon = NetraIcons.Bookmarks,
                     label = strings.navSaved,
                     isSelected = false,
                     badgeCount = null,
@@ -483,7 +483,7 @@ fun BottomBrowserBar(
                 )
 
                 BottomNavTabItem(
-                    icon = NovaIcons.Tab,
+                    icon = NetraIcons.Tab,
                     label = strings.navTabs,
                     isSelected = false,
                     badgeCount = tabsCount,
@@ -494,7 +494,7 @@ fun BottomBrowserBar(
                 )
 
                 BottomNavTabItem(
-                    icon = NovaIcons.Settings,
+                    icon = NetraIcons.Settings,
                     label = strings.navSettings,
                     isSelected = false,
                     badgeCount = null,
@@ -528,7 +528,7 @@ fun BottomBrowserBar(
                             .testTag("nav_back_button")
                     ) {
                         Icon(
-                            imageVector = NovaIcons.ArrowBack,
+                            imageVector = NetraIcons.ArrowBack,
                             contentDescription = "Back",
                             tint = if (activeTab.canGoBack || !activeTab.isHomePage) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                             modifier = Modifier.size(20.dp)
@@ -542,7 +542,7 @@ fun BottomBrowserBar(
                             .testTag("nav_home_button")
                     ) {
                         Icon(
-                            imageVector = NovaIcons.Home,
+                            imageVector = NetraIcons.Home,
                             contentDescription = strings.navHome,
                             tint = accentColor,
                             modifier = Modifier.size(20.dp)
@@ -556,7 +556,7 @@ fun BottomBrowserBar(
                             .testTag("address_bar_devtools_button")
                     ) {
                         Icon(
-                            imageVector = NovaIcons.Code,
+                            imageVector = NetraIcons.Code,
                             contentDescription = strings.inspectButton,
                             tint = if (isDevToolsVisible) MaterialTheme.colorScheme.secondary else accentColor,
                             modifier = Modifier.size(20.dp)
@@ -570,7 +570,7 @@ fun BottomBrowserBar(
                             .testTag("address_bar_video_detect_button")
                     ) {
                         Icon(
-                            imageVector = NovaIcons.Videocam,
+                            imageVector = NetraIcons.Videocam,
                             contentDescription = strings.videosButton,
                             tint = accentColor,
                             modifier = Modifier.size(20.dp)
@@ -584,7 +584,7 @@ fun BottomBrowserBar(
                             .testTag("reload_stop_button")
                     ) {
                         Icon(
-                            imageVector = if (activeTab.isLoading) NovaIcons.Close else NovaIcons.Refresh,
+                            imageVector = if (activeTab.isLoading) NetraIcons.Close else NetraIcons.Refresh,
                             contentDescription = if (activeTab.isLoading) "Stop Loading" else "Refresh Page",
                             tint = accentColor,
                             modifier = Modifier.size(20.dp)
@@ -605,7 +605,7 @@ fun BottomBrowserBar(
                         .testTag("tabs_fab_button")
                 ) {
                     Icon(
-                        imageVector = NovaIcons.Tab,
+                        imageVector = NetraIcons.Tab,
                         contentDescription = "${strings.openTabsTitle} ($tabsCount)",
                         tint = accentColor,
                         modifier = Modifier.size(17.dp)
@@ -629,7 +629,7 @@ fun BottomBrowserBar(
                         .testTag("browser_menu_button")
                 ) {
                     Icon(
-                        imageVector = NovaIcons.Settings,
+                        imageVector = NetraIcons.Settings,
                         contentDescription = strings.navSettings,
                         tint = accentColor,
                         modifier = Modifier.size(20.dp)
@@ -748,10 +748,10 @@ fun FindInPageTopBar(
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .testTag("find_in_page_bar")
     ) {
-        NovaEditText(
+        NetraEditText(
             value = query,
             onValueChange = onQueryChange,
-            placeholder = novaStrings.findInPageButton,
+            placeholder = netraStrings.findInPageButton,
             shape = RoundedCornerShape(14.dp),
             imeAction = EditorInfo.IME_ACTION_SEARCH,
             onImeAction = {
@@ -776,7 +776,7 @@ fun FindInPageTopBar(
         )
         IconButton(onClick = onFindPrev, modifier = Modifier.size(40.dp)) {
             Icon(
-                imageVector = NovaIcons.KeyboardArrowUp,
+                imageVector = NetraIcons.KeyboardArrowUp,
                 contentDescription = "Previous Match",
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
@@ -784,7 +784,7 @@ fun FindInPageTopBar(
         }
         IconButton(onClick = onFindNext, modifier = Modifier.size(40.dp)) {
             Icon(
-                imageVector = NovaIcons.KeyboardArrowDown,
+                imageVector = NetraIcons.KeyboardArrowDown,
                 contentDescription = "Next Match",
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
@@ -800,7 +800,7 @@ fun FindInPageTopBar(
                 .testTag("close_find_in_page_button")
         ) {
             Icon(
-                imageVector = NovaIcons.Close,
+                imageVector = NetraIcons.Close,
                 contentDescription = "Close Find in Page",
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(18.dp)
@@ -833,7 +833,7 @@ fun BackgroundMediaMiniBar(
                 .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f), CircleShape)
         ) {
             Icon(
-                imageVector = NovaIcons.Headphones,
+                imageVector = NetraIcons.Headphones,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.size(18.dp)
@@ -857,7 +857,7 @@ fun BackgroundMediaMiniBar(
         }
         IconButton(onClick = onTogglePlayPause, modifier = Modifier.size(40.dp)) {
             Icon(
-                imageVector = if (mediaState.isPlaying) NovaIcons.Pause else NovaIcons.PlayArrow,
+                imageVector = if (mediaState.isPlaying) NetraIcons.Pause else NetraIcons.PlayArrow,
                 contentDescription = if (mediaState.isPlaying) "Pause" else "Play",
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(20.dp)
@@ -865,7 +865,7 @@ fun BackgroundMediaMiniBar(
         }
         IconButton(onClick = onClose, modifier = Modifier.size(40.dp)) {
             Icon(
-                imageVector = NovaIcons.Close,
+                imageVector = NetraIcons.Close,
                 contentDescription = "Stop Background Playback",
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(18.dp)

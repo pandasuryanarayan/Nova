@@ -316,11 +316,11 @@ var now = Date.now();
 if (now - lastTriggerTimestamp < 750) return true;
 lastTriggerTimestamp = now;
 try {
-if (window.NovaVideoBridge && typeof window.NovaVideoBridge.onVideoLongPressed === 'function') {
-window.NovaVideoBridge.onVideoLongPressed(JSON.stringify(payload));
+if (window.NetraVideoBridge && typeof window.NetraVideoBridge.onVideoLongPressed === 'function') {
+window.NetraVideoBridge.onVideoLongPressed(JSON.stringify(payload));
 return true;
 }
-} catch (e) { console.error('NovaVideoBridge error:', e); }
+} catch (e) { console.error('NetraVideoBridge error:', e); }
 return false;
 }
 function fetchVideoWithCredentialsFallback(videoUrl, headersObj, signal) {
@@ -341,11 +341,11 @@ return resp;
 return tryCreds('same-origin').catch(function () { return tryCreds('include'); }).catch(function () { return tryCreds('omit'); });
 }
 var fetchCreds = fetchVideoWithCredentialsFallback;
-window.__novaProbeVideoSizeInWebView = function (videoUrl) {
+window.__netraProbeVideoSizeInWebView = function (videoUrl) {
 if (!videoUrl || videoUrl.indexOf('blob:') === 0) return;
 var perfSize = lookupPerformanceResourceSize(videoUrl);
-if (perfSize > 1024 && window.NovaVideoBridge && window.NovaVideoBridge.onVideoSizeProbed) {
-window.NovaVideoBridge.onVideoSizeProbed(JSON.stringify({
+if (perfSize > 1024 && window.NetraVideoBridge && window.NetraVideoBridge.onVideoSizeProbed) {
+window.NetraVideoBridge.onVideoSizeProbed(JSON.stringify({
 url: videoUrl,
 contentLength: perfSize,
 contentType: 'video/mp4'
@@ -375,8 +375,8 @@ try { controller.abort(); } catch (e) {}
 if (totalSize <= 0) {
 totalSize = lookupPerformanceResourceSize(videoUrl);
 }
-if (totalSize > 0 && window.NovaVideoBridge && window.NovaVideoBridge.onVideoSizeProbed) {
-window.NovaVideoBridge.onVideoSizeProbed(JSON.stringify({
+if (totalSize > 0 && window.NetraVideoBridge && window.NetraVideoBridge.onVideoSizeProbed) {
+window.NetraVideoBridge.onVideoSizeProbed(JSON.stringify({
 url: videoUrl,
 contentLength: totalSize,
 contentType: cType.split(';')[0].trim()
@@ -384,8 +384,8 @@ contentType: cType.split(';')[0].trim()
 }
 }).catch(function () {
 var fallbackPerf = lookupPerformanceResourceSize(videoUrl);
-if (fallbackPerf > 1024 && window.NovaVideoBridge && window.NovaVideoBridge.onVideoSizeProbed) {
-window.NovaVideoBridge.onVideoSizeProbed(JSON.stringify({
+if (fallbackPerf > 1024 && window.NetraVideoBridge && window.NetraVideoBridge.onVideoSizeProbed) {
+window.NetraVideoBridge.onVideoSizeProbed(JSON.stringify({
 url: videoUrl,
 contentLength: fallbackPerf,
 contentType: 'video/mp4'
@@ -398,8 +398,8 @@ var CHUNK_SZ = 0x8000, c = [];
 for (var i = 0; i < uint8.length; i += CHUNK_SZ) c.push(String.fromCharCode.apply(null, uint8.subarray(i, i + CHUNK_SZ)));
 return btoa(c.join(''));
 }
-window.__novaDownloadVideoViaWebView = function (downloadId, videoUrl) {
-if (!window.NovaVideoBridge) return;
+window.__netraDownloadVideoViaWebView = function (downloadId, videoUrl) {
+if (!window.NetraVideoBridge) return;
 fetchCreds(videoUrl, { 'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8' }, null).then(function (response) {
 var totalBytes = parseInt(response.headers.get('Content-Length') || '-1', 10), cRange = response.headers.get('Content-Range') || '';
 if (totalBytes <= 0 && cRange.indexOf('/') !== -1) {
@@ -411,21 +411,21 @@ if (!response.body || typeof response.body.getReader !== 'function') {
 return response.arrayBuffer().then(function (buf) {
 var bytes = new Uint8Array(buf), step = 98304;
 for (var offset = 0; offset < bytes.length; offset += step) {
-window.NovaVideoBridge.onWebViewDownloadChunk(downloadId, uint8ToBase64(bytes.subarray(offset, Math.min(bytes.length, offset + step))), Math.min(bytes.length, offset + step), bytes.length);
+window.NetraVideoBridge.onWebViewDownloadChunk(downloadId, uint8ToBase64(bytes.subarray(offset, Math.min(bytes.length, offset + step))), Math.min(bytes.length, offset + step), bytes.length);
 }
-window.NovaVideoBridge.onWebViewDownloadFinished(downloadId, bytes.length);
+window.NetraVideoBridge.onWebViewDownloadFinished(downloadId, bytes.length);
 });
 }
 var reader = response.body.getReader(), loaded = 0;
 function pump() {
 return reader.read().then(function (res) {
-if (res.done) { window.NovaVideoBridge.onWebViewDownloadFinished(downloadId, loaded); return; }
+if (res.done) { window.NetraVideoBridge.onWebViewDownloadFinished(downloadId, loaded); return; }
 var val = res.value;
 if (val && val.length > 0) {
 loaded += val.length;
 var step = 98304;
 for (var offset = 0; offset < val.length; offset += step) {
-window.NovaVideoBridge.onWebViewDownloadChunk(downloadId, uint8ToBase64(val.subarray(offset, Math.min(val.length, offset + step))), loaded, totalBytes > 0 ? totalBytes : -1);
+window.NetraVideoBridge.onWebViewDownloadChunk(downloadId, uint8ToBase64(val.subarray(offset, Math.min(val.length, offset + step))), loaded, totalBytes > 0 ? totalBytes : -1);
 }
 }
 return pump();
@@ -433,8 +433,8 @@ return pump();
 }
 return pump();
 }).catch(function (err) {
-if (window.NovaVideoBridge && window.NovaVideoBridge.onWebViewDownloadError) {
-window.NovaVideoBridge.onWebViewDownloadError(downloadId, String(err && err.message ? err.message : err));
+if (window.NetraVideoBridge && window.NetraVideoBridge.onWebViewDownloadError) {
+window.NetraVideoBridge.onWebViewDownloadError(downloadId, String(err && err.message ? err.message : err));
 }
 });
 };
@@ -442,8 +442,8 @@ function extractBest(videoEl, isIframeDoc) {
 return extractVid(videoEl, isIframeDoc, false) || extractVid(videoEl, isIframeDoc, true);
 }
 function bindVid(videoEl, isIframeDoc) {
-if (!videoEl || videoEl.__novaDirectBound) return;
-videoEl.__novaDirectBound = true;
+if (!videoEl || videoEl.__netraDirectBound) return;
+videoEl.__netraDirectBound = true;
 videoEl.style.webkitTouchCallout = 'none';
 videoEl.style.webkitUserSelect = 'none';
 var localTimer = null, startX = 0, startY = 0;
@@ -478,8 +478,8 @@ videoEl.addEventListener('touchend', clearLocal, { capture: true, passive: true 
 videoEl.addEventListener('touchcancel', clearLocal, { capture: true, passive: true });
 }
 function bindDoc(doc, isIframeDoc) {
-if (!doc || doc.__novaListenersAttached) return;
-doc.__novaListenersAttached = true;
+if (!doc || doc.__netraListenersAttached) return;
+doc.__netraListenersAttached = true;
 var eventRoot = (!isIframeDoc && doc === document && typeof window !== 'undefined') ? window : doc;
 eventRoot.addEventListener('contextmenu', function (e) {
 var x = e.clientX || lastTouchX, y = e.clientY || lastTouchY;
@@ -530,7 +530,7 @@ var collected = [];
 collectVids(doc, isIframeDoc, collected, 0);
 for (var i = 0; i < collected.length; i++) bindVid(collected[i].video, collected[i].isIframe);
 }
-window.__novaInspectVideoAtLastTouch = function (fallbackX, fallbackY) {
+window.__netraInspectVideoAtLastTouch = function (fallbackX, fallbackY) {
 var tx = (lastTouchX > 0 || lastTouchY > 0) ? lastTouchX : (fallbackX || 0);
 var ty = (lastTouchX > 0 || lastTouchY > 0) ? lastTouchY : (fallbackY || 0);
 var hit = findVidAt(document, tx, ty, false);
@@ -550,7 +550,7 @@ if (s > bestScore) { bestScore = s; hit = info; }
 if (hit) { dispatchToAndroid(hit); return JSON.stringify(hit); }
 return '';
 };
-window.__novaScanAllPageVideos = function () {
+window.__netraScanAllPageVideos = function () {
 var collected = [], scored = [];
 collectVids(document, false, collected, 0);
 for (var i = 0; i < collected.length; i++) {
@@ -571,8 +571,8 @@ for (var k = 0; k < scored.length; k++) results.push(scored[k].info);
 return JSON.stringify(results);
 };
 scanDoc(document, false);
-if (!window.__novaMutationObserverStarted && typeof MutationObserver !== 'undefined' && document.documentElement) {
-window.__novaMutationObserverStarted = true;
+if (!window.__netraMutationObserverStarted && typeof MutationObserver !== 'undefined' && document.documentElement) {
+window.__netraMutationObserverStarted = true;
 new MutationObserver(function () { scanDoc(document, false); }).observe(document.documentElement, { childList: true, subtree: true });
 }
 })();

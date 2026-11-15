@@ -21,7 +21,7 @@ class BrowserRepository(
     private val dao: BrowserDao
 ) {
     private val prefs: SharedPreferences =
-        context.getSharedPreferences("nova_browser_prefs", Context.MODE_PRIVATE)
+        context.getSharedPreferences("netra_browser_prefs", Context.MODE_PRIVATE)
 
     private object PrefKeys {
         const val DARK_MODE = "dark_mode"
@@ -148,7 +148,7 @@ class BrowserRepository(
         val alreadySeeded = prefs.getBoolean(PrefKeys.DEFAULT_SHORTCUTS_SEEDED, false)
         if (!alreadySeeded) {
             if (dao.getShortcutsCount() == 0) {
-                dao.insertShortcuts(NovaDatabase.defaultShortcuts())
+                dao.insertShortcuts(NetraDatabase.defaultShortcuts())
             }
             prefs.edit().putBoolean(PrefKeys.DEFAULT_SHORTCUTS_SEEDED, true).apply()
         }
@@ -201,7 +201,7 @@ class BrowserRepository(
     }
 
     suspend fun recordHistory(title: String, url: String, domain: String) {
-        if (url.startsWith("netra://") || url.startsWith("nova://") || url.isBlank() || url == "about:blank") return
+        if (url.startsWith("netra://") || url.isBlank() || url == "about:blank") return
         dao.insertHistory(HistoryEntity(title = title.ifBlank { domain }, url = url, domain = domain))
     }
 

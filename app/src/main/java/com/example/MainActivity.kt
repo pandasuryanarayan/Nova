@@ -13,7 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.animation.doOnEnd
-import com.example.ui.NovaBrowserApp
+import com.example.ui.NetraBrowserApp
 import com.example.viewmodel.BrowserViewModel
 
 class MainActivity : ComponentActivity() {
@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
         handleIncomingIntent(intent)
 
         setContent {
-            NovaBrowserApp(viewModel = browserViewModel)
+            NetraBrowserApp(viewModel = browserViewModel)
         }
     }
 

@@ -4,23 +4,23 @@
 
 ### **Fast, Private, Ad-Free & Developer-Grade Open-Source Android Web Browser**
 
-[![Version](https://img.shields.io/badge/Release-v6.9.6%20(code%2021)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.9.6/Netra-v6.9.6-release.apk)
+[![Version](https://img.shields.io/badge/Release-v6.9.7%20(code%2022)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.9.7/Netra-v6.9.7-release.apk)
 [![Platform](https://img.shields.io/badge/Android-API%2024%E2%80%9336-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#building-from-source)
 [![Kotlin](https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](#tech-stack--architecture)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](#key-features)
 [![Ad-Blocker](https://img.shields.io/badge/Ad--Shield-3--Tier%20(Up%20to%20267%20Rules)-00C853?style=for-the-badge&logo=shield&logoColor=white)](#3-tier-cumulative-ad-blocker--tracker-shield)
-[![APK Size](https://img.shields.io/badge/APK%20Size-1004%20KB%20(%3C1%20MiB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v696)
+[![APK Size](https://img.shields.io/badge/APK%20Size-1002%20KB%20(%3C1%20MiB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v697)
 [![License](https://img.shields.io/badge/License-GNU%20GPL%20v3.0-D50000?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 
 <br/>
 
-[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-Netra--v6.9.6--release.apk-FF6D00?style=for-the-badge)](releases/v6.9.6/Netra-v6.9.6-release.apk)
-[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.9.6-263238?style=for-the-badge)](releases/v6.9.6/RELEASE_NOTES.md)
+[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-Netra--v6.9.7--release.apk-FF6D00?style=for-the-badge)](releases/v6.9.7/Netra-v6.9.7-release.apk)
+[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.9.7-263238?style=for-the-badge)](releases/v6.9.7/RELEASE_NOTES.md)
 [![CI Workflow](https://img.shields.io/badge/GitHub%20Actions-Release%20Pipeline-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/release.yml)
 
 ---
 
-**Package ID:** `com.suryatech.browser.netra` &nbsp;•&nbsp; **Version:** `6.9.6` (`versionCode = 21`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
+**Package ID:** `com.suryatech.browser.netra` &nbsp;•&nbsp; **Version:** `6.9.7` (`versionCode = 22`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
 
 </div>
 
@@ -47,26 +47,26 @@
 
 ---
 
-## 📦 Signed Release APK (`v6.9.6`)
+## 📦 Signed Release APK (`v6.9.7`)
 
-A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.9.6/`](releases/v6.9.6/):
+A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.9.7/`](releases/v6.9.7/):
 
 | Property | Details |
 | :--- | :--- |
-| **APK File** | [`releases/v6.9.6/Netra-v6.9.6-release.apk`](releases/v6.9.6/Netra-v6.9.6-release.apk) |
-| **Release Notes** | [`releases/v6.9.6/RELEASE_NOTES.md`](releases/v6.9.6/RELEASE_NOTES.md) |
+| **APK File** | [`releases/v6.9.7/Netra-v6.9.7-release.apk`](releases/v6.9.7/Netra-v6.9.7-release.apk) |
+| **Release Notes** | [`releases/v6.9.7/RELEASE_NOTES.md`](releases/v6.9.7/RELEASE_NOTES.md) |
 | **Application ID** | `com.suryatech.browser.netra` |
-| **Version** | `6.9.6` (`versionCode = 21`) |
-| **APK Size** | `1,027,671 bytes` (**1,003.6 KB** — `~0.98 MiB`) |
-| **SHA-256 Checksum** | `f98c5026edcbe90942502ef9e7d71e7e001b422e66ad2a856a54e7e13c374777` |
-| **Signing Certificate** | `CN=Nova Browser, OU=Mobile, O=Nova, L=SF, ST=CA, C=US` |
+| **Version** | `6.9.7` (`versionCode = 22`) |
+| **APK Size** | `1,026,187 bytes` (**1,002.1 KB** — `~0.98 MiB`) |
+| **SHA-256 Checksum** | `c49a001e4cdbed84bde6f4786b90367ad631baebb67b36ef835419f96e20afea` |
+| **Signing Cert SHA-256** | `c585099e00ff5e42e727ae4f0cd2921799950805233b2914f0c63e8bb9362203` |
 | **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`, `localeFilters = [en, hi]`, lightweight vector icons & native system typography) |
 
 ---
 
 ## 🛡️ 3-Tier Cumulative Ad-Blocker & Tracker Shield
 
-Nova Browser features a **cumulative 3-tier Ad-Blocker engine** (`com.example.browser.AdBlocker`) operating at two independent layers:
+Netra features a **cumulative 3-tier Ad-Blocker engine** (`com.example.browser.AdBlocker`) operating at two independent layers:
 1. **Network Request Interception (`WebViewClient.shouldInterceptRequest`)**: Blocks ad scripts, tracking pixels, RTB auctions, VAST/VMAP video ads, and telemetry beacons **before** any network payload is downloaded (`204 No Content`).
 2. **Cosmetic DOM & Player Shield (`evaluateJavascript` + `MutationObserver`)**: Injects high-specificity CSS rules (`display: none !important`) and a throttled DOM observer to remove banner slots, native ad widgets, and YouTube video ad overlays.
 
@@ -200,7 +200,7 @@ ytd-in-feed-ad-layout-renderer, ytd-compact-promoted-video-renderer,
 #masthead-ad, #player-ads, #background-promo-renderer,
 ytd-rich-item-renderer:has(ytd-display-ad-renderer)
 ```
-> **In-Player Video Ad Auto-Skipper:** When `#movie_player.ad-showing` is active in **Max Mode**, Nova Browser automatically clicks `.ytp-ad-skip-button` / `.ytp-ad-skip-button-modern` / `.ytp-skip-ad-button` and fast-forwards unskippable ad segments to `video.duration`.
+> **In-Player Video Ad Auto-Skipper:** When `#movie_player.ad-showing` is active in **Max Mode**, Netra automatically clicks `.ytp-ad-skip-button` / `.ytp-ad-skip-button-modern` / `.ytp-skip-ad-button` and fast-forwards unskippable ad segments to `video.duration`.
 
 ---
 
@@ -212,7 +212,7 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
 - **App-Wide Radial Wave Transition**: Toggling Incognito ON or OFF runs a smooth 420ms color-scheme interpolation paired with a full-screen radial wave canvas animation.
 
 ### 🔒 Trusted Google Search & Anti-CAPTCHA Hardening
-- Uses a standard mobile Chrome User-Agent without non-standard bot tokens (`NovaBrowser/...`) that trigger Google Search CAPTCHA challenges.
+- Uses a standard mobile Chrome User-Agent without non-standard bot tokens (`NetraBrowser/...`) that trigger Google Search CAPTCHA challenges.
 - Normalizes `navigator.webdriver = false`, `navigator.languages`, `navigator.plugins`, and `window.chrome` runtime objects while preserving first-party session cookies and restricting `DNT: 1` / `Sec-GPC: 1` headers to cross-site third-party requests.
 
 ### 🖼️ Smart On-Visit Favicon Cache & Editable Quick Shortcuts
@@ -258,23 +258,28 @@ app/src/main/java/com/example/
 ├── MainActivity.kt                  # Edge-to-Edge activity & deep-link intent router
 ├── browser/
 │   ├── AdBlocker.kt                 # 3-Tier Ad/Tracker Shield (Minimal: 58, Pro: 189, Max: 220)
-│   ├── NovaDownloadHelper.kt        # Segmented HTTP Range download engine with pause/resume
-│   ├── NovaWebViewPool.kt           # Multi-tab WebView pool, JS bridges & anti-CAPTCHA headers
-│   └── ShortcutIconCacheManager.kt  # On-visit favicon fetcher (96x96 WEBP disk + 1.5MB LruCache)
+│   ├── NetraDownloadHelper.kt       # Segmented HTTP Range download engine with pause/resume
+│   ├── NetraWebViewPool.kt          # Multi-tab WebView pool, JS bridges & anti-CAPTCHA headers
+│   └── ShortcutIconCache.kt         # On-visit favicon fetcher (96x96 WEBP disk + 1.5MB LruCache)
 ├── data/
-│   ├── AppDatabase.kt               # Room SQLite database (Bookmarks, History, Downloads, Shortcuts)
-│   ├── BrowserDao.kt                # Reactive Coroutine Flow DAOs
+│   ├── NetraDatabase.kt             # SQLite database (Bookmarks, History, Downloads, Shortcuts)
 │   ├── BrowserModels.kt             # Domain models, AdBlockMode enum, DevTools & Tab states
-│   └── BrowserRepository.kt         # DataStore preferences & Room repository
+│   └── BrowserRepository.kt         # SharedPreferences & SQLite repository
 ├── ui/
-│   ├── NovaBrowserApp.kt            # Root Scaffold, radial wave canvas & sheet orchestration
+│   ├── NetraBrowserApp.kt           # Root Scaffold, radial wave canvas & sheet orchestration
 │   ├── components/
+│   │   ├── BottomBrowserBar.kt      # Top URL bar (Copy/Edit/Share) & Bottom navigation bar
 │   │   ├── BrowserSheets.kt         # Menu, Blocked Ads + Mode/Rule Inspector, Tabs, History, Downloads
-│   │   ├── BrowserToolbars.kt       # Top URL bar (Copy/Edit/Share) & Bottom navigation bar
 │   │   ├── DevToolsPanel.kt         # Split-screen Elements, Sources, Console & Network inspector
-│   │   └── NovaHomeContent.kt       # Centric Home screen, Omnibox, Split buttons & Quick Shortcuts
+│   │   ├── NetraHomeContent.kt      # Centric Home screen, Omnibox, Split buttons & Quick Shortcuts
+│   │   ├── NetraPrimitives.kt       # Lightweight Compose UI primitives & NetraBottomSheet
+│   │   └── VideoLongPressSheet.kt   # Long-press HTML5 video quality & download sheet
+│   ├── i18n/
+│   │   └── NetraStrings.kt          # English & Hindi localized strings provider
+│   ├── icons/
+│   │   └── NetraIcons.kt            # Lightweight cached vector icons
 │   └── theme/
-│       └── Theme.kt                 # Warm Light Orange default & Dark Cyan Incognito M3 themes
+│       └── Theme.kt                 # Warm Light Orange default, AMOLED Dark & Cyan Incognito themes
 └── viewmodel/
     └── BrowserViewModel.kt          # Unidirectional state holder & tab/ad-block coordinator
 ```
@@ -307,7 +312,7 @@ sha256sum app/build/outputs/apk/release/app-release.apk
 
 [![GNU GPL v3.0](https://img.shields.io/badge/License-GNU%20General%20Public%20License%20v3.0-D50000?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 
-Copyright © **SuryaTech** (`com.suryatech.browser.nova`).  
+Copyright © **SuryaTech** (`com.suryatech.browser.netra`).  
 Distributed under the **GNU General Public License v3.0 (GPL-3.0)**. See [`LICENSE`](LICENSE) for the full license text.
 
 </div>

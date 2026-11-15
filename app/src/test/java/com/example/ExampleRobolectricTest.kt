@@ -4,13 +4,13 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.example.browser.AdBlocker
 import com.example.browser.BrowserUrlUtils
-import com.example.browser.NovaDownloadHelper
-import com.example.browser.NovaWebViewPool
+import com.example.browser.NetraDownloadHelper
+import com.example.browser.NetraWebViewPool
 import com.example.data.AdBlockMode
 import com.example.data.BrowserRepository
 import com.example.data.BrowserTab
-import com.example.data.NOVA_HOME_URL
-import com.example.data.NovaDatabase
+import com.example.data.NETRA_HOME_URL
+import com.example.data.NetraDatabase
 import com.example.data.SiteConfigSettings
 import com.example.data.SiteCookieEntry
 import com.example.data.SiteCookiePolicy
@@ -183,13 +183,13 @@ class ExampleRobolectricTest {
             }
             assertTrue("Max JS missing $sel", maxJs.contains(sel))
         }
-        assertTrue("Live mode upgrade should clear previous interval", maxJs.contains("clearInterval(window.__novaAdShieldInterval)"))
+        assertTrue("Live mode upgrade should clear previous interval", maxJs.contains("clearInterval(window.__netraAdShieldInterval)"))
     }
 
     @Test
     fun `verify per-site chrome config persistence normalization and reset`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val dao = NovaDatabase.getInstance(context).browserDao()
+        val dao = NetraDatabase.getInstance(context).browserDao()
         val repo1 = BrowserRepository(context, dao)
 
         val defaultCfg = repo1.getSiteConfig("example.com")
@@ -244,7 +244,7 @@ class ExampleRobolectricTest {
     @Test
     fun `verify ssl certificate details fallback and cookie entry sizing`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val pool = NovaWebViewPool(
+        val pool = NetraWebViewPool(
             context = context,
             onTabStateUpdated = { _, _, _, _, _, _, _, _, _ -> },
             onHistoryVisited = { _, _, _ -> },
@@ -281,7 +281,7 @@ class ExampleRobolectricTest {
         assertTrue(httpDetails.protocol.contains("HTTP"))
 
         val homeDetails = pool.getSslCertificateDetails(
-            BrowserTab(url = NOVA_HOME_URL, isSecureSsl = true)
+            BrowserTab(url = NETRA_HOME_URL, isSecureSsl = true)
         )
         assertTrue(homeDetails.isSecure)
         assertTrue(homeDetails.protocol.contains("netra://"))
@@ -305,34 +305,34 @@ class ExampleRobolectricTest {
 
     @Test
     fun `verify content range parsing redirect resolution and keyboard dismissal`() {
-        assertEquals(5242880L, NovaDownloadHelper.parseContentRangeTotalBytes("bytes 0-1/5242880"))
-        assertEquals(12345678L, NovaDownloadHelper.parseContentRangeTotalBytes("bytes */12345678"))
-        assertEquals(-1L, NovaDownloadHelper.parseContentRangeTotalBytes("bytes 0-1/*"))
-        assertEquals(-1L, NovaDownloadHelper.parseContentRangeTotalBytes(null))
-        assertEquals(-1L, NovaDownloadHelper.parseContentRangeTotalBytes(""))
+        assertEquals(5242880L, NetraDownloadHelper.parseContentRangeTotalBytes("bytes 0-1/5242880"))
+        assertEquals(12345678L, NetraDownloadHelper.parseContentRangeTotalBytes("bytes */12345678"))
+        assertEquals(-1L, NetraDownloadHelper.parseContentRangeTotalBytes("bytes 0-1/*"))
+        assertEquals(-1L, NetraDownloadHelper.parseContentRangeTotalBytes(null))
+        assertEquals(-1L, NetraDownloadHelper.parseContentRangeTotalBytes(""))
 
         assertEquals(
             "http://cdn.video-host.net/files/show 1.mp4".replace(" ", "%20"),
-            NovaDownloadHelper.resolveRedirectUrl(
+            NetraDownloadHelper.resolveRedirectUrl(
                 "https://site.example.com/dl?id=42",
                 "http://cdn.video-host.net/files/show 1.mp4"
             )
         )
         assertEquals(
             "https://site.example.com/media/clip.mp4?token=xyz",
-            NovaDownloadHelper.resolveRedirectUrl(
+            NetraDownloadHelper.resolveRedirectUrl(
                 "https://site.example.com/player/watch",
                 "/media/clip.mp4?token=xyz"
             )
         )
         assertEquals(
             "https://edge.cdn.net/stream/video.mp4",
-            NovaDownloadHelper.resolveRedirectUrl(
+            NetraDownloadHelper.resolveRedirectUrl(
                 "https://site.example.com/watch",
                 "//edge.cdn.net/stream/video.mp4"
             )
         )
-        assertEquals(null, NovaDownloadHelper.resolveRedirectUrl("https://site.example.com", "  "))
+        assertEquals(null, NetraDownloadHelper.resolveRedirectUrl("https://site.example.com", "  "))
 
         val context = ApplicationProvider.getApplicationContext<Context>()
         dismissSoftKeyboard(null)
@@ -442,8 +442,8 @@ class ExampleRobolectricTest {
         assertTrue(vm.uiState.value.tabGroups.isEmpty())
         assertTrue(vm.uiState.value.tabs.filter { it.isIncognito }.all { it.groupId == null })
 
-        assertEquals("All Tabs", com.example.ui.i18n.EnglishNovaStrings.openTabsTitle)
-        assertEquals("सभी टैब", com.example.ui.i18n.HindiNovaStrings.openTabsTitle)
+        assertEquals("All Tabs", com.example.ui.i18n.EnglishNetraStrings.openTabsTitle)
+        assertEquals("सभी टैब", com.example.ui.i18n.HindiNetraStrings.openTabsTitle)
     }
 }
 

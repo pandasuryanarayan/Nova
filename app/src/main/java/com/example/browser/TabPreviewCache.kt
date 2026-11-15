@@ -55,7 +55,7 @@ object TabPreviewCache {
             .removePrefix("http://")
             .removePrefix("www.")
             .trimEnd('/')
-        if (cleaned.isBlank() || cleaned.startsWith("netra:") || cleaned.startsWith("nova:")) return ""
+        if (cleaned.isBlank() || cleaned.startsWith("netra:")) return ""
         val safe = cleaned.replace(Regex("[^a-z0-9._-]"), "_").take(90)
         return "${safe}_${cleaned.hashCode().toUInt().toString(16)}"
     }
@@ -88,7 +88,7 @@ object TabPreviewCache {
     ): ImageBitmap? {
         if (webView == null) return null
         val url = rawUrl.ifBlank { webView.url ?: "" }
-        if (url.isBlank() || url.startsWith("netra://") || url.startsWith("nova://") || url == "about:blank") {
+        if (url.isBlank() || url.startsWith("netra://") || url == "about:blank") {
             return null
         }
         return try {

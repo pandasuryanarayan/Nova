@@ -14,7 +14,7 @@ import com.example.data.AdBlockMode
 import com.example.data.AppLanguage
 import java.util.Locale
 
-data class NovaStrings(
+data class NetraStrings(
     val isHindi: Boolean,
     // Home Screen
     val appTitleStandard: String,
@@ -126,7 +126,7 @@ data class NovaStrings(
     val noHistorySubtitle: String,
     val noMatchingVisitsTitle: String,
     val openTabsTitle: String,
-    val novaHomeTabTitle: String,
+    val netraHomeTabTitle: String,
     val newTabButton: String,
     val privateTabButton: String,
     val defaultTabsButton: String,
@@ -295,7 +295,7 @@ data class NovaStrings(
         if (isHindi) "$count कुकीज़ सहेजी गई हैं" else "$count cookies stored"
 }
 
-val EnglishNovaStrings = NovaStrings(
+val EnglishNetraStrings = NetraStrings(
     isHindi = false,
     appTitleStandard = "Netra",
     appTitlePrivate = "Netra Private",
@@ -401,7 +401,7 @@ val EnglishNovaStrings = NovaStrings(
     noHistorySubtitle = "Websites you visit in standard mode will appear here.",
     noMatchingVisitsTitle = "No matching visits",
     openTabsTitle = "All Tabs",
-    novaHomeTabTitle = "Netra Home",
+    netraHomeTabTitle = "Netra Home",
     newTabButton = "New Tab",
     privateTabButton = "Private",
     defaultTabsButton = "Default Tabs",
@@ -483,7 +483,7 @@ val EnglishNovaStrings = NovaStrings(
     siteResetAndClearButton = "Clear cookies & reset site config"
 )
 
-val HindiNovaStrings = NovaStrings(
+val HindiNetraStrings = NetraStrings(
     isHindi = true,
     appTitleStandard = "नेत्र",
     appTitlePrivate = "नेत्र प्राइवेट",
@@ -589,7 +589,7 @@ val HindiNovaStrings = NovaStrings(
     noHistorySubtitle = "सामान्य मोड में देखी गई वेबसाइटें यहाँ दिखाई देंगी।",
     noMatchingVisitsTitle = "कोई परिणाम नहीं मिला",
     openTabsTitle = "सभी टैब",
-    novaHomeTabTitle = "नेत्र होम",
+    netraHomeTabTitle = "नेत्र होम",
     newTabButton = "नया टैब",
     privateTabButton = "प्राइवेट",
     defaultTabsButton = "सामान्य टैब",
@@ -671,7 +671,7 @@ val HindiNovaStrings = NovaStrings(
     siteResetAndClearButton = "कुकीज़ साफ़ करें और सेटिंग रीसेट करें"
 )
 
-val LocalNovaStrings = staticCompositionLocalOf { EnglishNovaStrings }
+val LocalNetraStrings = staticCompositionLocalOf { EnglishNetraStrings }
 
 fun resolveEffectiveLanguageCode(
     appLanguage: AppLanguage,
@@ -700,7 +700,7 @@ fun resolveEffectiveLanguageCode(
 }
 
 @Composable
-fun ProvideNovaStrings(
+fun ProvideNetraStrings(
     appLanguage: AppLanguage,
     content: @Composable () -> Unit
 ) {
@@ -723,16 +723,16 @@ fun ProvideNovaStrings(
         }
     }
 
-    val strings = if (effectiveLangCode == "hi") HindiNovaStrings else EnglishNovaStrings
+    val strings = if (effectiveLangCode == "hi") HindiNetraStrings else EnglishNetraStrings
 
     CompositionLocalProvider(
-        LocalNovaStrings provides strings,
+        LocalNetraStrings provides strings,
         LocalContext provides localizedContext,
         content = content
     )
 }
 
-val novaStrings: NovaStrings
+val netraStrings: NetraStrings
     @Composable
     @ReadOnlyComposable
-    get() = LocalNovaStrings.current
+    get() = LocalNetraStrings.current

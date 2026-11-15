@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-data class NovaColorScheme(
+data class NetraColorScheme(
     val primary: Color,
     val onPrimary: Color,
     val primaryContainer: Color,
@@ -31,7 +31,7 @@ data class NovaColorScheme(
 )
 
 // Default Normal Light Theme: Warm Orange
-private val NovaDefaultLightOrangeColorScheme = NovaColorScheme(
+private val NetraDefaultLightOrangeColorScheme = NetraColorScheme(
     primary = IncognitoOrangePrimary,
     onPrimary = Color.White,
     primaryContainer = IncognitoOrangePrimaryContainer,
@@ -51,8 +51,8 @@ private val NovaDefaultLightOrangeColorScheme = NovaColorScheme(
     outline = IncognitoOrangeOutline
 )
 
-// Normal Dark Theme: Pure AMOLED Black & Nova Orange
-private val NovaAmoledDarkColorScheme = NovaColorScheme(
+// Normal Dark Theme: Pure AMOLED Black & Netra Orange
+private val NetraAmoledDarkColorScheme = NetraColorScheme(
     primary = Color(0xFFFF8A3D),
     onPrimary = Color(0xFF1F0A00),
     primaryContainer = Color(0xFF331808),
@@ -68,57 +68,57 @@ private val NovaAmoledDarkColorScheme = NovaColorScheme(
     onSurface = Color(0xFFF5F5F7),
     surfaceVariant = Color(0xFF141418),
     onSurfaceVariant = Color(0xFFA6A6B2),
-    error = NovaCrimsonError,
+    error = NetraCrimsonError,
     outline = Color(0xFF272730)
 )
 
 // Incognito Theme: Cosmic Obsidian & Electric Cyan/Violet
-private val NovaIncognitoDarkSapphireColorScheme = NovaColorScheme(
-    primary = NovaCyanPrimary,
+private val NetraIncognitoDarkSapphireColorScheme = NetraColorScheme(
+    primary = NetraCyanPrimary,
     onPrimary = Color(0xFF002026),
-    primaryContainer = NovaCyanContainer,
+    primaryContainer = NetraCyanContainer,
     onPrimaryContainer = Color(0xFFA8F5FF),
-    secondary = NovaVioletSecondary,
+    secondary = NetraVioletSecondary,
     onSecondary = Color.White,
-    secondaryContainer = NovaVioletContainer,
+    secondaryContainer = NetraVioletContainer,
     onSecondaryContainer = Color(0xFFE5DAFF),
-    tertiary = NovaEmeraldSafe,
-    background = NovaDarkBackground,
-    onBackground = NovaTextPrimaryDark,
-    surface = NovaDarkSurface,
-    onSurface = NovaTextPrimaryDark,
-    surfaceVariant = NovaDarkSurfaceVariant,
-    onSurfaceVariant = NovaTextSecondaryDark,
-    error = NovaCrimsonError,
+    tertiary = NetraEmeraldSafe,
+    background = NetraDarkBackground,
+    onBackground = NetraTextPrimaryDark,
+    surface = NetraDarkSurface,
+    onSurface = NetraTextPrimaryDark,
+    surfaceVariant = NetraDarkSurfaceVariant,
+    onSurfaceVariant = NetraTextSecondaryDark,
+    error = NetraCrimsonError,
     outline = Color(0xFF2D3C6B)
 )
 
-val LocalNovaColorScheme = staticCompositionLocalOf { NovaDefaultLightOrangeColorScheme }
-val LocalNovaTypography = staticCompositionLocalOf { Typography }
+val LocalNetraColorScheme = staticCompositionLocalOf { NetraDefaultLightOrangeColorScheme }
+val LocalNetraTypography = staticCompositionLocalOf { Typography }
 val LocalContentColor = staticCompositionLocalOf { Color.Black }
 
 object MaterialTheme {
-    val colorScheme: NovaColorScheme
+    val colorScheme: NetraColorScheme
         @Composable
         @ReadOnlyComposable
-        get() = LocalNovaColorScheme.current
+        get() = LocalNetraColorScheme.current
 
-    val typography: NovaTypography
+    val typography: NetraTypography
         @Composable
         @ReadOnlyComposable
-        get() = LocalNovaTypography.current
+        get() = LocalNetraTypography.current
 }
 
 @Composable
-fun NovaBrowserTheme(
+fun NetraBrowserTheme(
     darkTheme: Boolean = false,
     isIncognito: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val scheme = when {
-        isIncognito -> NovaIncognitoDarkSapphireColorScheme
-        darkTheme -> NovaAmoledDarkColorScheme
-        else -> NovaDefaultLightOrangeColorScheme
+        isIncognito -> NetraIncognitoDarkSapphireColorScheme
+        darkTheme -> NetraAmoledDarkColorScheme
+        else -> NetraDefaultLightOrangeColorScheme
     }
 
     val view = LocalView.current
@@ -133,8 +133,8 @@ fun NovaBrowserTheme(
     }
 
     CompositionLocalProvider(
-        LocalNovaColorScheme provides scheme,
-        LocalNovaTypography provides Typography,
+        LocalNetraColorScheme provides scheme,
+        LocalNetraTypography provides Typography,
         LocalContentColor provides scheme.onBackground,
         content = content
     )

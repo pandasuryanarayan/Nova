@@ -635,16 +635,16 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
               if ((currentHost.indexOf('google.') !== -1 && currentHost.indexOf('youtube.') === -1) || currentHost.indexOf('recaptcha') !== -1) {
                 return;
               }
-              if (window.__novaAdShieldMode === '$modeName') return;
-              window.__novaAdShieldMode = '$modeName';
-              var reportedSelectors = window.__novaReportedDomSelectors || {};
-              window.__novaReportedDomSelectors = reportedSelectors;
+              if (window.__netraAdShieldMode === '$modeName') return;
+              window.__netraAdShieldMode = '$modeName';
+              var reportedSelectors = window.__netraReportedDomSelectors || {};
+              window.__netraReportedDomSelectors = reportedSelectors;
 
               var adSelectors = [$jsSelectorArray];
 
               // Inject persistent CSS stylesheet for instant zero-flicker hiding
               try {
-                var styleId = '__nova_adshield_css__';
+                var styleId = '__netra_adshield_css__';
                 var existingStyle = document.getElementById(styleId);
                 if (!existingStyle && document.head) {
                   existingStyle = document.createElement('style');
@@ -668,15 +668,15 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
                     }
                     for (var i = 0; i < nodes.length; i++) {
                       var el = nodes[i];
-                      if (!el || el.__novaAdHidden) continue;
-                      el.__novaAdHidden = true;
+                      if (!el || el.__netraAdHidden) continue;
+                      el.__netraAdHidden = true;
                       el.style.setProperty('display', 'none', 'important');
                       el.style.setProperty('height', '0px', 'important');
                       var ruleKey = '##' + sel;
-                      if (!reportedSelectors[ruleKey] && window.NovaVideoBridge && window.NovaVideoBridge.onDomAdBlocked) {
+                      if (!reportedSelectors[ruleKey] && window.NetraVideoBridge && window.NetraVideoBridge.onDomAdBlocked) {
                         reportedSelectors[ruleKey] = true;
                         var srcUrl = el.getAttribute('src') || el.getAttribute('href') || el.getAttribute('data-ad-client') || (window.location.origin + '/' + ruleKey);
-                        window.NovaVideoBridge.onDomAdBlocked(JSON.stringify({
+                        window.NetraVideoBridge.onDomAdBlocked(JSON.stringify({
                           adUrl: String(srcUrl),
                           adDomain: currentHost || 'dom-element',
                           pageDomain: currentHost || 'page',
@@ -704,10 +704,10 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
               }
 
               sweepDomAds();
-              if (window.__novaAdShieldInterval) {
-                clearInterval(window.__novaAdShieldInterval);
+              if (window.__netraAdShieldInterval) {
+                clearInterval(window.__netraAdShieldInterval);
               }
-              window.__novaAdShieldInterval = setInterval(sweepDomAds, 1800);
+              window.__netraAdShieldInterval = setInterval(sweepDomAds, 1800);
             })();
         """.trimIndent()
     }
@@ -732,7 +732,6 @@ object BrowserUrlUtils {
         val trimmed = rawInput.trim()
         if (trimmed.isEmpty()) return "https://www.google.com"
         if (trimmed.startsWith("netra://", ignoreCase = true) ||
-            trimmed.startsWith("nova://", ignoreCase = true) ||
             trimmed.startsWith("http://", ignoreCase = true) ||
             trimmed.startsWith("https://", ignoreCase = true) ||
             trimmed.startsWith("file://", ignoreCase = true)
@@ -805,7 +804,7 @@ object BrowserUrlUtils {
     }
 
     fun extractDomain(url: String): String {
-        if (url.startsWith("netra://") || url.startsWith("nova://")) return "Netra"
+        if (url.startsWith("netra://")) return "Netra"
         return try {
             val host = Uri.parse(url).host ?: return url.take(30)
             host.removePrefix("www.")

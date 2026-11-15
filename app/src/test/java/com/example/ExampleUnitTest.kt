@@ -16,12 +16,12 @@ class ExampleUnitTest {
 
   @Test
   fun testParseContentRangeTotalBytes() {
-    assertEquals(15728640L, com.example.browser.NovaDownloadHelper.parseContentRangeTotalBytes("bytes 0-1/15728640"))
-    assertEquals(50000000L, com.example.browser.NovaDownloadHelper.parseContentRangeTotalBytes("bytes 0-100/50000000"))
-    assertEquals(-1L, com.example.browser.NovaDownloadHelper.parseContentRangeTotalBytes("bytes */*"))
-    assertEquals(-1L, com.example.browser.NovaDownloadHelper.parseContentRangeTotalBytes(null))
-    assertEquals(-1L, com.example.browser.NovaDownloadHelper.parseContentRangeTotalBytes(""))
-    assertEquals(-1L, com.example.browser.NovaDownloadHelper.parseContentRangeTotalBytes("invalid"))
+    assertEquals(15728640L, com.example.browser.NetraDownloadHelper.parseContentRangeTotalBytes("bytes 0-1/15728640"))
+    assertEquals(50000000L, com.example.browser.NetraDownloadHelper.parseContentRangeTotalBytes("bytes 0-100/50000000"))
+    assertEquals(-1L, com.example.browser.NetraDownloadHelper.parseContentRangeTotalBytes("bytes */*"))
+    assertEquals(-1L, com.example.browser.NetraDownloadHelper.parseContentRangeTotalBytes(null))
+    assertEquals(-1L, com.example.browser.NetraDownloadHelper.parseContentRangeTotalBytes(""))
+    assertEquals(-1L, com.example.browser.NetraDownloadHelper.parseContentRangeTotalBytes("invalid"))
   }
 
   @Test
@@ -29,15 +29,15 @@ class ExampleUnitTest {
     val base = "https://example.com/videos/stream.mp4"
     assertEquals(
       "https://example.com/videos/final.mp4",
-      com.example.browser.NovaDownloadHelper.resolveRedirectUrl(base, "final.mp4")
+      com.example.browser.NetraDownloadHelper.resolveRedirectUrl(base, "final.mp4")
     )
     assertEquals(
       "https://cdn.example.com/media/file.mp4",
-      com.example.browser.NovaDownloadHelper.resolveRedirectUrl(base, "https://cdn.example.com/media/file.mp4")
+      com.example.browser.NetraDownloadHelper.resolveRedirectUrl(base, "https://cdn.example.com/media/file.mp4")
     )
     assertEquals(
       "https://example.com/videos/final%20file.mp4",
-      com.example.browser.NovaDownloadHelper.resolveRedirectUrl(base, "final file.mp4")
+      com.example.browser.NetraDownloadHelper.resolveRedirectUrl(base, "final file.mp4")
     )
   }
 
@@ -50,11 +50,11 @@ class ExampleUnitTest {
 
   @Test
   fun testCloseAllTabsStrings() {
-    assertEquals("Close all", com.example.ui.i18n.EnglishNovaStrings.closeAllTabsButton)
-    assertEquals("सब बंद करें", com.example.ui.i18n.HindiNovaStrings.closeAllTabsButton)
-    assertEquals("Default Tabs", com.example.ui.i18n.EnglishNovaStrings.defaultTabsButton)
-    assertEquals("Private Tabs", com.example.ui.i18n.EnglishNovaStrings.privateTabsButton)
-    assertEquals("सामान्य टैब", com.example.ui.i18n.HindiNovaStrings.defaultTabsButton)
-    assertEquals("प्राइवेट टैब", com.example.ui.i18n.HindiNovaStrings.privateTabsButton)
+    assertEquals("Close all", com.example.ui.i18n.EnglishNetraStrings.closeAllTabsButton)
+    assertEquals("सब बंद करें", com.example.ui.i18n.HindiNetraStrings.closeAllTabsButton)
+    assertEquals("Default Tabs", com.example.ui.i18n.EnglishNetraStrings.defaultTabsButton)
+    assertEquals("Private Tabs", com.example.ui.i18n.EnglishNetraStrings.privateTabsButton)
+    assertEquals("सामान्य टैब", com.example.ui.i18n.HindiNetraStrings.defaultTabsButton)
+    assertEquals("प्राइवेट टैब", com.example.ui.i18n.HindiNetraStrings.privateTabsButton)
   }
 }

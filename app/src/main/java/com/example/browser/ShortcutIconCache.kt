@@ -85,7 +85,7 @@ object ShortcutIconCache {
         withContext(Dispatchers.IO) {
             val key = normalizeDomainKey(rawUrl)
             val host = extractCleanHost(rawUrl)
-            if (key.isBlank() || host.isBlank() || host.startsWith("nova")) return@withContext null
+            if (key.isBlank() || host.isBlank() || host.startsWith("netra")) return@withContext null
 
             memoryCache.get(key)?.let { return@withContext it }
 

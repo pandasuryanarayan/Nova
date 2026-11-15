@@ -50,13 +50,13 @@ import com.example.R
 import com.example.browser.rememberShortcutIcon
 import com.example.data.AdBlockMode
 import com.example.data.QuickShortcutEntity
-import com.example.ui.i18n.novaStrings
-import com.example.ui.icons.NovaIcons
+import com.example.ui.i18n.netraStrings
+import com.example.ui.icons.NetraIcons
 import com.example.ui.theme.MaterialTheme
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NovaHomeContent(
+fun NetraHomeContent(
     isIncognito: Boolean,
     isAdBlockEnabled: Boolean,
     adBlockMode: AdBlockMode = AdBlockMode.MINIMAL,
@@ -77,7 +77,7 @@ fun NovaHomeContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val strings = novaStrings
+    val strings = netraStrings
     var homeSearchQuery by remember { mutableStateOf("") }
     var editingShortcut by remember { mutableStateOf<QuickShortcutEntity?>(null) }
     val focusManager = LocalFocusManager.current
@@ -120,7 +120,7 @@ fun NovaHomeContent(
                 .widthIn(max = 640.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp, vertical = 16.dp)
-                .testTag("nova_home_screen"),
+                .testTag("netra_home_screen"),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             // 1. Brand Icon & Title + Omnibox + Split Pills
@@ -206,7 +206,7 @@ fun NovaHomeContent(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                NovaEditText(
+                NetraEditText(
                     value = homeSearchQuery,
                     onValueChange = { homeSearchQuery = it },
                     placeholder = strings.searchPlaceholder,
@@ -217,7 +217,7 @@ fun NovaHomeContent(
                     onImeAction = { submitHomeSearch() },
                     leadingIcon = {
                         Icon(
-                            imageVector = NovaIcons.Search,
+                            imageVector = NetraIcons.Search,
                             contentDescription = "Search",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp)
@@ -231,7 +231,7 @@ fun NovaHomeContent(
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(
-                                        imageVector = NovaIcons.Close,
+                                        imageVector = NetraIcons.Close,
                                         contentDescription = "Clear",
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(18.dp)
@@ -242,7 +242,7 @@ fun NovaHomeContent(
                                     modifier = Modifier.size(38.dp)
                                 ) {
                                     Icon(
-                                        imageVector = NovaIcons.PlayCircleFilled,
+                                        imageVector = NetraIcons.PlayCircleFilled,
                                         contentDescription = "Go",
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp)
@@ -289,7 +289,7 @@ fun NovaHomeContent(
                             .testTag("home_blocked_ads_badge")
                     ) {
                         Icon(
-                            imageVector = NovaIcons.ShieldOutline,
+                            imageVector = NetraIcons.ShieldOutline,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(17.dp)
@@ -331,7 +331,7 @@ fun NovaHomeContent(
                             .testTag("home_incognito_toggle")
                     ) {
                         Icon(
-                            imageVector = NovaIcons.Incognito,
+                            imageVector = NetraIcons.Incognito,
                             contentDescription = "Toggle Incognito Mode",
                             tint = if (isIncognito) incognitoAccent else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(17.dp)
@@ -355,7 +355,7 @@ fun NovaHomeContent(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 HomeHubActionCard(
-                    icon = NovaIcons.Download,
+                    icon = NetraIcons.Download,
                     title = strings.downloadsTitle,
                     badge = "$downloadsCount ${strings.filesCountSuffix}",
                     accentColor = MaterialTheme.colorScheme.primary,
@@ -365,7 +365,7 @@ fun NovaHomeContent(
                         .testTag("home_downloads_button")
                 )
                 HomeHubActionCard(
-                    icon = NovaIcons.Bookmarks,
+                    icon = NetraIcons.Bookmarks,
                     title = strings.bookmarksTitle,
                     badge = "$bookmarksCount ${strings.savedCountSuffix}",
                     accentColor = MaterialTheme.colorScheme.secondary,
@@ -375,7 +375,7 @@ fun NovaHomeContent(
                         .testTag("home_bookmarks_button")
                 )
                 HomeHubActionCard(
-                    icon = NovaIcons.History,
+                    icon = NetraIcons.History,
                     title = strings.historyTitle,
                     badge = "$historyCount ${strings.visitsCountSuffix}",
                     accentColor = if (isIncognito) Color(0xFFFFB300) else Color(0xFFE65100),
@@ -407,7 +407,7 @@ fun NovaHomeContent(
                         .testTag("add_shortcut_button")
                 ) {
                     Icon(
-                        imageVector = NovaIcons.Add,
+                        imageVector = NetraIcons.Add,
                         contentDescription = strings.addSiteButton,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(15.dp)
@@ -464,7 +464,7 @@ fun NovaHomeContent(
                         .padding(14.dp)
                 ) {
                     Icon(
-                        imageVector = NovaIcons.ShieldCheck,
+                        imageVector = NetraIcons.ShieldCheck,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
@@ -495,7 +495,7 @@ fun NovaHomeContent(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    NovaEditText(
+                    NetraEditText(
                         value = editTitle,
                         onValueChange = { editTitle = it },
                         label = strings.siteTitleLabel,
@@ -503,7 +503,7 @@ fun NovaHomeContent(
                             .fillMaxWidth()
                             .testTag("edit_shortcut_title_input")
                     )
-                    NovaEditText(
+                    NetraEditText(
                         value = editUrl,
                         onValueChange = { editUrl = it },
                         label = strings.websiteUrlLabel,
@@ -639,7 +639,7 @@ private fun QuickShortcutTile(
                     .testTag("shortcut_menu_button_${item.id}")
             ) {
                 Icon(
-                    imageVector = NovaIcons.Settings,
+                    imageVector = NetraIcons.Settings,
                     contentDescription = "Edit or Delete ${item.title}",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(15.dp)
@@ -650,12 +650,12 @@ private fun QuickShortcutTile(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
-                val strings = novaStrings
+                val strings = netraStrings
                 DropdownMenuItem(
                     text = { Text(strings.editAction) },
                     leadingIcon = {
                         Icon(
-                            imageVector = NovaIcons.Edit,
+                            imageVector = NetraIcons.Edit,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(18.dp)
@@ -676,7 +676,7 @@ private fun QuickShortcutTile(
                     },
                     leadingIcon = {
                         Icon(
-                            imageVector = NovaIcons.Delete,
+                            imageVector = NetraIcons.Delete,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(18.dp)

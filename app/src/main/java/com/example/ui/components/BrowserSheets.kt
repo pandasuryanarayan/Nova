@@ -75,8 +75,8 @@ import com.example.data.SiteCookiePolicy
 import com.example.data.SitePermissionMode
 import com.example.data.SslCertificateDetails
 import com.example.data.TabGroup
-import com.example.ui.i18n.LocalNovaStrings
-import com.example.ui.icons.NovaIcons
+import com.example.ui.i18n.LocalNetraStrings
+import com.example.ui.icons.NetraIcons
 import com.example.ui.theme.MaterialTheme
 import java.net.URI
 import java.text.SimpleDateFormat
@@ -282,7 +282,7 @@ private fun extractHostClean(url: String): String = try {
 private fun TabWebsitePreviewCard(
     tab: BrowserTab,
     palette: SheetVisualPalette,
-    strings: com.example.ui.i18n.NovaStrings
+    strings: com.example.ui.i18n.NetraStrings
 ) {
     val context = LocalContext.current
     val previewBitmap by rememberTabPreview(context = context, tab = tab)
@@ -351,7 +351,7 @@ private fun TabWebsitePreviewCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (tab.isIncognito) NovaIcons.Incognito else NovaIcons.Public,
+                        imageVector = if (tab.isIncognito) NetraIcons.Incognito else NetraIcons.Public,
                         contentDescription = null,
                         tint = palette.accentPrimary,
                         modifier = Modifier.size(15.dp)
@@ -369,7 +369,7 @@ private fun TabWebsitePreviewCard(
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(NovaIcons.Search, null, tint = palette.textMuted, modifier = Modifier.size(10.dp))
+                        Icon(NetraIcons.Search, null, tint = palette.textMuted, modifier = Modifier.size(10.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "netra://start",
@@ -404,7 +404,7 @@ private fun TabWebsitePreviewCard(
                     )
                 } else {
                     Icon(
-                        imageVector = if (tab.isIncognito) NovaIcons.Incognito else NovaIcons.Public,
+                        imageVector = if (tab.isIncognito) NetraIcons.Incognito else NetraIcons.Public,
                         contentDescription = null,
                         tint = palette.accentPrimary,
                         modifier = Modifier.size(26.dp)
@@ -438,7 +438,7 @@ private sealed class TabGridEntry(val key: String) {
 private fun SingleTabCardBody(
     tab: BrowserTab,
     palette: SheetVisualPalette,
-    strings: com.example.ui.i18n.NovaStrings,
+    strings: com.example.ui.i18n.NetraStrings,
     actionIcon: ImageVector,
     actionTag: String,
     closeTag: String,
@@ -474,14 +474,14 @@ private fun SingleTabCardBody(
                     )
                 } else {
                     Icon(
-                        imageVector = if (tab.isIncognito) NovaIcons.Incognito else NovaIcons.Public,
+                        imageVector = if (tab.isIncognito) NetraIcons.Incognito else NetraIcons.Public,
                         contentDescription = null,
                         tint = palette.accentPrimary,
                         modifier = Modifier.size(15.dp)
                     )
                 }
                 Text(
-                    text = if (tab.isHomePage) strings.novaHomeTabTitle else tab.title,
+                    text = if (tab.isHomePage) strings.netraHomeTabTitle else tab.title,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -503,7 +503,7 @@ private fun SingleTabCardBody(
                         .size(26.dp)
                         .testTag(closeTag)
                 ) {
-                    Icon(NovaIcons.Close, "Close Tab", tint = palette.textSecondary, modifier = Modifier.size(14.dp))
+                    Icon(NetraIcons.Close, "Close Tab", tint = palette.textSecondary, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -603,7 +603,7 @@ fun TabsSwitcherSheet(
     onNewTabInGroup: (String, Boolean) -> Unit = { _, _ -> },
     onDismiss: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     var showPrivateTabs by remember {
         mutableStateOf(tabs.find { it.id == activeTabId }?.isIncognito == true)
     }
@@ -659,7 +659,7 @@ fun TabsSwitcherSheet(
     val privateTabsCount = remember(tabs) { tabs.count { it.isIncognito } }
     val isGroupPopupOpen = activeOpenGroup != null && activeOpenGroupTabs.isNotEmpty()
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
         border = BorderStroke(1.5.dp, palette.activePillBorder),
@@ -689,7 +689,7 @@ fun TabsSwitcherSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        SheetHeaderIconBadge(icon = NovaIcons.Tab, palette = palette)
+                        SheetHeaderIconBadge(icon = NetraIcons.Tab, palette = palette)
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
                                 text = strings.openTabsTitle,
@@ -714,7 +714,7 @@ fun TabsSwitcherSheet(
                                     modifier = Modifier.testTag("default_tabs_count_text")
                                 )
                                 Icon(
-                                    imageVector = NovaIcons.Public,
+                                    imageVector = NetraIcons.Public,
                                     contentDescription = strings.defaultTabsButton,
                                     tint = palette.accentPrimary,
                                     modifier = Modifier
@@ -741,7 +741,7 @@ fun TabsSwitcherSheet(
                                     modifier = Modifier.testTag("private_tabs_count_text")
                                 )
                                 Icon(
-                                    imageVector = NovaIcons.Incognito,
+                                    imageVector = NetraIcons.Incognito,
                                     contentDescription = strings.privateTabsButton,
                                     tint = palette.accentPrimary,
                                     modifier = Modifier
@@ -770,7 +770,7 @@ fun TabsSwitcherSheet(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
-                                Icon(NovaIcons.Add, strings.newTabButton, tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
+                                Icon(NetraIcons.Add, strings.newTabButton, tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
                                 Text(strings.newTabButton, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = palette.accentPrimary, maxLines = 1)
                             }
                         }
@@ -787,7 +787,7 @@ fun TabsSwitcherSheet(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
-                                Icon(NovaIcons.DeleteSweep, strings.closeAllTabsButton, tint = palette.dangerRed, modifier = Modifier.size(16.dp))
+                                Icon(NetraIcons.DeleteSweep, strings.closeAllTabsButton, tint = palette.dangerRed, modifier = Modifier.size(16.dp))
                                 Text(strings.closeAllTabsButton, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = palette.dangerRed, maxLines = 1)
                             }
                         }
@@ -826,7 +826,7 @@ fun TabsSwitcherSheet(
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
-                                        imageVector = if (isPrivBtn) NovaIcons.Incognito else NovaIcons.Public,
+                                        imageVector = if (isPrivBtn) NetraIcons.Incognito else NetraIcons.Public,
                                         contentDescription = label,
                                         tint = if (selected) palette.accentPrimary else palette.textSecondary,
                                         modifier = Modifier.size(18.dp)
@@ -866,7 +866,7 @@ fun TabsSwitcherSheet(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Icon(
-                                    imageVector = if (showPrivateTabs) NovaIcons.Incognito else NovaIcons.Public,
+                                    imageVector = if (showPrivateTabs) NetraIcons.Incognito else NetraIcons.Public,
                                     contentDescription = null,
                                     tint = palette.accentPrimary,
                                     modifier = Modifier.size(32.dp)
@@ -967,7 +967,7 @@ fun TabsSwitcherSheet(
                                                         tab = tab,
                                                         palette = palette,
                                                         strings = strings,
-                                                        actionIcon = NovaIcons.ContentCopy,
+                                                        actionIcon = NetraIcons.ContentCopy,
                                                         actionTag = "duplicate_tab_${tab.id}",
                                                         closeTag = "close_tab_${tab.id}",
                                                         onAction = { onDuplicateTab(tab.id) },
@@ -1002,7 +1002,7 @@ fun TabsSwitcherSheet(
                                                                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                                                                 modifier = Modifier.weight(1f)
                                                             ) {
-                                                                Icon(NovaIcons.FolderOpen, grp.name, tint = palette.accentPrimary, modifier = Modifier.size(15.dp))
+                                                                Icon(NetraIcons.FolderOpen, grp.name, tint = palette.accentPrimary, modifier = Modifier.size(15.dp))
                                                                 Text(
                                                                     text = grp.name,
                                                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
@@ -1022,7 +1022,7 @@ fun TabsSwitcherSheet(
                                                                     .size(26.dp)
                                                                     .testTag("close_group_${grp.id}")
                                                             ) {
-                                                                Icon(NovaIcons.Close, "Close Group", tint = palette.textSecondary, modifier = Modifier.size(14.dp))
+                                                                Icon(NetraIcons.Close, "Close Group", tint = palette.textSecondary, modifier = Modifier.size(14.dp))
                                                             }
                                                         }
                                                         Spacer(modifier = Modifier.height(8.dp))
@@ -1088,7 +1088,7 @@ fun TabsSwitcherSheet(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        NovaEditText(
+                                        NetraEditText(
                                             value = draftGroupName,
                                             onValueChange = { draftGroupName = it },
                                             placeholder = "Group 1",
@@ -1115,7 +1115,7 @@ fun TabsSwitcherSheet(
                                                 .size(36.dp)
                                                 .testTag("save_group_name_button")
                                         ) {
-                                            Icon(NovaIcons.Check, "Save", tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
+                                            Icon(NetraIcons.Check, "Save", tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
                                         }
                                     }
                                 } else {
@@ -1132,7 +1132,7 @@ fun TabsSwitcherSheet(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        Icon(NovaIcons.FolderOpen, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
+                                        Icon(NetraIcons.FolderOpen, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
                                         Text(
                                             text = activeOpenGroup.name,
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
@@ -1140,7 +1140,7 @@ fun TabsSwitcherSheet(
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        Icon(NovaIcons.Edit, "Rename", tint = palette.accentPrimary, modifier = Modifier.size(14.dp))
+                                        Icon(NetraIcons.Edit, "Rename", tint = palette.accentPrimary, modifier = Modifier.size(14.dp))
                                     }
                                 }
 
@@ -1151,7 +1151,7 @@ fun TabsSwitcherSheet(
                                             .size(34.dp)
                                             .testTag("group_add_tab_button")
                                     ) {
-                                        Icon(NovaIcons.Add, strings.newTabButton, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
+                                        Icon(NetraIcons.Add, strings.newTabButton, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
                                     }
                                     IconButton(
                                         onClick = { onOpenTabGroupPopup(null) },
@@ -1159,7 +1159,7 @@ fun TabsSwitcherSheet(
                                             .size(34.dp)
                                             .testTag("close_group_popup_button")
                                     ) {
-                                        Icon(NovaIcons.Close, "Close", tint = palette.textSecondary, modifier = Modifier.size(18.dp))
+                                        Icon(NetraIcons.Close, "Close", tint = palette.textSecondary, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }
@@ -1264,7 +1264,7 @@ fun TabsSwitcherSheet(
                                                     tab = gTab,
                                                     palette = palette,
                                                     strings = strings,
-                                                    actionIcon = NovaIcons.OpenInNew,
+                                                    actionIcon = NetraIcons.OpenInNew,
                                                     actionTag = "ungroup_tab_${gTab.id}",
                                                     closeTag = "close_grouped_tab_${gTab.id}",
                                                     onAction = { onRemoveTabFromGroup(gTab.id) },
@@ -1299,7 +1299,7 @@ fun DownloadsManagerSheet(
     onDeleteDownload: (DownloadItemEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     val palette = rememberSheetPalette()
 
     val initialTab = remember(downloads.size) {
@@ -1336,7 +1336,7 @@ fun DownloadsManagerSheet(
         if (totalBytes <= 0L) "0 MB" else String.format(Locale.US, "%.1f MB", totalBytes / (1024.0 * 1024.0))
     }
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
         modifier = Modifier.testTag("downloads_manager_sheet")
@@ -1353,7 +1353,7 @@ fun DownloadsManagerSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SheetHeaderIconBadge(icon = NovaIcons.Download, palette = palette)
+                    SheetHeaderIconBadge(icon = NetraIcons.Download, palette = palette)
                     Column {
                         Text(
                             text = strings.downloadsTitle,
@@ -1425,9 +1425,9 @@ fun DownloadsManagerSheet(
                     ) {
                         SheetHeaderIconBadge(
                             icon = when (selectedSection) {
-                                0 -> NovaIcons.Download
-                                1 -> NovaIcons.Videocam
-                                else -> NovaIcons.Warning
+                                0 -> NetraIcons.Download
+                                1 -> NetraIcons.Videocam
+                                else -> NetraIcons.Warning
                             },
                             palette = palette
                         )
@@ -1488,7 +1488,7 @@ private fun DownloadItemCard(
     onOpen: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     val statusEnum = item.statusEnum
     val progress = item.progressFraction
 
@@ -1515,7 +1515,7 @@ private fun DownloadItemCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    SheetHeaderIconBadge(icon = NovaIcons.Videocam, palette = palette, modifier = Modifier.size(40.dp))
+                    SheetHeaderIconBadge(icon = NetraIcons.Videocam, palette = palette, modifier = Modifier.size(40.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = item.fileName,
@@ -1547,21 +1547,21 @@ private fun DownloadItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     when (statusEnum) {
                         DownloadStatus.RUNNING -> IconButton(onClick = onPause, modifier = Modifier.testTag("pause_download_${item.id}")) {
-                            Icon(NovaIcons.Pause, "Pause Download", tint = palette.accentPrimary)
+                            Icon(NetraIcons.Pause, "Pause Download", tint = palette.accentPrimary)
                         }
                         DownloadStatus.PAUSED -> IconButton(onClick = onResume, modifier = Modifier.testTag("resume_download_${item.id}")) {
-                            Icon(NovaIcons.PlayArrow, "Resume Download", tint = palette.accentPrimary)
+                            Icon(NetraIcons.PlayArrow, "Resume Download", tint = palette.accentPrimary)
                         }
                         DownloadStatus.FAILED -> IconButton(onClick = onResume, modifier = Modifier.testTag("retry_download_${item.id}")) {
-                            Icon(NovaIcons.Refresh, "Retry Download", tint = palette.accentPrimary)
+                            Icon(NetraIcons.Refresh, "Retry Download", tint = palette.accentPrimary)
                         }
                         DownloadStatus.COMPLETED -> IconButton(onClick = onOpen, modifier = Modifier.testTag("open_download_${item.id}")) {
-                            Icon(NovaIcons.FolderOpen, "Open File", tint = palette.accentPrimary)
+                            Icon(NetraIcons.FolderOpen, "Open File", tint = palette.accentPrimary)
                         }
                         DownloadStatus.PENDING -> Unit
                     }
                     IconButton(onClick = onDelete, modifier = Modifier.testTag("delete_download_${item.id}")) {
-                        Icon(NovaIcons.DeleteOutline, "Delete Download", tint = palette.dangerRed, modifier = Modifier.size(18.dp))
+                        Icon(NetraIcons.DeleteOutline, "Delete Download", tint = palette.dangerRed, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -1595,14 +1595,14 @@ fun BookmarksSheet(
     onAddBookmark: ((String, String) -> Unit)? = null,
     onOpenAllBookmarks: ((List<String>) -> Unit)? = null
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     val palette = rememberSheetPalette()
     var isEditingMode by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
     var newUrl by remember { mutableStateOf("https://") }
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
         modifier = Modifier.testTag("bookmarks_sheet")
@@ -1619,7 +1619,7 @@ fun BookmarksSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SheetHeaderIconBadge(icon = NovaIcons.Bookmarks, palette = palette)
+                    SheetHeaderIconBadge(icon = NetraIcons.Bookmarks, palette = palette)
                     Column {
                         Text(
                             text = strings.bookmarksTitle,
@@ -1646,7 +1646,7 @@ fun BookmarksSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(NovaIcons.Edit, strings.editAction, tint = palette.accentPrimary, modifier = Modifier.size(15.dp))
+                        Icon(NetraIcons.Edit, strings.editAction, tint = palette.accentPrimary, modifier = Modifier.size(15.dp))
                         Text(
                             text = if (isEditingMode) strings.doneAction else strings.editAction,
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
@@ -1710,7 +1710,7 @@ fun BookmarksSheet(
                                         .size(34.dp)
                                         .testTag("delete_bookmark_${bookmark.id}")
                                 ) {
-                                    Icon(NovaIcons.DeleteOutline, strings.deleteAction, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
+                                    Icon(NetraIcons.DeleteOutline, strings.deleteAction, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
@@ -1739,7 +1739,7 @@ fun BookmarksSheet(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(NovaIcons.Add, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
+                        Icon(NetraIcons.Add, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = strings.addBookmarkButton,
@@ -1786,8 +1786,8 @@ fun BookmarksSheet(
             title = { Text(strings.addBookmarkButton, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    NovaEditText(value = newTitle, onValueChange = { newTitle = it }, label = strings.siteTitleLabel, modifier = Modifier.fillMaxWidth())
-                    NovaEditText(value = newUrl, onValueChange = { newUrl = it }, label = strings.websiteUrlLabel, modifier = Modifier.fillMaxWidth())
+                    NetraEditText(value = newTitle, onValueChange = { newTitle = it }, label = strings.siteTitleLabel, modifier = Modifier.fillMaxWidth())
+                    NetraEditText(value = newUrl, onValueChange = { newUrl = it }, label = strings.websiteUrlLabel, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
@@ -1827,7 +1827,7 @@ fun HistorySheet(
     onOpenClearDataDialog: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     val palette = rememberSheetPalette()
     var searchQuery by remember { mutableStateOf("") }
 
@@ -1869,7 +1869,7 @@ fun HistorySheet(
 
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
         modifier = Modifier.testTag("history_sheet")
@@ -1886,7 +1886,7 @@ fun HistorySheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SheetHeaderIconBadge(icon = NovaIcons.History, palette = palette)
+                    SheetHeaderIconBadge(icon = NetraIcons.History, palette = palette)
                     Column {
                         Text(
                             text = strings.browsingHistoryTitle,
@@ -1913,7 +1913,7 @@ fun HistorySheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(NovaIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(16.dp))
+                        Icon(NetraIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(16.dp))
                         Text(
                             text = strings.clearAllButton,
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
@@ -1925,7 +1925,7 @@ fun HistorySheet(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            NovaEditText(
+            NetraEditText(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 placeholder = strings.searchHistoryPlaceholder,
@@ -1933,11 +1933,11 @@ fun HistorySheet(
                 borderColor = palette.cardBorder,
                 textColor = palette.textPrimary,
                 hintColor = palette.textMuted,
-                leadingIcon = { Icon(NovaIcons.Search, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp)) },
+                leadingIcon = { Icon(NetraIcons.Search, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp)) },
                 trailingIcon = if (searchQuery.isNotEmpty()) {
                     {
                         IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(28.dp)) {
-                            Icon(NovaIcons.Close, "Clear search", tint = palette.textSecondary, modifier = Modifier.size(16.dp))
+                            Icon(NetraIcons.Close, "Clear search", tint = palette.textSecondary, modifier = Modifier.size(16.dp))
                         }
                     }
                 } else null,
@@ -1961,7 +1961,7 @@ fun HistorySheet(
                             .padding(28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        SheetHeaderIconBadge(icon = NovaIcons.History, palette = palette)
+                        SheetHeaderIconBadge(icon = NetraIcons.History, palette = palette)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = if (searchQuery.isNotBlank()) strings.noMatchingVisitsTitle else strings.noHistoryTitle,
@@ -2067,7 +2067,7 @@ fun HistorySheet(
                                                     .size(30.dp)
                                                     .testTag("delete_history_${entry.id}")
                                             ) {
-                                                Icon(NovaIcons.Close, strings.deleteAction, tint = palette.textSecondary, modifier = Modifier.size(16.dp))
+                                                Icon(NetraIcons.Close, strings.deleteAction, tint = palette.textSecondary, modifier = Modifier.size(16.dp))
                                             }
                                         }
                                         if (idx < group.items.lastIndex) {
@@ -2120,14 +2120,14 @@ fun BrowserMenuSheet(
     onOpenClearData: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     val palette = rememberSheetPalette(isIncognito = activeTab.isIncognito, isDarkMode = isDarkMode)
     val minimalTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MINIMAL) }
     val proTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.PRO) }
     val maxTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MAX) }
     val activeModeLabel = strings.adBlockModeLabel(adBlockMode)
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
         modifier = Modifier.testTag("browser_menu_sheet")
@@ -2142,11 +2142,11 @@ fun BrowserMenuSheet(
         ) {
             // 5 Quick Action Tiles
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                ControlCenterQuickTile(NovaIcons.Bookmarks, strings.quickActionBookmarks, palette, onOpenBookmarks, Modifier.testTag("menu_bookmarks_button"))
-                ControlCenterQuickTile(NovaIcons.Download, strings.quickActionDownloads, palette, onOpenDownloads, Modifier.testTag("menu_downloads_button"))
-                ControlCenterQuickTile(NovaIcons.History, strings.quickActionHistory, palette, onOpenHistory, Modifier.testTag("menu_history_button"))
-                ControlCenterQuickTile(NovaIcons.Share, strings.quickActionShare, palette, onSharePage, Modifier.testTag("menu_share_button"))
-                ControlCenterQuickTile(NovaIcons.ContentCopy, strings.quickActionCopyLink, palette, onCopyPageLink, Modifier.testTag("menu_copy_link_button"))
+                ControlCenterQuickTile(NetraIcons.Bookmarks, strings.quickActionBookmarks, palette, onOpenBookmarks, Modifier.testTag("menu_bookmarks_button"))
+                ControlCenterQuickTile(NetraIcons.Download, strings.quickActionDownloads, palette, onOpenDownloads, Modifier.testTag("menu_downloads_button"))
+                ControlCenterQuickTile(NetraIcons.History, strings.quickActionHistory, palette, onOpenHistory, Modifier.testTag("menu_history_button"))
+                ControlCenterQuickTile(NetraIcons.Share, strings.quickActionShare, palette, onSharePage, Modifier.testTag("menu_share_button"))
+                ControlCenterQuickTile(NetraIcons.ContentCopy, strings.quickActionCopyLink, palette, onCopyPageLink, Modifier.testTag("menu_copy_link_button"))
             }
 
             HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.7f))
@@ -2162,7 +2162,7 @@ fun BrowserMenuSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(NovaIcons.ShieldOutline, null, tint = palette.accentPrimary, modifier = Modifier.size(22.dp))
+                    Icon(NetraIcons.ShieldOutline, null, tint = palette.accentPrimary, modifier = Modifier.size(22.dp))
                     Column {
                         Text(strings.adBlockShieldMenuTitle, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = palette.textPrimary)
                         Text(
@@ -2249,7 +2249,7 @@ fun BrowserMenuSheet(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        SheetHeaderIconBadge(icon = NovaIcons.ListAlt, palette = palette, modifier = Modifier.size(38.dp))
+                        SheetHeaderIconBadge(icon = NetraIcons.ListAlt, palette = palette, modifier = Modifier.size(38.dp))
                         Column {
                             Text(strings.filterModesTitle, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = palette.textPrimary)
                             Text(strings.filterModesSubtitle, style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace), color = palette.textSecondary)
@@ -2278,7 +2278,7 @@ fun BrowserMenuSheet(
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     ControlCenterSwitchRow(
-                        icon = NovaIcons.DesktopWindows,
+                        icon = NetraIcons.DesktopWindows,
                         title = strings.desktopSiteMode,
                         subtitle = null,
                         checked = activeTab.isDesktopMode,
@@ -2291,7 +2291,7 @@ fun BrowserMenuSheet(
                         modifier = Modifier.padding(horizontal = 14.dp)
                     )
                     ControlCenterSwitchRow(
-                        icon = NovaIcons.DarkMode,
+                        icon = NetraIcons.DarkMode,
                         title = strings.darkModeTheme,
                         subtitle = null,
                         checked = isDarkMode,
@@ -2304,7 +2304,7 @@ fun BrowserMenuSheet(
                         modifier = Modifier.padding(horizontal = 14.dp)
                     )
                     ControlCenterSwitchRow(
-                        icon = NovaIcons.Incognito,
+                        icon = NetraIcons.Incognito,
                         title = strings.incognitoLabel,
                         subtitle = strings.nothingIsSavedSubtitle,
                         checked = activeTab.isIncognito,
@@ -2340,7 +2340,7 @@ fun BrowserMenuSheet(
                                     .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(NovaIcons.TextFields, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
+                                Icon(NetraIcons.TextFields, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
                             }
                             Text(
                                 text = strings.textZoomLabel,
@@ -2365,7 +2365,7 @@ fun BrowserMenuSheet(
                                     .testTag("text_zoom_decrease")
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                    Icon(NovaIcons.Remove, "Decrease Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
+                                    Icon(NetraIcons.Remove, "Decrease Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
                                 }
                             }
                             Text(
@@ -2391,7 +2391,7 @@ fun BrowserMenuSheet(
                                     .testTag("text_zoom_increase")
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                    Icon(NovaIcons.Add, "Increase Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
+                                    Icon(NetraIcons.Add, "Increase Text Size", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
                                 }
                             }
                             Surface(
@@ -2453,7 +2453,7 @@ fun BrowserMenuSheet(
                                 .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(NovaIcons.Translate, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
+                            Icon(NetraIcons.Translate, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
                         }
                         Text(
                             text = strings.languageSectionTitle,
@@ -2529,7 +2529,7 @@ fun BrowserMenuSheet(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(NovaIcons.Search, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
+                        Icon(NetraIcons.Search, null, tint = palette.accentPrimary, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = strings.findInPageButton,
@@ -2558,7 +2558,7 @@ fun BrowserMenuSheet(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(NovaIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
+                        Icon(NetraIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = strings.clearDataButton,
@@ -2617,7 +2617,7 @@ private fun ControlCenterSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     testTag: String
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -2685,14 +2685,14 @@ fun ClearBrowsingDataDialog(
     onConfirmClear: (clearHistory: Boolean, clearCookies: Boolean, clearCache: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     var clearHistory by remember { mutableStateOf(true) }
     var clearCookies by remember { mutableStateOf(true) }
     var clearCache by remember { mutableStateOf(true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(NovaIcons.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) },
+        icon = { Icon(NetraIcons.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) },
         title = { Text(strings.clearDataDialogTitle, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -2729,7 +2729,7 @@ fun AddShortcutDialog(
     onConfirmAdd: (title: String, url: String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     var title by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("https://") }
 
@@ -2738,7 +2738,7 @@ fun AddShortcutDialog(
         title = { Text(strings.addShortcutDialogTitle, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                NovaEditText(
+                NetraEditText(
                     value = title,
                     onValueChange = { title = it },
                     label = strings.siteTitleLabel,
@@ -2747,7 +2747,7 @@ fun AddShortcutDialog(
                         .fillMaxWidth()
                         .testTag("shortcut_title_input")
                 )
-                NovaEditText(
+                NetraEditText(
                     value = url,
                     onValueChange = { url = it },
                     label = strings.websiteUrlLabel,
@@ -2792,13 +2792,13 @@ fun SslSecurityInfoDialog(
     onClearSiteCookies: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     val palette = rememberSheetPalette(isIncognito = tab.isIncognito)
     var selectedSection by remember { mutableIntStateOf(0) }
     val cleanHost = remember(tab.url) { extractHostClean(tab.url) }
     val effectiveAdBlockOn = isAdBlockEnabled && siteConfig.isAdBlockEnabled
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
         modifier = Modifier.testTag("ssl_security_info_sheet")
@@ -2815,7 +2815,7 @@ fun SslSecurityInfoDialog(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                SheetHeaderIconBadge(icon = if (tab.isSecureSsl) NovaIcons.Lock else NovaIcons.Warning, palette = palette)
+                SheetHeaderIconBadge(icon = if (tab.isSecureSsl) NetraIcons.Lock else NetraIcons.Warning, palette = palette)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (tab.isSecureSsl) strings.connSecureTitle else strings.connNotSecureTitle,
@@ -2831,7 +2831,7 @@ fun SslSecurityInfoDialog(
                     )
                 }
                 IconButton(onClick = { onCopyText(strings.websiteLinkTitle, tab.url) }, modifier = Modifier.size(34.dp)) {
-                    Icon(NovaIcons.ContentCopy, "Copy Full URL", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
+                    Icon(NetraIcons.ContentCopy, "Copy Full URL", tint = palette.accentPrimary, modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -3086,13 +3086,13 @@ fun SslSecurityInfoDialog(
                                                 onClick = { onCopyText(cookie.name, "${cookie.name}=${cookie.value}") },
                                                 modifier = Modifier.size(30.dp)
                                             ) {
-                                                Icon(NovaIcons.ContentCopy, "Copy Cookie", tint = palette.accentPrimary, modifier = Modifier.size(15.dp))
+                                                Icon(NetraIcons.ContentCopy, "Copy Cookie", tint = palette.accentPrimary, modifier = Modifier.size(15.dp))
                                             }
                                             IconButton(
                                                 onClick = { onClearSingleCookie(cookie.name) },
                                                 modifier = Modifier.size(30.dp)
                                             ) {
-                                                Icon(NovaIcons.DeleteOutline, "Delete Cookie", tint = palette.dangerRed, modifier = Modifier.size(16.dp))
+                                                Icon(NetraIcons.DeleteOutline, "Delete Cookie", tint = palette.dangerRed, modifier = Modifier.size(16.dp))
                                             }
                                         }
                                     }
@@ -3152,7 +3152,7 @@ fun SslSecurityInfoDialog(
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.ShieldOutline,
+                                    icon = NetraIcons.ShieldOutline,
                                     title = strings.adBlockShieldMenuTitle,
                                     subtitle = "BLOCKS ADS & TELEMETRY",
                                     checked = effectiveAdBlockOn,
@@ -3167,7 +3167,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.DesktopWindows,
+                                    icon = NetraIcons.DesktopWindows,
                                     title = strings.desktopSiteMode,
                                     subtitle = "DESKTOP USER-AGENT",
                                     checked = tab.isDesktopMode,
@@ -3177,7 +3177,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.DarkMode,
+                                    icon = NetraIcons.DarkMode,
                                     title = strings.darkModeTheme,
                                     subtitle = "AMOLED DARK PALETTE",
                                     checked = isDarkMode,
@@ -3187,7 +3187,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.Code,
+                                    icon = NetraIcons.Code,
                                     title = strings.siteJsTitle,
                                     subtitle = strings.siteJsSub,
                                     checked = siteConfig.javaScriptEnabled,
@@ -3211,7 +3211,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.OpenInNew,
+                                    icon = NetraIcons.OpenInNew,
                                     title = strings.sitePopupsTitle,
                                     subtitle = strings.sitePopupsSub,
                                     checked = siteConfig.popupsAllowed,
@@ -3223,7 +3223,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.Image,
+                                    icon = NetraIcons.Image,
                                     title = strings.siteImagesTitle,
                                     subtitle = strings.siteImagesSub,
                                     checked = siteConfig.imagesEnabled,
@@ -3235,7 +3235,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.VolumeUp,
+                                    icon = NetraIcons.VolumeUp,
                                     title = strings.siteSoundTitle,
                                     subtitle = strings.siteSoundSub,
                                     checked = siteConfig.soundEnabled,
@@ -3247,7 +3247,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.PlayArrow,
+                                    icon = NetraIcons.PlayArrow,
                                     title = strings.siteAutoplayTitle,
                                     subtitle = strings.siteAutoplaySub,
                                     checked = siteConfig.autoplayEnabled,
@@ -3270,7 +3270,7 @@ fun SslSecurityInfoDialog(
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 SitePermissionModeRow(
-                                    icon = NovaIcons.LocationOn,
+                                    icon = NetraIcons.LocationOn,
                                     title = strings.siteLocationTitle,
                                     mode = siteConfig.locationPermission,
                                     askLabel = strings.sitePermAsk,
@@ -3284,7 +3284,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 SitePermissionModeRow(
-                                    icon = NovaIcons.Videocam,
+                                    icon = NetraIcons.Videocam,
                                     title = strings.siteCameraTitle,
                                     mode = siteConfig.cameraPermission,
                                     askLabel = strings.sitePermAsk,
@@ -3298,7 +3298,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 SitePermissionModeRow(
-                                    icon = NovaIcons.Mic,
+                                    icon = NetraIcons.Mic,
                                     title = strings.siteMicTitle,
                                     mode = siteConfig.microphonePermission,
                                     askLabel = strings.sitePermAsk,
@@ -3312,7 +3312,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.ShieldCheck,
+                                    icon = NetraIcons.ShieldCheck,
                                     title = strings.siteDrmTitle,
                                     subtitle = strings.siteDrmSub,
                                     checked = siteConfig.protectedContentAllowed,
@@ -3335,7 +3335,7 @@ fun SslSecurityInfoDialog(
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.Storage,
+                                    icon = NetraIcons.Storage,
                                     title = strings.siteDomStorageTitle,
                                     subtitle = strings.siteDomStorageSub,
                                     checked = siteConfig.domStorageEnabled,
@@ -3347,7 +3347,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.Warning,
+                                    icon = NetraIcons.Warning,
                                     title = strings.siteMixedContentTitle,
                                     subtitle = strings.siteMixedContentSub,
                                     checked = siteConfig.insecureContentAllowed,
@@ -3359,7 +3359,7 @@ fun SslSecurityInfoDialog(
                                 )
                                 CertificateDivider(palette)
                                 ControlCenterSwitchRow(
-                                    icon = NovaIcons.ShieldCheck,
+                                    icon = NetraIcons.ShieldCheck,
                                     title = strings.siteSafeBrowsingTitle,
                                     subtitle = strings.siteSafeBrowsingSub,
                                     checked = siteConfig.safeBrowsingEnabled,
@@ -3390,7 +3390,7 @@ fun SslSecurityInfoDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
-                                Icon(NovaIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
+                                Icon(NetraIcons.DeleteOutline, null, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = strings.siteResetAndClearButton,
@@ -3485,7 +3485,7 @@ private fun CertificateFieldRow(
         }
         Spacer(modifier = Modifier.width(8.dp))
         Icon(
-            NovaIcons.ContentCopy,
+            NetraIcons.ContentCopy,
             contentDescription = "Copy $label",
             tint = palette.accentPrimary.copy(alpha = 0.75f),
             modifier = Modifier.size(14.dp)
@@ -3502,7 +3502,7 @@ private fun <T> SiteThreeOptionRow(
     palette: SheetVisualPalette,
     onSelect: (T) -> Unit
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -3578,7 +3578,7 @@ private fun SiteCookiePolicyRow(
     onSelectPolicy: (SiteCookiePolicy) -> Unit
 ) {
     SiteThreeOptionRow(
-        icon = NovaIcons.Public,
+        icon = NetraIcons.Public,
         title = title,
         selectedValue = policy,
         options = listOf(
@@ -3635,7 +3635,7 @@ fun BlockedAdsSheet(
     onDismiss: () -> Unit,
     currentSiteUrl: String = "https://www.google.com"
 ) {
-    val strings = LocalNovaStrings.current
+    val strings = LocalNetraStrings.current
     val palette = rememberSheetPalette()
 
     var selectedFilter by remember { mutableIntStateOf(0) }
@@ -3663,15 +3663,14 @@ fun BlockedAdsSheet(
 
     val currentTabBlockedCount = remember(blockedAds, activeTabId) { blockedAds.count { it.tabId == activeTabId } }
     val currentSiteHost = remember(currentSiteUrl, blockedAds, activeTabId) {
-        val isInternalHome = currentSiteUrl.startsWith("netra://", ignoreCase = true) ||
-            currentSiteUrl.startsWith("nova://", ignoreCase = true)
+        val isInternalHome = currentSiteUrl.startsWith("netra://", ignoreCase = true)
         val fromUrl = if (isInternalHome) "" else extractHostClean(currentSiteUrl)
         if (fromUrl.isNotBlank()) fromUrl
         else blockedAds.firstOrNull { it.tabId == activeTabId }?.pageDomain.orEmpty().ifBlank { "Netra" }
     }
     val activeModeLabel = strings.adBlockModeLabel(adBlockMode)
 
-    NovaBottomSheet(
+    NetraBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.sheetBg,
         modifier = Modifier.testTag("blocked_ads_sheet")
@@ -3688,7 +3687,7 @@ fun BlockedAdsSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
-                    SheetHeaderIconBadge(icon = NovaIcons.ShieldCheck, palette = palette)
+                    SheetHeaderIconBadge(icon = NetraIcons.ShieldCheck, palette = palette)
                     Column {
                         Text(strings.adBlockShieldMenuTitle, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold), color = palette.textPrimary)
                         Text(
@@ -3706,7 +3705,7 @@ fun BlockedAdsSheet(
                                 .size(34.dp)
                                 .testTag("clear_blocked_ads_log_button")
                         ) {
-                            Icon(NovaIcons.DeleteOutline, strings.clearAllButton, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
+                            Icon(NetraIcons.DeleteOutline, strings.clearAllButton, tint = palette.dangerRed, modifier = Modifier.size(18.dp))
                         }
                     }
                     Switch(
@@ -3868,7 +3867,7 @@ fun BlockedAdsSheet(
                                     Spacer(modifier = Modifier.height(3.dp))
                                     Text(ruleItem.rule, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold), color = palette.textPrimary)
                                 }
-                                Icon(NovaIcons.ContentCopy, "Copy Rule", tint = palette.accentPrimary, modifier = Modifier.size(14.dp))
+                                Icon(NetraIcons.ContentCopy, "Copy Rule", tint = palette.accentPrimary, modifier = Modifier.size(14.dp))
                             }
                         }
                     }
@@ -3881,7 +3880,7 @@ fun BlockedAdsSheet(
                             .padding(horizontal = 22.dp, vertical = 26.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        SheetHeaderIconBadge(icon = NovaIcons.Block, palette = palette)
+                        SheetHeaderIconBadge(icon = NetraIcons.Block, palette = palette)
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = if (isAdBlockEnabled) strings.shieldActiveEmptyTitle(activeModeLabel, activeRules.size) else strings.shieldDisabledEmptyTitle,
@@ -3988,7 +3987,7 @@ fun BlockedAdsSheet(
             onDismissRequest = { showAddRuleDialog = false },
             title = { Text(strings.addCustomRuleButton, fontWeight = FontWeight.Bold) },
             text = {
-                NovaEditText(
+                NetraEditText(
                     value = newCustomRuleInput,
                     onValueChange = { newCustomRuleInput = it },
                     label = "Host, path, or CSS selector",

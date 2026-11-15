@@ -2,8 +2,8 @@ package com.example.data
 
 import java.util.UUID
 
-const val NOVA_HOME_URL = "netra://home"
-const val NOVA_VIDEO_LAB_URL = "netra://video-lab"
+const val NETRA_HOME_URL = "netra://home"
+const val NETRA_VIDEO_LAB_URL = "netra://video-lab"
 
 data class BookmarkEntity(
     val id: Long = 0,
@@ -265,7 +265,7 @@ data class TabGroup(
 
 data class BrowserTab(
     val id: String = UUID.randomUUID().toString(),
-    val url: String = NOVA_HOME_URL,
+    val url: String = NETRA_HOME_URL,
     val title: String = "Netra Home",
     val isLoading: Boolean = false,
     val progress: Int = 0,
@@ -280,7 +280,7 @@ data class BrowserTab(
     val groupId: String? = null
 ) {
     val isHomePage: Boolean
-        get() = url == NOVA_HOME_URL
+        get() = url == NETRA_HOME_URL
 }
 
 data class DetectedVideoQuality(

@@ -42,7 +42,7 @@ import com.example.data.DevToolsState
 import com.example.data.DevToolsTab
 import com.example.data.DomSelectedElementDetail
 import com.example.data.DomTreeNodeItem
-import com.example.ui.icons.NovaIcons
+import com.example.ui.icons.NetraIcons
 import com.example.ui.theme.JetBrainsMonoFontFamily
 import com.example.ui.theme.MaterialTheme
 
@@ -98,7 +98,7 @@ fun DevToolsInspectorPanel(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Icon(
-                            imageVector = NovaIcons.AdsClick,
+                            imageVector = NetraIcons.AdsClick,
                             contentDescription = "Pick Element on Page",
                             tint = if (devToolsState.isInspectElementPickerActive) Color(0xFF04151F) else Color(0xFF00E5FF),
                             modifier = Modifier.size(16.dp)
@@ -161,7 +161,7 @@ fun DevToolsInspectorPanel(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        imageVector = NovaIcons.Refresh,
+                        imageVector = NetraIcons.Refresh,
                         contentDescription = "Refresh Inspector",
                         tint = Color(0xFF9EABC9),
                         modifier = Modifier.size(17.dp)
@@ -175,7 +175,7 @@ fun DevToolsInspectorPanel(
                         .testTag("devtools_close_button")
                 ) {
                     Icon(
-                        imageVector = NovaIcons.Close,
+                        imageVector = NetraIcons.Close,
                         contentDescription = "Close DevTools",
                         tint = Color(0xFF9EABC9),
                         modifier = Modifier.size(18.dp)
@@ -408,7 +408,7 @@ private fun SelectedElementDetailView(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
                 ) {
-                    Icon(NovaIcons.ContentCopy, "Copy HTML", Modifier.size(14.dp), tint = Color(0xFF00E5FF))
+                    Icon(NetraIcons.ContentCopy, "Copy HTML", Modifier.size(14.dp), tint = Color(0xFF00E5FF))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Copy", style = MaterialTheme.typography.labelSmall, color = Color(0xFF00E5FF))
                 }
@@ -417,7 +417,7 @@ private fun SelectedElementDetailView(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
                 ) {
-                    Icon(NovaIcons.Delete, "Remove Element", Modifier.size(14.dp), tint = Color(0xFFFF5252))
+                    Icon(NetraIcons.Delete, "Remove Element", Modifier.size(14.dp), tint = Color(0xFFFF5252))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Remove", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF5252))
                 }
@@ -433,7 +433,7 @@ private fun SelectedElementDetailView(
                     color = Color(0xFF00E5FF)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                NovaEditText(
+                NetraEditText(
                     value = inlineStyleInput,
                     onValueChange = { inlineStyleInput = it },
                     placeholder = "e.g. border: 2px solid red; background: #222;",
@@ -447,7 +447,7 @@ private fun SelectedElementDetailView(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    NovaEditText(
+                    NetraEditText(
                         value = attrNameInput,
                         onValueChange = { attrNameInput = it },
                         placeholder = "Attr name",
@@ -459,7 +459,7 @@ private fun SelectedElementDetailView(
                         textSizeSp = 12f,
                         modifier = Modifier.weight(1f)
                     )
-                    NovaEditText(
+                    NetraEditText(
                         value = attrValInput,
                         onValueChange = { attrValInput = it },
                         placeholder = "Attr value",
@@ -631,7 +631,7 @@ private fun SourcesTabContent(
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Icon(NovaIcons.Download, null, Modifier.size(13.dp))
+                            Icon(NetraIcons.Download, null, Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Load Remote", style = MaterialTheme.typography.labelSmall)
                         }
@@ -641,7 +641,7 @@ private fun SourcesTabContent(
                         onClick = { onCopyText(activeSource.name, activeSource.content) },
                         modifier = Modifier.size(28.dp)
                     ) {
-                        Icon(NovaIcons.ContentCopy, "Copy Source Code", Modifier.size(15.dp), tint = Color(0xFF00E5FF))
+                        Icon(NetraIcons.ContentCopy, "Copy Source Code", Modifier.size(15.dp), tint = Color(0xFF00E5FF))
                     }
                 }
             }
@@ -724,7 +724,7 @@ private fun ConsoleTabContent(
             }
 
             IconButton(onClick = onClearConsole, modifier = Modifier.size(28.dp)) {
-                Icon(NovaIcons.DeleteSweep, "Clear Console", Modifier.size(16.dp), tint = Color(0xFF9EABC9))
+                Icon(NetraIcons.DeleteSweep, "Clear Console", Modifier.size(16.dp), tint = Color(0xFF9EABC9))
             }
         }
 
@@ -780,9 +780,9 @@ private fun ConsoleTabContent(
                 .background(Color(0xFF11182E))
                 .padding(horizontal = 8.dp, vertical = 6.dp)
         ) {
-            Icon(NovaIcons.Terminal, null, Modifier.size(18.dp), tint = Color(0xFF00E5FF))
+            Icon(NetraIcons.Terminal, null, Modifier.size(18.dp), tint = Color(0xFF00E5FF))
             Spacer(modifier = Modifier.width(6.dp))
-            NovaEditText(
+            NetraEditText(
                 value = jsCommand,
                 onValueChange = { jsCommand = it },
                 placeholder = "Run JS (e.g. document.title)…",
@@ -812,7 +812,7 @@ private fun ConsoleTabContent(
                 },
                 modifier = Modifier.testTag("devtools_console_run_button")
             ) {
-                Icon(NovaIcons.Send, "Execute JS", tint = Color(0xFF00E5FF))
+                Icon(NetraIcons.Send, "Execute JS", tint = Color(0xFF00E5FF))
             }
         }
     }
@@ -876,7 +876,7 @@ private fun NetworkTabContent(
                 },
                 modifier = Modifier.size(28.dp)
             ) {
-                Icon(NovaIcons.DeleteSweep, "Clear Network Log", Modifier.size(16.dp), tint = Color(0xFF9EABC9))
+                Icon(NetraIcons.DeleteSweep, "Clear Network Log", Modifier.size(16.dp), tint = Color(0xFF9EABC9))
             }
         }
 

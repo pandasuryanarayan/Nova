@@ -63,7 +63,7 @@ private enum class HeaderProfile {
     NO_REFERER_NO_RANGE
 }
 
-class NovaDownloadHelper(
+class NetraDownloadHelper(
     private val context: Context,
     private val repository: BrowserRepository,
     private val scope: CoroutineScope
@@ -82,7 +82,7 @@ class NovaDownloadHelper(
     var webViewStreamTrigger: ((downloadId: Long, videoUrl: String) -> Boolean)? = null
 
     companion object {
-        private const val CHANNEL_ID = "nova_video_downloads"
+        private const val CHANNEL_ID = "netra_video_downloads"
         private const val MAX_HTTP_REDIRECTS = 8
         const val SUBFOLDER_VIDEOS = "Netra/Videos"
 
@@ -151,7 +151,7 @@ class NovaDownloadHelper(
 
         val videoOrigin = extractOrigin(videoUrl)
         val pageOrigin = extractOrigin(pageUrl)
-        val effectiveUa = userAgent.ifBlank { NovaWebViewPool.MOBILE_USER_AGENT }
+        val effectiveUa = userAgent.ifBlank { NetraWebViewPool.MOBILE_USER_AGENT }
 
         conn.setRequestProperty("User-Agent", effectiveUa)
         conn.setRequestProperty("Accept", "video/mp4,video/webm,video/*;q=0.9,*/*;q=0.8")
@@ -733,7 +733,7 @@ class NovaDownloadHelper(
             val directCookie = getMergedCookies(item.url, item.referer.orEmpty())
                 ?: getDirectCookieForUrl(item.url)
                 ?: item.cookies
-            val effectiveUa = item.userAgent.ifBlank { NovaWebViewPool.MOBILE_USER_AGENT }
+            val effectiveUa = item.userAgent.ifBlank { NetraWebViewPool.MOBILE_USER_AGENT }
 
             val request = DownloadManager.Request(uri).apply {
                 setTitle(item.fileName)

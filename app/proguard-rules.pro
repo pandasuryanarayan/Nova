@@ -1,12 +1,12 @@
-# ProGuard / R8 configuration for Nova Browser
+# ProGuard / R8 configuration for Netra Browser
 -keepattributes JavascriptInterface,RuntimeVisibleAnnotations
 
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
 
--keep class com.example.browser.NovaJsBridge { *; }
--keep class com.example.browser.NovaDevToolsJsBridge { *; }
+-keep class com.example.browser.NetraJsBridge { *; }
+-keep class com.example.browser.NetraDevToolsJsBridge { *; }
 
 -assumenosideeffects class android.util.Log {
     public static int v(...);
