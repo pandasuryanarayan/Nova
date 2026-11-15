@@ -52,5 +52,9 @@ class ExampleUnitTest {
   fun testCloseAllTabsStrings() {
     assertEquals("Close all", com.example.ui.i18n.EnglishNovaStrings.closeAllTabsButton)
     assertEquals("सब बंद करें", com.example.ui.i18n.HindiNovaStrings.closeAllTabsButton)
+    assertEquals("Default Tabs", com.example.ui.i18n.EnglishNovaStrings.defaultTabsButton)
+    assertEquals("Private Tabs", com.example.ui.i18n.EnglishNovaStrings.privateTabsButton)
+    assertEquals("सामान्य टैब", com.example.ui.i18n.HindiNovaStrings.defaultTabsButton)
+    assertEquals("प्राइवेट टैब", com.example.ui.i18n.HindiNovaStrings.privateTabsButton)
   }
 }

@@ -571,6 +571,10 @@ fun TabsSwitcherSheet(
 ) {
     val strings = LocalNovaStrings.current
     val palette = rememberSheetPalette()
+    var showPrivateTabs by remember { mutableStateOf(false) }
+    val displayedTabs = remember(tabs, showPrivateTabs) {
+        tabs.filter { it.isIncognito == showPrivateTabs }
+    }
 
     NovaBottomSheet(
         onDismissRequest = onDismiss,
@@ -591,52 +595,96 @@ fun TabsSwitcherSheet(
                 Row(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     SheetHeaderIconBadge(icon = NovaIcons.Tab, palette = palette)
                     Column {
                         Text(
                             text = strings.openTabsTitle,
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                            color = palette.textPrimary
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 18.sp),
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         val incognitoCount = tabs.count { it.isIncognito }
                         Text(
                             text = strings.tabsHeaderStats(tabs.size, incognitoCount),
-                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.8.sp),
-                            color = palette.textSecondary
+                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, letterSpacing = 0.6.sp),
+                            color = palette.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Surface(
-                    onClick = onCloseAllTabs,
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.dangerBg,
-                    border = BorderStroke(1.dp, palette.dangerBorder),
-                    modifier = Modifier.testTag("close_all_tabs_button")
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    Surface(
+                        onClick = {
+                            if (showPrivateTabs) onNewIncognitoTab() else onNewNormalTab()
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        color = palette.activePillBg,
+                        border = BorderStroke(1.dp, palette.activePillBorder),
+                        modifier = Modifier.testTag("new_tab_button")
                     ) {
-                        Icon(
-                            imageVector = NovaIcons.DeleteSweep,
-                            contentDescription = strings.closeAllTabsButton,
-                            tint = palette.dangerRed,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = strings.closeAllTabsButton,
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = palette.dangerRed
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(
+                                imageVector = NovaIcons.Add,
+                                contentDescription = strings.newTabButton,
+                                tint = palette.accentPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = strings.newTabButton,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                color = palette.accentPrimary,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = onCloseAllTabs,
+                        shape = RoundedCornerShape(14.dp),
+                        color = palette.dangerBg,
+                        border = BorderStroke(1.dp, palette.dangerBorder),
+                        modifier = Modifier.testTag("close_all_tabs_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(
+                                imageVector = NovaIcons.DeleteSweep,
+                                contentDescription = strings.closeAllTabsButton,
+                                tint = palette.dangerRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = strings.closeAllTabsButton,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                color = palette.dangerRed,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
+
+            val isDefaultSelected = !showPrivateTabs
+            val isPrivateSelected = showPrivateTabs
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -644,14 +692,57 @@ fun TabsSwitcherSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    onClick = onNewIncognitoTab,
+                    onClick = { showPrivateTabs = false },
                     shape = RoundedCornerShape(14.dp),
-                    color = palette.cardBg,
-                    border = BorderStroke(1.dp, palette.cardBorder),
+                    color = if (isDefaultSelected) palette.activePillBg else palette.cardBg,
+                    border = BorderStroke(
+                        if (isDefaultSelected) 1.5.dp else 1.dp,
+                        if (isDefaultSelected) palette.activePillBorder else palette.cardBorder
+                    ),
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
-                        .testTag("new_incognito_tab_button")
+                        .testTag("default_tabs_button")
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = NovaIcons.Public,
+                                contentDescription = strings.defaultTabsButton,
+                                tint = if (isDefaultSelected) palette.accentPrimary else palette.textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = strings.defaultTabsButton,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                color = if (isDefaultSelected) palette.accentPrimary else palette.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    onClick = { showPrivateTabs = true },
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isPrivateSelected) palette.activePillBg else palette.cardBg,
+                    border = BorderStroke(
+                        if (isPrivateSelected) 1.5.dp else 1.dp,
+                        if (isPrivateSelected) palette.activePillBorder else palette.cardBorder
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("private_tabs_button")
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -664,52 +755,15 @@ fun TabsSwitcherSheet(
                         ) {
                             Icon(
                                 imageVector = NovaIcons.Incognito,
-                                contentDescription = strings.privateTabButton,
-                                tint = palette.accentPrimary,
+                                contentDescription = strings.privateTabsButton,
+                                tint = if (isPrivateSelected) palette.accentPrimary else palette.textSecondary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = strings.privateTabButton,
+                                text = strings.privateTabsButton,
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                color = palette.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-
-                Surface(
-                    onClick = onNewNormalTab,
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.activePillBg,
-                    border = BorderStroke(1.5.dp, palette.activePillBorder),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .testTag("new_tab_button")
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = NovaIcons.Add,
-                                contentDescription = strings.newTabButton,
-                                tint = palette.accentPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = strings.newTabButton,
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                color = palette.accentPrimary,
+                                color = if (isPrivateSelected) palette.accentPrimary else palette.textPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -725,91 +779,121 @@ fun TabsSwitcherSheet(
                     .fillMaxWidth()
                     .heightIn(max = 520.dp)
             ) {
-                val cols = if (maxWidth >= 520.dp) 3 else 2
-                val rows = remember(tabs, cols) { tabs.chunked(cols) }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    rows.forEach { rowTabs ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                if (displayedTabs.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = palette.cardBg,
+                        border = BorderStroke(1.dp, palette.cardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 28.dp, horizontal = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            rowTabs.forEach { tab ->
-                                val isSelected = tab.id == activeTabId
-                                Surface(
-                                    onClick = { onSelectTab(tab.id) },
-                                    shape = RoundedCornerShape(18.dp),
-                                    color = if (isSelected) palette.activePillBg else palette.cardBg,
-                                    border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) palette.activePillBorder else palette.cardBorder),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .testTag("tab_item_${tab.id}")
-                                ) {
-                                    Column(
+                            Icon(
+                                imageVector = if (showPrivateTabs) NovaIcons.Incognito else NovaIcons.Public,
+                                contentDescription = null,
+                                tint = palette.accentPrimary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = if (showPrivateTabs) strings.noPrivateTabsTitle else strings.noDefaultTabsTitle,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = palette.textPrimary
+                            )
+                        }
+                    }
+                } else {
+                    val cols = if (maxWidth >= 520.dp) 3 else 2
+                    val rows = remember(displayedTabs, cols) { displayedTabs.chunked(cols) }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        rows.forEach { rowTabs ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                rowTabs.forEach { tab ->
+                                    val isSelected = tab.id == activeTabId
+                                    Surface(
+                                        onClick = { onSelectTab(tab.id) },
+                                        shape = RoundedCornerShape(18.dp),
+                                        color = if (isSelected) palette.activePillBg else palette.cardBg,
+                                        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) palette.activePillBorder else palette.cardBorder),
                                         modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp)
+                                            .weight(1f)
+                                            .testTag("tab_item_${tab.id}")
                                     ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp)
                                         ) {
                                             Row(
+                                                modifier = Modifier.fillMaxWidth(),
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                modifier = Modifier.weight(1f)
+                                                horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
-                                                Icon(
-                                                    imageVector = if (tab.isIncognito) NovaIcons.Incognito else NovaIcons.Public,
-                                                    contentDescription = null,
-                                                    tint = palette.accentPrimary,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Text(
-                                                    text = if (tab.isHomePage) strings.novaHomeTabTitle else tab.title,
-                                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    color = palette.textPrimary
-                                                )
-                                            }
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                IconButton(
-                                                    onClick = { onDuplicateTab(tab.id) },
-                                                    modifier = Modifier
-                                                        .size(28.dp)
-                                                        .testTag("duplicate_tab_${tab.id}")
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                    modifier = Modifier.weight(1f)
                                                 ) {
-                                                    Icon(NovaIcons.ContentCopy, "Duplicate Tab", tint = palette.accentPrimary, modifier = Modifier.size(14.dp))
+                                                    Icon(
+                                                        imageVector = if (tab.isIncognito) NovaIcons.Incognito else NovaIcons.Public,
+                                                        contentDescription = null,
+                                                        tint = palette.accentPrimary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Text(
+                                                        text = if (tab.isHomePage) strings.novaHomeTabTitle else tab.title,
+                                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        color = palette.textPrimary
+                                                    )
                                                 }
-                                                IconButton(
-                                                    onClick = { onCloseTab(tab.id) },
-                                                    modifier = Modifier
-                                                        .size(28.dp)
-                                                        .testTag("close_tab_${tab.id}")
-                                                ) {
-                                                    Icon(NovaIcons.Close, "Close Tab", tint = palette.textSecondary, modifier = Modifier.size(15.dp))
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    IconButton(
+                                                        onClick = { onDuplicateTab(tab.id) },
+                                                        modifier = Modifier
+                                                            .size(28.dp)
+                                                            .testTag("duplicate_tab_${tab.id}")
+                                                    ) {
+                                                        Icon(NovaIcons.ContentCopy, "Duplicate Tab", tint = palette.accentPrimary, modifier = Modifier.size(14.dp))
+                                                    }
+                                                    IconButton(
+                                                        onClick = { onCloseTab(tab.id) },
+                                                        modifier = Modifier
+                                                            .size(28.dp)
+                                                            .testTag("close_tab_${tab.id}")
+                                                    ) {
+                                                        Icon(NovaIcons.Close, "Close Tab", tint = palette.textSecondary, modifier = Modifier.size(15.dp))
+                                                    }
                                                 }
                                             }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            TabWebsitePreviewCard(
+                                                tab = tab,
+                                                palette = palette,
+                                                strings = strings
+                                            )
                                         }
-
-                                        Spacer(modifier = Modifier.height(10.dp))
-
-                                        TabWebsitePreviewCard(
-                                            tab = tab,
-                                            palette = palette,
-                                            strings = strings
-                                        )
                                     }
                                 }
-                            }
-                            repeat(cols - rowTabs.size) {
-                                Spacer(modifier = Modifier.weight(1f))
+                                repeat(cols - rowTabs.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
                     }

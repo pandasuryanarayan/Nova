@@ -9,7 +9,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](#tech-stack--architecture)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](#key-features)
 [![Ad-Blocker](https://img.shields.io/badge/Ad--Shield-3--Tier%20(Up%20to%20267%20Rules)-00C853?style=for-the-badge&logo=shield&logoColor=white)](#3-tier-cumulative-ad-blocker--tracker-shield)
-[![APK Size](https://img.shields.io/badge/APK%20Size-970%20KB%20(%3C1%20MB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v692)
+[![APK Size](https://img.shields.io/badge/APK%20Size-972%20KB%20(%3C1%20MB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v692)
 [![License](https://img.shields.io/badge/License-GNU%20GPL%20v3.0-D50000?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 
 <br/>
@@ -57,8 +57,8 @@ A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed rele
 | **Release Notes** | [`releases/v6.9.2/RELEASE_NOTES.md`](releases/v6.9.2/RELEASE_NOTES.md) |
 | **Application ID** | `com.suryatech.browser.netra` |
 | **Version** | `6.9.2` (`versionCode = 17`) |
-| **APK Size** | `993,875 bytes` (**970 KB** — strictly below `1 MB`; **1.89 MB** installed) |
-| **SHA-256 Checksum** | `f8edbbe332e6b630220eae251bf201a687fe672d53eab8fefcd5e583b08527c5` |
+| **APK Size** | `995,903 bytes` (**972 KB** — strictly below `1 MB`; **1.89 MB** installed) |
+| **SHA-256 Checksum** | `1a178771e102fe071d2ffebf0f99a6f91071f3c82a1e6b718a959934215d2791` |
 | **Signing Certificate** | `CN=Nova Browser, OU=Mobile, O=Nova, L=SF, ST=CA, C=US` |
 | **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`, `localeFilters = [en, hi]`, lightweight vector icons & native system typography) |
 
