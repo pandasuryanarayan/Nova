@@ -257,6 +257,12 @@ data class PendingWebPermissionRequest(
     val isPreAllowed: Boolean = false
 )
 
+data class TabGroup(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String = "Group 1",
+    val isIncognito: Boolean = false
+)
+
 data class BrowserTab(
     val id: String = UUID.randomUUID().toString(),
     val url: String = NOVA_HOME_URL,
@@ -270,7 +276,8 @@ data class BrowserTab(
     val isIncognito: Boolean = false,
     val isDesktopMode: Boolean = false,
     val textZoom: Int = 100,
-    val adsBlockedInTab: Int = 0
+    val adsBlockedInTab: Int = 0,
+    val groupId: String? = null
 ) {
     val isHomePage: Boolean
         get() = url == NOVA_HOME_URL

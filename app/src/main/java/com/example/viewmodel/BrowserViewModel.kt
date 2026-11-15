@@ -39,6 +39,7 @@ import com.example.data.PendingWebPermissionRequest
 import com.example.data.QuickShortcutEntity
 import com.example.data.SiteConfigSettings
 import com.example.data.SitePermissionMode
+import com.example.data.TabGroup
 import com.example.data.WebPermissionKind
 import java.net.HttpURLConnection
 import java.net.URL
@@ -58,6 +59,8 @@ import org.json.JSONTokener
 
 data class BrowserUiState(
     val tabs: List<BrowserTab> = listOf(BrowserTab(title = "Netra Home", url = NOVA_HOME_URL)),
+    val tabGroups: List<TabGroup> = emptyList(),
+    val openGroupPopupId: String? = null,
     val activeTabId: String = "",
     val activeSheet: ActiveSheet = ActiveSheet.NONE,
     val detectedVideo: DetectedVideoInfo? = null,
@@ -988,12 +991,201 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         )
     }
 
-    // --- Tab Management ---
+    // --- Tab Management & Tab Grouping ---
+
+    private fun normalizeGroups(
+        tabs: List<BrowserTab>,
+        groups: List<TabGroup>,
+        openPopupId: String?
+    ): Triple<List<BrowserTab>, List<TabGroup>, String?> {
+        val countsByGroup = tabs.mapNotNull { it.groupId }.groupingBy { it }.eachCount()
+        val validGroupIds = countsByGroup.filterValues { it >= 2 }.keys
+        val cleanedTabs = tabs.map { tab ->
+            if (tab.groupId != null && tab.groupId !in validGroupIds) {
+                tab.copy(groupId = null)
+            } else {
+                tab
+            }
+        }
+        val cleanedGroups = groups.filter { it.id in validGroupIds }
+        val nextPopupId = if (openPopupId != null && openPopupId in validGroupIds) openPopupId else null
+        return Triple(cleanedTabs, cleanedGroups, nextPopupId)
+    }
+
+    private fun nextDefaultGroupName(existingGroups: List<TabGroup>, isIncognito: Boolean): String {
+        val modeGroups = existingGroups.filter { it.isIncognito == isIncognito }
+        var n = 1
+        while (modeGroups.any { it.name.equals("Group $n", ignoreCase = true) }) {
+            n++
+        }
+        return "Group $n"
+    }
+
+    fun groupTabs(draggedTabId: String, targetTabId: String) {
+        if (draggedTabId == targetTabId) return
+        _uiState.update { state ->
+            val draggedTab = state.tabs.find { it.id == draggedTabId } ?: return@update state
+            val targetTab = state.tabs.find { it.id == targetTabId } ?: return@update state
+            if (draggedTab.isIncognito != targetTab.isIncognito) return@update state
+
+            when {
+                targetTab.groupId != null -> {
+                    val targetGroupId = targetTab.groupId
+                    val updatedTabs = state.tabs.map { tab ->
+                        if (tab.id == draggedTabId) tab.copy(groupId = targetGroupId) else tab
+                    }
+                    val (cleanTabs, cleanGroups, _) = normalizeGroups(updatedTabs, state.tabGroups, targetGroupId)
+                    state.copy(
+                        tabs = cleanTabs,
+                        tabGroups = cleanGroups,
+                        openGroupPopupId = targetGroupId
+                    )
+                }
+                draggedTab.groupId != null -> {
+                    val existingGroupId = draggedTab.groupId
+                    val updatedTabs = state.tabs.map { tab ->
+                        if (tab.id == targetTabId) tab.copy(groupId = existingGroupId) else tab
+                    }
+                    val (cleanTabs, cleanGroups, _) = normalizeGroups(updatedTabs, state.tabGroups, existingGroupId)
+                    state.copy(
+                        tabs = cleanTabs,
+                        tabGroups = cleanGroups,
+                        openGroupPopupId = existingGroupId
+                    )
+                }
+                else -> {
+                    val newGroup = TabGroup(
+                        name = nextDefaultGroupName(state.tabGroups, targetTab.isIncognito),
+                        isIncognito = targetTab.isIncognito
+                    )
+                    val updatedTabs = state.tabs.map { tab ->
+                        if (tab.id == targetTabId || tab.id == draggedTabId) {
+                            tab.copy(groupId = newGroup.id)
+                        } else {
+                            tab
+                        }
+                    }
+                    state.copy(
+                        tabs = updatedTabs,
+                        tabGroups = state.tabGroups + newGroup,
+                        openGroupPopupId = newGroup.id
+                    )
+                }
+            }
+        }
+    }
+
+    fun moveTabToGroup(tabId: String, groupId: String) {
+        _uiState.update { state ->
+            val tab = state.tabs.find { it.id == tabId } ?: return@update state
+            val group = state.tabGroups.find { it.id == groupId } ?: return@update state
+            if (tab.isIncognito != group.isIncognito) return@update state
+            val updatedTabs = state.tabs.map {
+                if (it.id == tabId) it.copy(groupId = groupId) else it
+            }
+            val (cleanTabs, cleanGroups, _) = normalizeGroups(updatedTabs, state.tabGroups, groupId)
+            state.copy(
+                tabs = cleanTabs,
+                tabGroups = cleanGroups,
+                openGroupPopupId = groupId
+            )
+        }
+    }
+
+    fun mergeTabGroups(sourceGroupId: String, targetGroupId: String) {
+        if (sourceGroupId == targetGroupId) return
+        _uiState.update { state ->
+            val srcGroup = state.tabGroups.find { it.id == sourceGroupId } ?: return@update state
+            val dstGroup = state.tabGroups.find { it.id == targetGroupId } ?: return@update state
+            if (srcGroup.isIncognito != dstGroup.isIncognito) return@update state
+            val updatedTabs = state.tabs.map {
+                if (it.groupId == sourceGroupId) it.copy(groupId = targetGroupId) else it
+            }
+            val (cleanTabs, cleanGroups, _) = normalizeGroups(updatedTabs, state.tabGroups, targetGroupId)
+            state.copy(
+                tabs = cleanTabs,
+                tabGroups = cleanGroups,
+                openGroupPopupId = targetGroupId
+            )
+        }
+    }
+
+    fun removeTabFromGroup(tabId: String) {
+        _uiState.update { state ->
+            val tab = state.tabs.find { it.id == tabId } ?: return@update state
+            val oldGroupId = tab.groupId ?: return@update state
+            val updatedTabs = state.tabs.map {
+                if (it.id == tabId) it.copy(groupId = null) else it
+            }
+            val (cleanTabs, cleanGroups, nextPopupId) = normalizeGroups(
+                updatedTabs,
+                state.tabGroups,
+                state.openGroupPopupId
+            )
+            state.copy(
+                tabs = cleanTabs,
+                tabGroups = cleanGroups,
+                openGroupPopupId = if (state.openGroupPopupId == oldGroupId) nextPopupId else state.openGroupPopupId
+            )
+        }
+        emitToast("Tab moved to normal list")
+    }
+
+    fun renameTabGroup(groupId: String, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return
+        _uiState.update { state ->
+            state.copy(
+                tabGroups = state.tabGroups.map { group ->
+                    if (group.id == groupId) group.copy(name = trimmed) else group
+                }
+            )
+        }
+    }
+
+    fun openTabGroupPopup(groupId: String?) {
+        _uiState.update { it.copy(openGroupPopupId = groupId) }
+    }
+
+    fun closeTabGroup(groupId: String) {
+        val tabsToClose = _uiState.value.tabs.filter { it.groupId == groupId }
+        tabsToClose.forEach { webViewPool.removeAndDestroyTab(it.id) }
+        _uiState.update { state ->
+            val remaining = state.tabs.filterNot { it.groupId == groupId }
+            val remainingGroups = state.tabGroups.filterNot { it.id == groupId }
+            if (remaining.isEmpty()) {
+                val fresh = BrowserTab(
+                    title = "Netra Home",
+                    url = NOVA_HOME_URL,
+                    textZoom = preferences.value.defaultTextZoom
+                )
+                state.copy(
+                    tabs = listOf(fresh),
+                    tabGroups = emptyList(),
+                    openGroupPopupId = null,
+                    activeTabId = fresh.id
+                )
+            } else {
+                val nextActiveId = if ( remaining.any { it.id == state.activeTabId }) {
+                    state.activeTabId
+                } else {
+                    remaining.last().id
+                }
+                state.copy(
+                    tabs = remaining,
+                    tabGroups = remainingGroups,
+                    openGroupPopupId = if (state.openGroupPopupId == groupId) null else state.openGroupPopupId,
+                    activeTabId = nextActiveId
+                )
+            }
+        }
+    }
 
     fun openNewTab(
         url: String = NOVA_HOME_URL,
         isIncognito: Boolean = false,
-        referer: String? = null
+        referer: String? = null,
+        groupId: String? = null
     ) {
         webViewPool.captureTabPreview(_uiState.value.activeTab)
         val defaultZoom = preferences.value.defaultTextZoom
@@ -1006,12 +1198,14 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 BrowserUrlUtils.extractDomain(normalizedUrl)
             },
             isIncognito = isIncognito,
-            textZoom = defaultZoom
+            textZoom = defaultZoom,
+            groupId = groupId
         )
         _uiState.update { state ->
             state.copy(
                 tabs = state.tabs + newTab,
                 activeTabId = newTab.id,
+                openGroupPopupId = null,
                 activeSheet = ActiveSheet.NONE
             )
         }
@@ -1026,6 +1220,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             _uiState.update {
                 it.copy(
                     activeTabId = tabId,
+                    openGroupPopupId = null,
                     activeSheet = ActiveSheet.NONE,
                     isFindInPageVisible = false
                 )
@@ -1048,6 +1243,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             state.copy(
                 tabs = state.tabs + duplicated,
                 activeTabId = duplicated.id,
+                openGroupPopupId = null,
                 activeSheet = ActiveSheet.NONE
             )
         }
@@ -1061,15 +1257,25 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         webViewPool.removeAndDestroyTab(tabId)
         _uiState.update { state ->
             val closedTab = state.tabs.find { it.id == tabId }
-            val remaining = state.tabs.filterNot { it.id == tabId }
-            if (remaining.isEmpty()) {
+            val remainingRaw = state.tabs.filterNot { it.id == tabId }
+            if (remainingRaw.isEmpty()) {
                 val fresh = BrowserTab(
                     title = "Netra Home",
                     url = NOVA_HOME_URL,
                     textZoom = preferences.value.defaultTextZoom
                 )
-                state.copy(tabs = listOf(fresh), activeTabId = fresh.id)
+                state.copy(
+                    tabs = listOf(fresh),
+                    tabGroups = emptyList(),
+                    openGroupPopupId = null,
+                    activeTabId = fresh.id
+                )
             } else {
+                val (remaining, cleanGroups, nextPopupId) = normalizeGroups(
+                    remainingRaw,
+                    state.tabGroups,
+                    state.openGroupPopupId
+                )
                 val nextActiveId = if (state.activeTabId == tabId) {
                     val sameModeTab = if (closedTab != null) {
                         remaining.lastOrNull { it.isIncognito == closedTab.isIncognito }
@@ -1078,7 +1284,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 } else {
                     state.activeTabId
                 }
-                state.copy(tabs = remaining, activeTabId = nextActiveId)
+                state.copy(
+                    tabs = remaining,
+                    tabGroups = cleanGroups,
+                    openGroupPopupId = nextPopupId,
+                    activeTabId = nextActiveId
+                )
             }
         }
     }
@@ -1097,6 +1308,8 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         _uiState.update { state ->
             state.copy(
                 tabs = listOf(fresh),
+                tabGroups = emptyList(),
+                openGroupPopupId = null,
                 activeTabId = fresh.id,
                 activeSheet = ActiveSheet.NONE,
                 isFindInPageVisible = false,

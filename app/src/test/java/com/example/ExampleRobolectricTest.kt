@@ -371,6 +371,80 @@ class ExampleRobolectricTest {
         assertTrue(vm.uiState.value.activeTab.isIncognito)
         assertEquals(privateTabId, vm.uiState.value.activeTabId)
     }
+
+    @Test
+    fun `verify tab grouping default naming renaming popup and reversible ungrouping in both modes`() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val vm = com.example.viewmodel.BrowserViewModel(app)
+
+        // 1. Default mode: create 3 normal tabs
+        val tab1Id = vm.uiState.value.activeTabId
+        vm.openNewTab("https://github.com", isIncognito = false)
+        val tab2Id = vm.uiState.value.activeTabId
+        vm.openNewTab("https://photos.google.com", isIncognito = false)
+        val tab3Id = vm.uiState.value.activeTabId
+
+        // Drop tab2 onto tab1 -> creates "Group 1" and opens group popup
+        vm.groupTabs(draggedTabId = tab2Id, targetTabId = tab1Id)
+        assertEquals(1, vm.uiState.value.tabGroups.size)
+        val defaultGroup = vm.uiState.value.tabGroups.first()
+        assertEquals("Group 1", defaultGroup.name)
+        assertFalse(defaultGroup.isIncognito)
+        assertEquals(defaultGroup.id, vm.uiState.value.openGroupPopupId)
+        assertEquals(
+            2,
+            vm.uiState.value.tabs.count { it.groupId == defaultGroup.id }
+        )
+
+        // Drop tab3 onto tab1 -> adds tab3 to "Group 1" (3 tabs in group)
+        vm.groupTabs(draggedTabId = tab3Id, targetTabId = tab1Id)
+        assertEquals(
+            3,
+            vm.uiState.value.tabs.count { it.groupId == defaultGroup.id }
+        )
+
+        // Rename "Group 1" -> "Dev & Photos"
+        vm.renameTabGroup(defaultGroup.id, "Dev & Photos")
+        assertEquals(
+            "Dev & Photos",
+            vm.uiState.value.tabGroups.first { it.id == defaultGroup.id }.name
+        )
+
+        // Reverse process: remove tab3 from group -> tab3 returns to normal list, 2 tabs remain in group
+        vm.removeTabFromGroup(tab3Id)
+        assertEquals(null, vm.uiState.value.tabs.first { it.id == tab3Id }.groupId)
+        assertEquals(
+            2,
+            vm.uiState.value.tabs.count { it.groupId == defaultGroup.id }
+        )
+
+        // Reverse process on remaining 2-tab group: remove tab2 -> both tab2 and tab1 return to normal list
+        vm.removeTabFromGroup(tab2Id)
+        assertTrue(vm.uiState.value.tabs.all { it.groupId == null })
+        assertTrue(vm.uiState.value.tabGroups.isEmpty())
+        assertEquals(null, vm.uiState.value.openGroupPopupId)
+
+        // 2. Private (Incognito) mode: create 2 private tabs and group them
+        vm.openNewTab("https://example.com", isIncognito = true)
+        val pTab1Id = vm.uiState.value.activeTabId
+        vm.openNewTab("https://duckduckgo.com", isIncognito = true)
+        val pTab2Id = vm.uiState.value.activeTabId
+
+        vm.groupTabs(draggedTabId = pTab2Id, targetTabId = pTab1Id)
+        assertEquals(1, vm.uiState.value.tabGroups.size)
+        val privateGroup = vm.uiState.value.tabGroups.first()
+        assertEquals("Group 1", privateGroup.name)
+        assertTrue(privateGroup.isIncognito)
+        assertEquals(privateGroup.id, vm.uiState.value.openGroupPopupId)
+
+        // Reverse in private mode -> places back in normal private list
+        vm.removeTabFromGroup(pTab2Id)
+        assertTrue(vm.uiState.value.tabGroups.isEmpty())
+        assertTrue(vm.uiState.value.tabs.filter { it.isIncognito }.all { it.groupId == null })
+
+        assertEquals("All Tabs", com.example.ui.i18n.EnglishNovaStrings.openTabsTitle)
+        assertEquals("सभी टैब", com.example.ui.i18n.HindiNovaStrings.openTabsTitle)
+    }
 }
 
 

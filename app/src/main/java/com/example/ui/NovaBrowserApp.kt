@@ -478,6 +478,8 @@ fun NovaBrowserApp(
                         ActiveSheet.TABS -> {
                             TabsSwitcherSheet(
                                 tabs = uiState.tabs,
+                                tabGroups = uiState.tabGroups,
+                                openGroupPopupId = uiState.openGroupPopupId,
                                 activeTabId = uiState.activeTabId,
                                 onSelectTab = viewModel::switchTab,
                                 onCloseTab = viewModel::closeTab,
@@ -485,6 +487,16 @@ fun NovaBrowserApp(
                                 onDuplicateTab = viewModel::duplicateTab,
                                 onNewNormalTab = { viewModel.openNewTab(isIncognito = false) },
                                 onNewIncognitoTab = { viewModel.openNewTab(isIncognito = true) },
+                                onGroupTabs = viewModel::groupTabs,
+                                onMoveTabToGroup = viewModel::moveTabToGroup,
+                                onMergeTabGroups = viewModel::mergeTabGroups,
+                                onRemoveTabFromGroup = viewModel::removeTabFromGroup,
+                                onRenameTabGroup = viewModel::renameTabGroup,
+                                onOpenTabGroupPopup = viewModel::openTabGroupPopup,
+                                onCloseTabGroup = viewModel::closeTabGroup,
+                                onNewTabInGroup = { groupId, isIncognito ->
+                                    viewModel.openNewTab(isIncognito = isIncognito, groupId = groupId)
+                                },
                                 onDismiss = viewModel::dismissSheet
                             )
                         }
