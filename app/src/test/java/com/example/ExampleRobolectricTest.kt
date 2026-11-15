@@ -339,6 +339,38 @@ class ExampleRobolectricTest {
         val et = EditText(context)
         dismissSoftKeyboard(et)
     }
+
+    @Test
+    fun `verify toggling incognito preserves existing tabs and shifts without deleting`() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val vm = com.example.viewmodel.BrowserViewModel(app)
+
+        // Initially 1 default home tab
+        val initialDefaultTabId = vm.uiState.value.activeTabId
+        assertEquals(1, vm.uiState.value.tabs.size)
+        assertFalse(vm.uiState.value.activeTab.isIncognito)
+
+        // Toggle incognito ON -> must keep initial default home tab AND create/shift to a new private tab
+        vm.toggleIncognitoMode()
+        assertEquals(2, vm.uiState.value.tabs.size)
+        assertTrue(vm.uiState.value.activeTab.isIncognito)
+        val privateTabId = vm.uiState.value.activeTabId
+        assertTrue(vm.uiState.value.tabs.any { it.id == initialDefaultTabId && !it.isIncognito })
+        assertTrue(vm.uiState.value.tabs.any { it.id == privateTabId && it.isIncognito })
+
+        // Toggle incognito OFF -> must keep the private tab (do NOT delete it) and shift back to existing default tab
+        vm.toggleIncognitoMode()
+        assertEquals(2, vm.uiState.value.tabs.size)
+        assertFalse(vm.uiState.value.activeTab.isIncognito)
+        assertEquals(initialDefaultTabId, vm.uiState.value.activeTabId)
+        assertTrue(vm.uiState.value.tabs.any { it.id == privateTabId && it.isIncognito })
+
+        // Toggle incognito ON again -> shifts back to existing private tab without duplicating
+        vm.toggleIncognitoMode()
+        assertEquals(2, vm.uiState.value.tabs.size)
+        assertTrue(vm.uiState.value.activeTab.isIncognito)
+        assertEquals(privateTabId, vm.uiState.value.activeTabId)
+    }
 }
 
 

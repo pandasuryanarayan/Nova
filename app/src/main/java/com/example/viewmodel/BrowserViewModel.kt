@@ -311,6 +311,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setActiveSheet(sheet: ActiveSheet) {
+        if (sheet == ActiveSheet.TABS) {
+            webViewPool.captureTabPreview(_uiState.value.activeTab)
+        }
         _uiState.update { it.copy(activeSheet = sheet) }
     }
 
@@ -992,6 +995,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         isIncognito: Boolean = false,
         referer: String? = null
     ) {
+        webViewPool.captureTabPreview(_uiState.value.activeTab)
         val defaultZoom = preferences.value.defaultTextZoom
         val normalizedUrl = if (url == NOVA_HOME_URL) NOVA_HOME_URL else BrowserUrlUtils.normalizeInputToUrl(url)
         val newTab = BrowserTab(
@@ -1018,6 +1022,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun switchTab(tabId: String) {
         if (_uiState.value.tabs.any { it.id == tabId }) {
+            webViewPool.captureTabPreview(_uiState.value.activeTab)
             _uiState.update {
                 it.copy(
                     activeTabId = tabId,
@@ -1055,6 +1060,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun closeTab(tabId: String) {
         webViewPool.removeAndDestroyTab(tabId)
         _uiState.update { state ->
+            val closedTab = state.tabs.find { it.id == tabId }
             val remaining = state.tabs.filterNot { it.id == tabId }
             if (remaining.isEmpty()) {
                 val fresh = BrowserTab(
@@ -1065,7 +1071,10 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 state.copy(tabs = listOf(fresh), activeTabId = fresh.id)
             } else {
                 val nextActiveId = if (state.activeTabId == tabId) {
-                    remaining.last().id
+                    val sameModeTab = if (closedTab != null) {
+                        remaining.lastOrNull { it.isIncognito == closedTab.isIncognito }
+                    } else null
+                    (sameModeTab ?: remaining.last()).id
                 } else {
                     state.activeTabId
                 }
@@ -1099,28 +1108,13 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun toggleIncognitoMode() {
         val current = _uiState.value.activeTab
+        webViewPool.captureTabPreview(current)
         val nextIncognito = !current.isIncognito
-        if (current.isHomePage) {
-            updateTabById(current.id) {
-                it.copy(
-                    isIncognito = nextIncognito,
-                    title = if (nextIncognito) "Private Home" else "Netra Home"
-                )
-            }
-        } else if (current.isIncognito) {
-            val normalTab = _uiState.value.tabs.firstOrNull { !it.isIncognito }
-            if (normalTab != null) {
-                switchTab(normalTab.id)
-            } else {
-                openNewTab(url = NOVA_HOME_URL, isIncognito = false)
-            }
+        val existingTargetTab = _uiState.value.tabs.lastOrNull { it.isIncognito == nextIncognito }
+        if (existingTargetTab != null) {
+            switchTab(existingTargetTab.id)
         } else {
-            val existingIncognito = _uiState.value.tabs.firstOrNull { it.isIncognito }
-            if (existingIncognito != null) {
-                switchTab(existingIncognito.id)
-            } else {
-                openNewTab(url = NOVA_HOME_URL, isIncognito = true)
-            }
+            openNewTab(url = NOVA_HOME_URL, isIncognito = nextIncognito)
         }
         emitToast(if (nextIncognito) "Incognito Mode Activated" else "Standard Mode Restored")
     }

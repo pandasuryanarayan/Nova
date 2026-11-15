@@ -770,7 +770,14 @@ class NovaWebViewPool(
         webView.evaluateJavascript(js, null)
     }
 
+    fun captureTabPreview(tab: BrowserTab) {
+        if (tab.isHomePage) return
+        val webView = webViews[tab.id] ?: return
+        TabPreviewCache.captureWebView(context, tab.id, tab.url, webView, tab.isIncognito)
+    }
+
     fun removeAndDestroyTab(tabId: String) {
+        TabPreviewCache.removeTabPreview(tabId)
         tabStates.remove(tabId)
         val webView = webViews.remove(tabId) ?: return
         try {
@@ -1153,6 +1160,17 @@ class NovaWebViewPool(
                 mainHandler.post {
                     onPageFinishedForDevTools(tabId)
                 }
+                if (!isInternalPage && mappedUrl.isNotBlank()) {
+                    TabPreviewCache.captureWebView(context, tabId, mappedUrl, view, liveTab.isIncognito)
+                    mainHandler.postDelayed({
+                        val currentTab = tabStates[tabId] ?: liveTab
+                        TabPreviewCache.captureWebView(context, tabId, currentTab.url.ifBlank { mappedUrl }, view, currentTab.isIncognito)
+                    }, 450L)
+                    mainHandler.postDelayed({
+                        val currentTab = tabStates[tabId] ?: liveTab
+                        TabPreviewCache.captureWebView(context, tabId, currentTab.url.ifBlank { mappedUrl }, view, currentTab.isIncognito)
+                    }, 1400L)
+                }
 
                 if (!liveTab.isIncognito && !isInternalPage && mappedUrl.isNotBlank()) {
                     onHistoryVisited(tabId, title, mappedUrl)
@@ -1210,6 +1228,13 @@ class NovaWebViewPool(
                 )
                 if (newProgress >= 30) {
                     injectScripts(view, tabId)
+                }
+                if (newProgress >= 75) {
+                    val liveTab = tabStates[tabId] ?: initialTab
+                    val currentUrl = view?.url ?: liveTab.url
+                    if (!currentUrl.startsWith("netra://") && !currentUrl.startsWith("nova://")) {
+                        TabPreviewCache.captureWebView(context, tabId, currentUrl, view, liveTab.isIncognito)
+                    }
                 }
             }
 
