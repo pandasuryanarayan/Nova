@@ -2121,7 +2121,7 @@ fun BrowserMenuSheet(
     onDismiss: () -> Unit
 ) {
     val strings = LocalNovaStrings.current
-    val palette = rememberSheetPalette(isIncognito = activeTab.isIncognito)
+    val palette = rememberSheetPalette(isIncognito = activeTab.isIncognito, isDarkMode = isDarkMode)
     val minimalTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MINIMAL) }
     val proTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.PRO) }
     val maxTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MAX) }
@@ -2508,44 +2508,6 @@ fun BrowserMenuSheet(
                 }
             }
 
-            if (!activeTab.isHomePage) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    PageToolBtn(
-                        icon = if (isBookmarked) NovaIcons.Bookmark else NovaIcons.BookmarkBorder,
-                        label = if (isBookmarked) strings.savedButton else strings.bookmarkButton,
-                        active = isBookmarked,
-                        palette = palette,
-                        onClick = onToggleBookmark,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("menu_bookmark_toggle_button")
-                    )
-                    PageToolBtn(
-                        icon = NovaIcons.Code,
-                        label = strings.inspectButton,
-                        active = false,
-                        palette = palette,
-                        onClick = onOpenDevTools,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("menu_devtools_button")
-                    )
-                    PageToolBtn(
-                        icon = NovaIcons.Videocam,
-                        label = strings.videosButton,
-                        active = false,
-                        palette = palette,
-                        onClick = onScanPageVideos,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("menu_scan_videos_button")
-                    )
-                }
-            }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -2608,42 +2570,6 @@ fun BrowserMenuSheet(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun PageToolBtn(
-    icon: ImageVector,
-    label: String,
-    active: Boolean,
-    palette: SheetVisualPalette,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        color = if (active) palette.activePillBg else palette.cardBg,
-        border = BorderStroke(if (active) 1.5.dp else 1.dp, if (active) palette.activePillBorder else palette.cardBorder),
-        modifier = modifier.height(44.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, null, tint = palette.accentPrimary, modifier = Modifier.size(17.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold),
-                color = if (active) palette.accentPrimary else palette.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
