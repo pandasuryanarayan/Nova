@@ -107,21 +107,6 @@ fun NovaBrowserApp(
     var cookieRefreshTick by remember { mutableIntStateOf(0) }
     var previousIncognito by remember { mutableStateOf(activeTab.isIncognito) }
     var incognitoWaveProgress by remember { mutableFloatStateOf(0f) }
-    var showSplashOverlay by rememberSaveable { mutableStateOf(true) }
-    var splashAlpha by remember { mutableFloatStateOf(1f) }
-
-    LaunchedEffect(Unit) {
-        if (showSplashOverlay) {
-            delay(480L)
-            val fadeStart = withFrameMillis { it }
-            var elapsed = 0L
-            while (elapsed < 220L && showSplashOverlay) {
-                elapsed = withFrameMillis { it } - fadeStart
-                splashAlpha = (1f - (elapsed / 220f)).coerceIn(0f, 1f)
-            }
-            showSplashOverlay = false
-        }
-    }
 
     LaunchedEffect(activeTab.isIncognito) {
         if (activeTab.isIncognito != previousIncognito) {
@@ -731,49 +716,6 @@ fun NovaBrowserApp(
                                 ) { Text(novaStrings.sitePermBlock) }
                             }
                         )
-                    }
-
-                    if (showSplashOverlay) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .alpha(splashAlpha)
-                                .background(Color.Black)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) { showSplashOverlay = false }
-                                .testTag("netra_splash_screen")
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_netra_logo),
-                                    contentDescription = "Netra Logo",
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier
-                                        .size(112.dp)
-                                        .clip(RoundedCornerShape(28.dp))
-                                )
-                                Spacer(modifier = Modifier.height(14.dp))
-                                Text(
-                                    text = novaStrings.appTitleStandard,
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.headlineMedium.copy(
-                                        fontSize = 26.sp,
-                                        lineHeight = 36.sp,
-                                        letterSpacing = if (novaStrings.isHindi) 0.sp else 0.6.sp
-                                    ),
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
                     }
                 }
             }
