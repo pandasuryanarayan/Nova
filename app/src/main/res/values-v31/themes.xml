@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_screen</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_bg_color</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_netra_splash</item>
+        <item name="android:windowSplashScreenAnimationDuration">700</item>
+        <item name="android:statusBarColor">@color/splash_bg_color</item>
+        <item name="android:navigationBarColor">@color/splash_bg_color</item>
+    </style>
+</resources>

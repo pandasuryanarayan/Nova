@@ -4,11 +4,73 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M21,54 C33,42 42.4,31.6 54,31.6 C65.6,31.6 75,42 87,54 C75,66 65.6,76.4 54,76.4 C42.4,76.4 33,66 21,54 Z M54,39.6 A14.4,14.4 0 1,1 54,68.4 A14.4,14.4 0 1,1 54,39.6 Z M39.6,54 L68.4,54 M41.8,46.4 Q54,49.8 66.2,46.4 M41.8,61.6 Q54,58.2 66.2,61.6 M54,39.6 Q45.2,54 54,68.4 M54,39.6 Q62.8,54 54,68.4"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2.5" />
+    <group
+        android:name="eye_outer_group"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:name="eye_upper_lid"
+            android:fillColor="#00000000"
+            android:pathData="M21,54 C33,42 42.4,31.6 54,31.6 C65.6,31.6 75,42 87,54"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="2.6" />
+        <path
+            android:name="eye_lower_lid"
+            android:fillColor="#00000000"
+            android:pathData="M21,54 C33,66 42.4,76.4 54,76.4 C65.6,76.4 75,66 87,54"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="2.6" />
+    </group>
+    <group
+        android:name="internet_globe_group"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:name="globe_outer_ring"
+            android:fillColor="#00000000"
+            android:pathData="M54,39.6 A14.4,14.4 0 1,1 54,68.4 A14.4,14.4 0 1,1 54,39.6 Z"
+            android:strokeColor="#FF8A3D"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="2.5" />
+        <path
+            android:name="globe_equator"
+            android:fillColor="#00000000"
+            android:pathData="M39.6,54 L68.4,54"
+            android:strokeColor="#FF8A3D"
+            android:strokeLineCap="round"
+            android:strokeWidth="2.3" />
+        <path
+            android:name="globe_lat_north"
+            android:fillColor="#00000000"
+            android:pathData="M41.8,46.4 Q54,49.8 66.2,46.4"
+            android:strokeColor="#FF8A3D"
+            android:strokeLineCap="round"
+            android:strokeWidth="2.2" />
+        <path
+            android:name="globe_lat_south"
+            android:fillColor="#00000000"
+            android:pathData="M41.8,61.6 Q54,58.2 66.2,61.6"
+            android:strokeColor="#FF8A3D"
+            android:strokeLineCap="round"
+            android:strokeWidth="2.2" />
+        <path
+            android:name="globe_meridian_left"
+            android:fillColor="#00000000"
+            android:pathData="M54,39.6 Q45.2,54 54,68.4"
+            android:strokeColor="#FF8A3D"
+            android:strokeLineCap="round"
+            android:strokeWidth="2.3" />
+        <path
+            android:name="globe_meridian_right"
+            android:fillColor="#00000000"
+            android:pathData="M54,39.6 Q62.8,54 54,68.4"
+            android:strokeColor="#FF8A3D"
+            android:strokeLineCap="round"
+            android:strokeWidth="2.3" />
+    </group>
 </vector>

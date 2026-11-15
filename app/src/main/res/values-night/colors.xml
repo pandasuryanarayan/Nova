@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_bg_color">#FF09090B</color>
+    <color name="splash_eye_stroke">#FFFFFFFF</color>
+    <color name="splash_globe_stroke">#FFFF8A3D</color>
+</resources>

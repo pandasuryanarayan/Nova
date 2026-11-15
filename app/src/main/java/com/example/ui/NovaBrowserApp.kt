@@ -87,6 +87,10 @@ import com.example.ui.theme.NovaBrowserTheme
 import com.example.viewmodel.BrowserViewModel
 import kotlinx.coroutines.delay
 
+import android.app.UiModeManager
+import android.graphics.drawable.AnimatedVectorDrawable
+import android.widget.ImageView
+
 @Composable
 fun NovaBrowserApp(
     viewModel: BrowserViewModel
@@ -107,6 +111,24 @@ fun NovaBrowserApp(
     var cookieRefreshTick by remember { mutableIntStateOf(0) }
     var previousIncognito by remember { mutableStateOf(activeTab.isIncognito) }
     var incognitoWaveProgress by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(preferences.isDarkMode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !Build.FINGERPRINT.contains("robolectric", ignoreCase = true)
+        ) {
+            try {
+                val uiModeManager = context.getSystemService(UiModeManager::class.java)
+                uiModeManager?.setApplicationNightMode(
+                    if (preferences.isDarkMode) {
+                        UiModeManager.MODE_NIGHT_YES
+                    } else {
+                        UiModeManager.MODE_NIGHT_NO
+                    }
+                )
+            } catch (_: Exception) {
+            }
+        }
+    }
 
     LaunchedEffect(activeTab.isIncognito) {
         if (activeTab.isIncognito != previousIncognito) {
@@ -716,6 +738,45 @@ fun NovaBrowserApp(
                                 ) { Text(novaStrings.sitePermBlock) }
                             }
                         )
+                    }
+
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S &&
+                        !Build.FINGERPRINT.contains("robolectric", ignoreCase = true)
+                    ) {
+                        var showLegacyAvdSplash by rememberSaveable { mutableStateOf(true) }
+                        var legacySplashAlpha by remember { mutableFloatStateOf(1f) }
+                        LaunchedEffect(showLegacyAvdSplash) {
+                            if (showLegacyAvdSplash) {
+                                delay(620L)
+                                val fadeStart = withFrameMillis { it }
+                                var fadeElapsed = 0L
+                                while (fadeElapsed < 160L) {
+                                    fadeElapsed = withFrameMillis { it } - fadeStart
+                                    legacySplashAlpha = (1f - fadeElapsed / 160f).coerceIn(0f, 1f)
+                                }
+                                showLegacyAvdSplash = false
+                            }
+                        }
+                        if (showLegacyAvdSplash) {
+                            val splashBg = if (preferences.isDarkMode) Color(0xFF09090B) else Color(0xFFFFF8F4)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .alpha(legacySplashAlpha)
+                                    .background(splashBg),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AndroidView(
+                                    factory = { ctx ->
+                                        ImageView(ctx).apply {
+                                            setImageResource(R.drawable.avd_netra_splash)
+                                            (drawable as? AnimatedVectorDrawable)?.start()
+                                        }
+                                    },
+                                    modifier = Modifier.size(132.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

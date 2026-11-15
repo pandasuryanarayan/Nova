@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="108"
+            android:viewportHeight="108">
+            <group
+                android:name="eye_outer_group"
+                android:pivotX="54"
+                android:pivotY="54">
+                <path
+                    android:name="eye_upper_lid"
+                    android:fillColor="#00000000"
+                    android:pathData="M24,54 C33,57.5 43,59.5 54,59.5 C65,59.5 75,57.5 84,54"
+                    android:strokeColor="@color/splash_eye_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:strokeWidth="2.8" />
+                <path
+                    android:name="eye_lower_lid"
+                    android:fillColor="#00000000"
+                    android:pathData="M24,54 C33,57.5 43,59.5 54,59.5 C65,59.5 75,57.5 84,54"
+                    android:strokeColor="@color/splash_eye_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:strokeWidth="2.8" />
+            </group>
+            <group
+                android:name="internet_globe_group"
+                android:pivotX="54"
+                android:pivotY="54"
+                android:rotation="-35"
+                android:scaleX="0.0"
+                android:scaleY="0.0">
+                <path
+                    android:name="globe_outer_ring"
+                    android:fillColor="#00000000"
+                    android:pathData="M54,41.2 A12.8,12.8 0 1,1 54,66.8 A12.8,12.8 0 1,1 54,41.2 Z"
+                    android:strokeColor="@color/splash_globe_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:strokeWidth="2.4" />
+                <path
+                    android:name="globe_equator"
+                    android:fillColor="#00000000"
+                    android:pathData="M41.2,54 L66.8,54"
+                    android:strokeColor="@color/splash_globe_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeWidth="2.1"
+                    android:trimPathEnd="0.0" />
+                <path
+                    android:name="globe_lat_north"
+                    android:fillColor="#00000000"
+                    android:pathData="M43.2,47.2 Q54,50.2 64.8,47.2"
+                    android:strokeColor="@color/splash_globe_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeWidth="2.0"
+                    android:trimPathEnd="0.0" />
+                <path
+                    android:name="globe_lat_south"
+                    android:fillColor="#00000000"
+                    android:pathData="M43.2,60.8 Q54,57.8 64.8,60.8"
+                    android:strokeColor="@color/splash_globe_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeWidth="2.0"
+                    android:trimPathEnd="0.0" />
+                <path
+                    android:name="globe_meridian_left"
+                    android:fillColor="#00000000"
+                    android:pathData="M54,41.2 Q46.2,54 54,66.8"
+                    android:strokeColor="@color/splash_globe_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeWidth="2.1"
+                    android:trimPathEnd="0.0" />
+                <path
+                    android:name="globe_meridian_right"
+                    android:fillColor="#00000000"
+                    android:pathData="M54,41.2 Q61.8,54 54,66.8"
+                    android:strokeColor="@color/splash_globe_stroke"
+                    android:strokeLineCap="round"
+                    android:strokeWidth="2.1"
+                    android:trimPathEnd="0.0" />
+            </group>
+        </vector>
+    </aapt:attr>
+
+    <target android:name="eye_upper_lid">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="470"
+                android:interpolator="@android:interpolator/overshoot"
+                android:propertyName="pathData"
+                android:startOffset="110"
+                android:valueFrom="M24,54 C33,57.5 43,59.5 54,59.5 C65,59.5 75,57.5 84,54"
+                android:valueTo="M24,54 C33,41.5 43,33.5 54,33.5 C65,33.5 75,41.5 84,54"
+                android:valueType="pathType" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="eye_lower_lid">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="470"
+                android:interpolator="@android:interpolator/overshoot"
+                android:propertyName="pathData"
+                android:startOffset="110"
+                android:valueFrom="M24,54 C33,57.5 43,59.5 54,59.5 C65,59.5 75,57.5 84,54"
+                android:valueTo="M24,54 C33,66.5 43,74.5 54,74.5 C65,74.5 75,66.5 84,54"
+                android:valueType="pathType" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="internet_globe_group">
+        <aapt:attr name="android:animation">
+            <set android:ordering="together">
+                <objectAnimator
+                    android:duration="450"
+                    android:interpolator="@android:interpolator/decelerate_cubic"
+                    android:propertyName="scaleX"
+                    android:startOffset="150"
+                    android:valueFrom="0.0"
+                    android:valueTo="1.0"
+                    android:valueType="floatType" />
+                <objectAnimator
+                    android:duration="450"
+                    android:interpolator="@android:interpolator/decelerate_cubic"
+                    android:propertyName="scaleY"
+                    android:startOffset="150"
+                    android:valueFrom="0.0"
+                    android:valueTo="1.0"
+                    android:valueType="floatType" />
+                <objectAnimator
+                    android:duration="480"
+                    android:interpolator="@android:interpolator/decelerate_cubic"
+                    android:propertyName="rotation"
+                    android:startOffset="150"
+                    android:valueFrom="-35"
+                    android:valueTo="0"
+                    android:valueType="floatType" />
+            </set>
+        </aapt:attr>
+    </target>
+
+    <target android:name="globe_equator">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="380"
+                android:interpolator="@android:interpolator/decelerate_quad"
+                android:propertyName="trimPathEnd"
+                android:startOffset="210"
+                android:valueFrom="0.0"
+                android:valueTo="1.0"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="globe_lat_north">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="380"
+                android:interpolator="@android:interpolator/decelerate_quad"
+                android:propertyName="trimPathEnd"
+                android:startOffset="240"
+                android:valueFrom="0.0"
+                android:valueTo="1.0"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="globe_lat_south">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="380"
+                android:interpolator="@android:interpolator/decelerate_quad"
+                android:propertyName="trimPathEnd"
+                android:startOffset="240"
+                android:valueFrom="0.0"
+                android:valueTo="1.0"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="globe_meridian_left">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="380"
+                android:interpolator="@android:interpolator/decelerate_quad"
+                android:propertyName="trimPathEnd"
+                android:startOffset="260"
+                android:valueFrom="0.0"
+                android:valueTo="1.0"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="globe_meridian_right">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="380"
+                android:interpolator="@android:interpolator/decelerate_quad"
+                android:propertyName="trimPathEnd"
+                android:startOffset="260"
+                android:valueFrom="0.0"
+                android:valueTo="1.0"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+</animated-vector>
