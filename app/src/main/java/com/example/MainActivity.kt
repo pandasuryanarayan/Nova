@@ -1,10 +1,13 @@
 package com.example
 
 import android.animation.ObjectAnimator
+import android.app.SearchManager
 import android.content.Intent
+import android.nfc.NfcAdapter
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.provider.MediaStore
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.animation.DecelerateInterpolator
@@ -54,8 +57,9 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        // Handle incoming http/https VIEW intents when Netra Browser is used to open external links
-        handleIncomingIntent(intent)
+        if (savedInstanceState == null) {
+            handleIncomingIntent(intent)
+        }
 
         setContent {
             NetraBrowserApp(viewModel = browserViewModel)
@@ -69,12 +73,55 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIncomingIntent(intent: Intent?) {
-        val dataUrl = intent?.dataString
-        if (!dataUrl.isNullOrBlank() &&
-            (dataUrl.startsWith("http://", ignoreCase = true) ||
-                dataUrl.startsWith("https://", ignoreCase = true))
-        ) {
-            browserViewModel.openNewTab(url = dataUrl, isIncognito = false)
+        val target = extractTargetFromBrowserIntent(intent)
+        if (!target.isNullOrBlank()) {
+            browserViewModel.openExternalLinkOrSearch(target)
+        }
+    }
+
+    companion object {
+        internal fun extractTargetFromBrowserIntent(intent: Intent?): String? {
+            if (intent == null) return null
+            return when (intent.action) {
+                Intent.ACTION_VIEW,
+                NfcAdapter.ACTION_NDEF_DISCOVERED -> {
+                    val dataUrl = intent.dataString?.trim()
+                    if (!dataUrl.isNullOrBlank() &&
+                        (dataUrl.startsWith("http://", ignoreCase = true) ||
+                            dataUrl.startsWith("https://", ignoreCase = true) ||
+                            dataUrl.startsWith("about:", ignoreCase = true) ||
+                            dataUrl.startsWith("netra://", ignoreCase = true) ||
+                            dataUrl.startsWith("content://", ignoreCase = true) ||
+                            dataUrl.startsWith("file://", ignoreCase = true))
+                    ) {
+                        dataUrl
+                    } else {
+                        null
+                    }
+                }
+                Intent.ACTION_WEB_SEARCH,
+                Intent.ACTION_SEARCH,
+                MediaStore.INTENT_ACTION_MEDIA_SEARCH -> {
+                    intent.getStringExtra(SearchManager.QUERY)?.takeIf { it.isNotBlank() }
+                        ?: intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
+                        ?: intent.dataString?.takeIf { it.isNotBlank() }
+                }
+                Intent.ACTION_SEND -> {
+                    intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
+                }
+                else -> {
+                    val fallbackUrl = intent.dataString?.trim()
+                    if (!fallbackUrl.isNullOrBlank() &&
+                        (fallbackUrl.startsWith("http://", ignoreCase = true) ||
+                            fallbackUrl.startsWith("https://", ignoreCase = true))
+                    ) {
+                        fallbackUrl
+                    } else {
+                        null
+                    }
+                }
+            }
         }
     }
 }
+

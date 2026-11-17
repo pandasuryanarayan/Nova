@@ -1334,6 +1334,37 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Navigation & Address Bar ---
 
+    fun openExternalLinkOrSearch(rawInput: String) {
+        val extracted = BrowserUrlUtils.extractExternalTarget(rawInput)
+        if (extracted.isBlank()) return
+        val targetUrl = BrowserUrlUtils.normalizeInputToUrl(extracted)
+        if (targetUrl == NETRA_HOME_URL) {
+            _uiState.update {
+                it.copy(
+                    activeSheet = ActiveSheet.NONE,
+                    openGroupPopupId = null,
+                    isFindInPageVisible = false
+                )
+            }
+            goHome()
+            return
+        }
+        val currentState = _uiState.value
+        val active = currentState.activeTab
+        if (currentState.tabs.size == 1 && active.isHomePage && !active.isIncognito) {
+            _uiState.update {
+                it.copy(
+                    activeSheet = ActiveSheet.NONE,
+                    openGroupPopupId = null,
+                    isFindInPageVisible = false
+                )
+            }
+            loadUrlOrSearch(targetUrl)
+        } else {
+            openNewTab(url = targetUrl, isIncognito = false)
+        }
+    }
+
     fun loadUrlOrSearch(rawInput: String) {
         val targetUrl = BrowserUrlUtils.normalizeInputToUrl(rawInput)
         val active = _uiState.value.activeTab

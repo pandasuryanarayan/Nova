@@ -445,6 +445,98 @@ class ExampleRobolectricTest {
         assertEquals("All Tabs", com.example.ui.i18n.EnglishNetraStrings.openTabsTitle)
         assertEquals("सभी टैब", com.example.ui.i18n.HindiNetraStrings.openTabsTitle)
     }
+
+    @Test
+    fun `verify browser category recognition role browser qualification and external link handling`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val pm = context.packageManager
+
+        fun resolvesMainActivity(intent: android.content.Intent): Boolean {
+            val matches = pm.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+            return matches.any { it.activityInfo?.name == MainActivity::class.java.name }
+        }
+
+        // 1. Browser App Category (Intent.CATEGORY_APP_BROWSER)
+        val appBrowserIntent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+            addCategory(android.content.Intent.CATEGORY_APP_BROWSER)
+        }
+        assertTrue("MainActivity must resolve for CATEGORY_APP_BROWSER", resolvesMainActivity(appBrowserIntent))
+
+        // 2. Android Default Browser Role (RoleManager.ROLE_BROWSER probes bare http:// and https://)
+        val bareHttpIntent = android.content.Intent(
+            android.content.Intent.ACTION_VIEW,
+            android.net.Uri.parse("http://")
+        ).apply {
+            addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+        }
+        val bareHttpsIntent = android.content.Intent(
+            android.content.Intent.ACTION_VIEW,
+            android.net.Uri.parse("https://")
+        ).apply {
+            addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+        }
+        assertTrue("MainActivity must resolve bare http:// for ROLE_BROWSER", resolvesMainActivity(bareHttpIntent))
+        assertTrue("MainActivity must resolve bare https:// for ROLE_BROWSER", resolvesMainActivity(bareHttpsIntent))
+
+        // 3. Standard clicked web links (http/https) & HTML MIME type links
+        val webLinkIntent = android.content.Intent(
+            android.content.Intent.ACTION_VIEW,
+            android.net.Uri.parse("https://www.wikipedia.org")
+        ).apply {
+            addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+        }
+        assertTrue("MainActivity must resolve standard https links", resolvesMainActivity(webLinkIntent))
+
+        val htmlMimeIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+            setDataAndType(android.net.Uri.parse("https://example.com/page.html"), "text/html")
+            addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+        }
+        assertTrue("MainActivity must resolve text/html VIEW intents", resolvesMainActivity(htmlMimeIntent))
+
+        // 4. Web Search & Share text/plain intents
+        val webSearchIntent = android.content.Intent(android.content.Intent.ACTION_WEB_SEARCH).apply {
+            putExtra(android.app.SearchManager.QUERY, "Netra browser")
+        }
+        assertTrue("MainActivity must resolve ACTION_WEB_SEARCH", resolvesMainActivity(webSearchIntent))
+
+        val shareTextIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_TEXT, "Check out https://github.com/trending today!")
+        }
+        assertTrue("MainActivity must resolve ACTION_SEND text/plain", resolvesMainActivity(shareTextIntent))
+
+        // 5. Verify MainActivity intent extraction & ViewModel external link handling
+        assertEquals(
+            "https://www.wikipedia.org",
+            MainActivity.extractTargetFromBrowserIntent(webLinkIntent)
+        )
+        assertEquals(
+            "Netra browser",
+            MainActivity.extractTargetFromBrowserIntent(webSearchIntent)
+        )
+        assertEquals(
+            "https://github.com/trending",
+            BrowserUrlUtils.extractExternalTarget(
+                MainActivity.extractTargetFromBrowserIntent(shareTextIntent).orEmpty()
+            )
+        )
+
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val vm = com.example.viewmodel.BrowserViewModel(app)
+
+        // Cold start on initial blank Home tab -> loads directly into the single active tab
+        assertEquals(1, vm.uiState.value.tabs.size)
+        assertTrue(vm.uiState.value.activeTab.isHomePage)
+        vm.openExternalLinkOrSearch("https://www.wikipedia.org")
+        assertEquals(1, vm.uiState.value.tabs.size)
+        assertEquals("https://www.wikipedia.org", vm.uiState.value.activeTab.url)
+
+        // Warm start when a webpage is already open -> opens a new tab and activates it
+        vm.openExternalLinkOrSearch("Check this link: https://github.com/trending!")
+        assertEquals(2, vm.uiState.value.tabs.size)
+        assertEquals("https://github.com/trending", vm.uiState.value.activeTab.url)
+    }
 }
+
 
 

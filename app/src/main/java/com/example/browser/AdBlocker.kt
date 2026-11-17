@@ -716,6 +716,7 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
 object BrowserUrlUtils {
     private val STREAMING_EXTENSION_REGEX = Regex("""\.(m3u8|mpd|ism)(\?|#|$)""", RegexOption.IGNORE_CASE)
     private val DIRECT_VIDEO_EXTENSION_REGEX = Regex("""\.(mp4|mov|webm|mkv|m4v)(\?|#|$)""", RegexOption.IGNORE_CASE)
+    private val EMBEDDED_URL_REGEX = Regex("""https?://[^\s<>"')]+""", RegexOption.IGNORE_CASE)
     private val PROTECTED_DOMAINS = listOf(
         "youtube.com",
         "youtu.be",
@@ -728,13 +729,34 @@ object BrowserUrlUtils {
         "primevideo.com"
     )
 
+    fun extractExternalTarget(rawInput: String): String {
+        val trimmed = rawInput.trim()
+        if (trimmed.isEmpty()) return ""
+        if (trimmed.contains(' ') || trimmed.contains('\n')) {
+            val match = EMBEDDED_URL_REGEX.find(trimmed)
+            if (match != null) {
+                return match.value.trimEnd('.', ',', ';', '!', '?')
+            }
+        }
+        return trimmed
+    }
+
     fun normalizeInputToUrl(rawInput: String): String {
         val trimmed = rawInput.trim()
         if (trimmed.isEmpty()) return "https://www.google.com"
+        if (trimmed.equals("about:home", ignoreCase = true) ||
+            trimmed.equals("about:newtab", ignoreCase = true) ||
+            trimmed.equals("http://", ignoreCase = true) ||
+            trimmed.equals("https://", ignoreCase = true)
+        ) {
+            return "netra://home"
+        }
         if (trimmed.startsWith("netra://", ignoreCase = true) ||
             trimmed.startsWith("http://", ignoreCase = true) ||
             trimmed.startsWith("https://", ignoreCase = true) ||
-            trimmed.startsWith("file://", ignoreCase = true)
+            trimmed.startsWith("file://", ignoreCase = true) ||
+            trimmed.startsWith("content://", ignoreCase = true) ||
+            trimmed.startsWith("about:", ignoreCase = true)
         ) {
             return trimmed
         }
