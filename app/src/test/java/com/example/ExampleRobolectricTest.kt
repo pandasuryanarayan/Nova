@@ -535,8 +535,38 @@ class ExampleRobolectricTest {
         vm.openExternalLinkOrSearch("Check this link: https://github.com/trending!")
         assertEquals(2, vm.uiState.value.tabs.size)
         assertEquals("https://github.com/trending", vm.uiState.value.activeTab.url)
+
+        // 6. Verify DownloadItemEntity searching state (no 25%/35% bar before MB discovery & stream start)
+        val preStartUnknownSize = com.example.data.DownloadItemEntity(
+            id = 1L,
+            fileName = "sample.mp4",
+            url = "https://example.com/sample.mp4",
+            pageTitle = "Sample",
+            domain = "example.com",
+            filePath = "/storage/emulated/0/Download/Netra/Videos/sample.mp4",
+            totalBytes = -1L,
+            downloadedBytes = 0L,
+            status = com.example.data.DownloadStatus.RUNNING.name
+        )
+        assertFalse(preStartUnknownSize.isSizeAndStreamDiscovered)
+        assertEquals(0f, preStartUnknownSize.progressFraction, 0.0001f)
+        assertEquals(0, preStartUnknownSize.dynamicProgressPercent)
+
+        val preStartKnownSize = preStartUnknownSize.copy(totalBytes = 20_971_520L, downloadedBytes = 0L)
+        assertFalse(preStartKnownSize.isSizeAndStreamDiscovered)
+        assertEquals(0f, preStartKnownSize.progressFraction, 0.0001f)
+        assertEquals(0, preStartKnownSize.dynamicProgressPercent)
+
+        val activeAfterMbDiscovery = preStartUnknownSize.copy(
+            totalBytes = 20_000_000L,
+            downloadedBytes = 7_600_000L
+        )
+        assertTrue(activeAfterMbDiscovery.isSizeAndStreamDiscovered)
+        assertEquals(0.38f, activeAfterMbDiscovery.progressFraction, 0.001f)
+        assertEquals(38, activeAfterMbDiscovery.dynamicProgressPercent)
     }
 }
+
 
 
 

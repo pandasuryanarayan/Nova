@@ -8,13 +8,19 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      rebuild_apk:
+        description: 'Force fresh Gradle release APK build from source'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 jobs:
   release-apk:
-    name: Build Signed Release APK (v6.9.8)
+    name: Build & Verify Signed Release APK (v6.9.9)
     runs-on: ubuntu-latest
 
     steps:
@@ -23,54 +29,82 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify or Build Signed Release APK (v6.9.8)
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Restore Debug Keystore for CI Verification
+        run: |
+          if [ ! -f "debug.keystore" ] && [ -f "debug.keystore.base64" ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+
+      - name: Run Unit Tests & Build/Verify Signed Release APK (v6.9.9)
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'android' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
+          REBUILD_APK: ${{ inputs.rebuild_apk || false }}
         run: |
-          mkdir -p releases/v6.9.8
-          if [ ! -f "releases/v6.9.8/Netra-v6.9.8-release.apk" ]; then
-            ./gradlew :app:assembleRelease || gradle :app:assembleRelease
-            cp app/build/outputs/apk/release/app-release.apk releases/v6.9.8/Netra-v6.9.8-release.apk
+          mkdir -p releases/v6.9.9
+          if [ "$REBUILD_APK" = "true" ] || [ ! -f "releases/v6.9.9/Netra-v6.9.9-release.apk" ]; then
+            gradle :app:testDebugUnitTest :app:assembleRelease
+            cp app/build/outputs/apk/release/app-release.apk releases/v6.9.9/Netra-v6.9.9-release.apk
+            sha256sum releases/v6.9.9/Netra-v6.9.9-release.apk > releases/v6.9.9/Netra-v6.9.9-release.apk.sha256
+          else
+            gradle :app:testDebugUnitTest
+            sha256sum -c releases/v6.9.9/Netra-v6.9.9-release.apk.sha256
           fi
-          sha256sum releases/v6.9.8/Netra-v6.9.8-release.apk > releases/v6.9.8/Netra-v6.9.8-release.apk.sha256
 
-      - name: Match Release Title & Heading Format
-        id: release_meta
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify APK Signature (v2/v3) & Metadata
         run: |
-          DEFAULT_TITLE="Netra v6.9.8 — Full Android Browser Category & Default Browser Role Recognition"
-          echo "title=$DEFAULT_TITLE" >> "$GITHUB_OUTPUT"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name "apksigner" | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner not found in ANDROID_HOME/build-tools"
+            exit 1
+          fi
+          "$APKSIGNER" verify --print-certs --verbose releases/v6.9.9/Netra-v6.9.9-release.apk
+          ls -lh releases/v6.9.9/Netra-v6.9.9-release.apk
 
-      - name: Create & Push Git Tag v6.9.8
+      - name: Prepare Release Metadata
+        id: release_meta
+        run: |
+          echo "title=Netra v6.9.9 — Search & Snake Download Progress + v6.9.7 Direct MP4 Parity" >> "$GITHUB_OUTPUT"
+
+      - name: Create & Push Git Tag v6.9.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a v6.9.8 -m "${{ steps.release_meta.outputs.title }}" -f
-          git push origin refs/tags/v6.9.8 --force
+          git tag -a v6.9.9 -m "${{ steps.release_meta.outputs.title }}" -f
+          git push origin refs/tags/v6.9.9 --force
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Netra-v6.9.8-release-apk
+          name: Netra-v6.9.9-release-apk
           path: |
-            releases/v6.9.8/Netra-v6.9.8-release.apk
-            releases/v6.9.8/Netra-v6.9.8-release.apk.sha256
+            releases/v6.9.9/Netra-v6.9.9-release.apk
+            releases/v6.9.9/Netra-v6.9.9-release.apk.sha256
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v6.9.8
+          tag_name: v6.9.9
           name: ${{ steps.release_meta.outputs.title }}
-          body_path: releases/v6.9.8/RELEASE_NOTES.md
+          body_path: releases/v6.9.9/RELEASE_NOTES.md
           draft: false
           prerelease: false
           make_latest: true
           files: |
-            releases/v6.9.8/Netra-v6.9.8-release.apk
-            releases/v6.9.8/Netra-v6.9.8-release.apk.sha256
+            releases/v6.9.9/Netra-v6.9.9-release.apk
+            releases/v6.9.9/Netra-v6.9.9-release.apk.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

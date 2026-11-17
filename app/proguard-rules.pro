@@ -7,6 +7,8 @@
 
 -keep class com.example.browser.NetraJsBridge { *; }
 -keep class com.example.browser.NetraDevToolsJsBridge { *; }
+-keep class com.example.browser.NetraWebViewPool$NetraJsBridge { *; }
+-keep class com.example.browser.NetraWebViewPool$NetraDevToolsJsBridge { *; }
 
 -assumenosideeffects class android.util.Log {
     public static int v(...);

@@ -64,11 +64,22 @@ data class DownloadItemEntity(
             DownloadStatus.PENDING
         }
 
+    val isSizeAndStreamDiscovered: Boolean
+        get() = totalBytes > 0L && downloadedBytes > 0L
+
     val progressFraction: Float
         get() = if (totalBytes > 0L) {
             (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
         } else {
             0f
+        }
+
+    val dynamicProgressPercent: Int
+        get() = when {
+            statusEnum == DownloadStatus.COMPLETED -> 100
+            totalBytes > 0L && downloadedBytes > 0L ->
+                ((downloadedBytes.toDouble() * 100.0) / totalBytes.toDouble()).toInt().coerceIn(1, 100)
+            else -> 0
         }
 }
 

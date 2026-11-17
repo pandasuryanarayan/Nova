@@ -134,12 +134,11 @@ class NetraDownloadHelper(
         profile: HeaderProfile,
         rangeHeaderValue: String?,
         usePermissiveSsl: Boolean,
-        method: String = "GET",
-        includeOrigin: Boolean = true
+        includeOrigin: Boolean
     ): HttpURLConnection {
         val safeUrl = videoUrl.trim().replace(" ", "%20")
         val conn = (URL(safeUrl).openConnection() as HttpURLConnection).apply {
-            requestMethod = method
+            requestMethod = "GET"
             connectTimeout = 15_000
             readTimeout = 35_000
             instanceFollowRedirects = true
@@ -203,58 +202,6 @@ class NetraDownloadHelper(
         return conn
     }
 
-    private fun connectSingleHopWithSslFallback(
-        url: String,
-        pageUrl: String,
-        userAgent: String,
-        cookies: String?,
-        profile: HeaderProfile,
-        rangeHeaderValue: String?,
-        method: String,
-        includeOrigin: Boolean
-    ): HttpURLConnection {
-        val firstConn = openConfiguredConnection(
-            videoUrl = url,
-            pageUrl = pageUrl,
-            userAgent = userAgent,
-            cookies = cookies,
-            profile = profile,
-            rangeHeaderValue = rangeHeaderValue,
-            usePermissiveSsl = false,
-            method = method,
-            includeOrigin = includeOrigin
-        )
-        return try {
-            firstConn.connect()
-            firstConn.responseCode
-            firstConn
-        } catch (_: SSLException) {
-            firstConn.disconnect()
-            val fallbackConn = openConfiguredConnection(
-                videoUrl = url,
-                pageUrl = pageUrl,
-                userAgent = userAgent,
-                cookies = cookies,
-                profile = profile,
-                rangeHeaderValue = rangeHeaderValue,
-                usePermissiveSsl = true,
-                method = method,
-                includeOrigin = includeOrigin
-            )
-            try {
-                fallbackConn.connect()
-                fallbackConn.responseCode
-                fallbackConn
-            } catch (e: Exception) {
-                fallbackConn.disconnect()
-                throw e
-            }
-        } catch (e: Exception) {
-            firstConn.disconnect()
-            throw e
-        }
-    }
-
     private fun <T> executeHttpRequestWithRedirects(
         videoUrl: String,
         pageUrl: String,
@@ -262,7 +209,6 @@ class NetraDownloadHelper(
         cookies: String?,
         profile: HeaderProfile,
         rangeHeaderValue: String?,
-        method: String = "GET",
         block: (HttpURLConnection, String) -> T
     ): T {
         var currentUrl = videoUrl.trim().replace(" ", "%20")
@@ -273,17 +219,38 @@ class NetraDownloadHelper(
         try {
             var hop = 0
             while (true) {
-                val conn = connectSingleHopWithSslFallback(
-                    url = currentUrl,
+                val firstConn = openConfiguredConnection(
+                    videoUrl = currentUrl,
                     pageUrl = pageUrl,
                     userAgent = userAgent,
                     cookies = currentCookies,
                     profile = profile,
                     rangeHeaderValue = rangeHeaderValue,
-                    method = method,
+                    usePermissiveSsl = false,
                     includeOrigin = includeOrigin
                 )
-                activeConn = conn
+                activeConn = firstConn
+                val conn = try {
+                    firstConn.connect()
+                    firstConn.responseCode
+                    firstConn
+                } catch (_: SSLException) {
+                    firstConn.disconnect()
+                    val fallbackConn = openConfiguredConnection(
+                        videoUrl = currentUrl,
+                        pageUrl = pageUrl,
+                        userAgent = userAgent,
+                        cookies = currentCookies,
+                        profile = profile,
+                        rangeHeaderValue = rangeHeaderValue,
+                        usePermissiveSsl = true,
+                        includeOrigin = includeOrigin
+                    )
+                    activeConn = fallbackConn
+                    fallbackConn.connect()
+                    fallbackConn.responseCode
+                    fallbackConn
+                }
 
                 try {
                     val setCookieHeaders = conn.headerFields?.entries
@@ -311,9 +278,9 @@ class NetraDownloadHelper(
                     val location = conn.getHeaderField("Location")
                     val nextUrl = resolveRedirectUrl(currentUrl, location)
                     if (nextUrl != null && nextUrl != currentUrl) {
-                        val oldOrigin = extractOrigin(currentUrl)
-                        val newOrigin = extractOrigin(nextUrl)
-                        if (oldOrigin != null && newOrigin != null && oldOrigin != newOrigin) {
+                        val curOrigin = extractOrigin(currentUrl)
+                        val nxtOrigin = extractOrigin(nextUrl)
+                        if (curOrigin != null && nxtOrigin != null && curOrigin != nxtOrigin) {
                             includeOrigin = false
                         }
                         conn.disconnect()
@@ -495,7 +462,6 @@ class NetraDownloadHelper(
         }
 
         val cookies = getMergedCookies(videoUrl, pageUrl)
-
         val probeProfiles = listOf(
             HeaderProfile.PAGE_REFERER_WITH_RANGE,
             HeaderProfile.VIDEO_ORIGIN_REFERER_WITH_RANGE,
@@ -515,8 +481,7 @@ class NetraDownloadHelper(
                     userAgent = userAgent,
                     cookies = cookies,
                     profile = profile,
-                    rangeHeaderValue = if (isRangeProbe) "bytes=0-1" else null,
-                    method = "GET"
+                    rangeHeaderValue = if (isRangeProbe) "bytes=0-1" else null
                 ) { conn, finalUrl ->
                     val code = conn.responseCode
                     if (code == 200 || code == 206 || code == 416) {
@@ -990,8 +955,7 @@ class NetraDownloadHelper(
                     userAgent = item.userAgent,
                     cookies = freshCookies,
                     profile = profile,
-                    rangeHeaderValue = rangeHeader,
-                    method = "GET"
+                    rangeHeaderValue = rangeHeader
                 ) { conn, finalUrl ->
                         val code = conn.responseCode
                         if (code !in 200..299 && code != 206) {

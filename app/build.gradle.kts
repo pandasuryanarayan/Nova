@@ -16,8 +16,8 @@ android {
     applicationId = "com.suryatech.browser.netra"
     minSdk = 24
     targetSdk = 36
-    versionCode = 23
-    versionName = "6.9.8"
+    versionCode = 24
+    versionName = "6.9.9"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

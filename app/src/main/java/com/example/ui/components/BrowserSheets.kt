@@ -1,6 +1,15 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,11 +47,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -1326,6 +1341,21 @@ fun DownloadsManagerSheet(
         if (sortNewestFirst) list.sortedByDescending { it.createdAt } else list.sortedBy { it.createdAt }
     }
 
+    var prevOngoingCount by remember { mutableIntStateOf(ongoingDownloads.size) }
+    LaunchedEffect(ongoingDownloads.size, successDownloads.size, failedDownloads.size) {
+        val currentOngoing = ongoingDownloads.size
+        if (currentOngoing > prevOngoingCount) {
+            selectedSection = 0
+        } else if (prevOngoingCount > 0 && currentOngoing == 0 && selectedSection == 0) {
+            selectedSection = when {
+                successDownloads.isNotEmpty() -> 1
+                failedDownloads.isNotEmpty() -> 2
+                else -> 1
+            }
+        }
+        prevOngoingCount = currentOngoing
+    }
+
     val displayedDownloads = when (selectedSection) {
         0 -> ongoingDownloads
         1 -> successDownloads
@@ -1490,7 +1520,9 @@ private fun DownloadItemCard(
 ) {
     val strings = LocalNetraStrings.current
     val statusEnum = item.statusEnum
+    val hasDiscoveredSizeAndStarted = item.isSizeAndStreamDiscovered
     val progress = item.progressFraction
+    val dynamicPercent = item.dynamicProgressPercent
 
     Surface(
         shape = RoundedCornerShape(18.dp),
@@ -1524,10 +1556,13 @@ private fun DownloadItemCard(
                             overflow = TextOverflow.Ellipsis,
                             color = palette.textPrimary
                         )
-                        val sizeLabel = if (item.totalBytes > 0) formatBytes(item.downloadedBytes) else strings.unknownSize
                         val statusText = when (statusEnum) {
-                            DownloadStatus.RUNNING -> "${formatBytes(item.downloadedBytes)} / ${if (item.totalBytes > 0) formatBytes(item.totalBytes) else strings.unknownSize}"
-                            DownloadStatus.PAUSED -> "${strings.downloadStatusPaused} • $sizeLabel"
+                            DownloadStatus.RUNNING -> if (item.totalBytes > 0) {
+                                "${formatBytes(item.downloadedBytes)} / ${formatBytes(item.totalBytes)}"
+                            } else {
+                                "${formatBytes(item.downloadedBytes)} / ${strings.unknownSize}"
+                            }
+                            DownloadStatus.PAUSED -> "${strings.downloadStatusPaused} • ${formatBytes(item.downloadedBytes)}"
                             DownloadStatus.COMPLETED -> "${strings.downloadStatusCompleted} • ${formatBytes(item.downloadedBytes)}"
                             DownloadStatus.FAILED -> strings.downloadStatusFailed
                             DownloadStatus.PENDING -> strings.downloadStatusStarting
@@ -1566,18 +1601,264 @@ private fun DownloadItemCard(
                 }
             }
 
-            if (statusEnum == DownloadStatus.RUNNING || statusEnum == DownloadStatus.PAUSED) {
+            if (statusEnum == DownloadStatus.RUNNING ||
+                statusEnum == DownloadStatus.PAUSED ||
+                statusEnum == DownloadStatus.PENDING
+            ) {
                 Spacer(modifier = Modifier.height(10.dp))
-                LinearProgressIndicator(
-                    progress = { if (item.totalBytes > 0) progress else 0.35f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .clip(CircleShape),
-                    color = palette.accentPrimary,
-                    trackColor = palette.cardElevatedBg
+                if (!hasDiscoveredSizeAndStarted) {
+                    // Phase 1: Video has not started downloading or MB size is not yet identified.
+                    // Render a continuous inside-bar horizontal searching animation (never a static 25%/35% bar).
+                    SearchingInsideBarAnimation(
+                        palette = palette,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("download_searching_bar_${item.id}")
+                    )
+                } else {
+                    // Phase 2: Download has started after MB discovery.
+                    // Render forward-moving snake progress bar + live dynamic percentage badge.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        SnakeDownloadProgressBar(
+                            progress = progress,
+                            isAnimating = statusEnum == DownloadStatus.RUNNING,
+                            palette = palette,
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("download_snake_bar_${item.id}")
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = palette.activePillBg,
+                            border = BorderStroke(1.dp, palette.activePillBorder),
+                            modifier = Modifier.testTag("download_percent_badge_${item.id}")
+                        ) {
+                            Text(
+                                text = "$dynamicPercent%",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 11.sp
+                                ),
+                                color = palette.accentPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun SearchingInsideBarAnimation(
+    palette: SheetVisualPalette,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "searching_inside_bar")
+    val sweepFraction by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1150, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "searching_sweep"
+    )
+
+    Box(
+        modifier = modifier
+            .height(10.dp)
+            .clip(CircleShape)
+            .background(palette.cardElevatedBg)
+            .border(0.75.dp, palette.cardBorder.copy(alpha = 0.7f), CircleShape)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            val centerY = h / 2f
+
+            // Subtle interior guide dots across the bar track
+            val dotSpacing = 18.dp.toPx().coerceAtLeast(12f)
+            var dotX = dotSpacing / 2f
+            while (dotX < w) {
+                drawCircle(
+                    color = palette.textMuted.copy(alpha = 0.22f),
+                    radius = 1.2.dp.toPx(),
+                    center = Offset(dotX, centerY)
+                )
+                dotX += dotSpacing
+            }
+
+            // Continuous horizontal searching beam sweeping inside the bar
+            val beamWidth = (w * 0.32f).coerceAtLeast(28f)
+            val totalTravel = w + beamWidth
+            val beamStartX = -beamWidth + (sweepFraction * totalTravel)
+            val beamEndX = beamStartX + beamWidth
+
+            val clampedLeft = beamStartX.coerceIn(0f, w)
+            val clampedRight = beamEndX.coerceIn(0f, w)
+            if (clampedRight > clampedLeft) {
+                drawRoundRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            palette.accentSecondary.copy(alpha = 0.75f),
+                            palette.accentPrimary,
+                            Color.White.copy(alpha = 0.9f),
+                            palette.accentPrimary,
+                            Color.Transparent
+                        ),
+                        startX = beamStartX,
+                        endX = beamEndX
+                    ),
+                    topLeft = Offset(clampedLeft, 1.dp.toPx()),
+                    size = Size(clampedRight - clampedLeft, (h - 2.dp.toPx()).coerceAtLeast(2f)),
+                    cornerRadius = CornerRadius(h / 2f, h / 2f)
                 )
             }
+
+            // Secondary trailing scanner echo for continuous fluid motion when wrapping
+            val secondarySweep = (sweepFraction + 0.5f) % 1f
+            val secStartX = -beamWidth + (secondarySweep * totalTravel)
+            val secEndX = secStartX + (beamWidth * 0.65f)
+            val secLeft = secStartX.coerceIn(0f, w)
+            val secRight = secEndX.coerceIn(0f, w)
+            if (secRight > secLeft) {
+                drawRoundRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            palette.accentPrimary.copy(alpha = 0.45f),
+                            palette.accentSecondary.copy(alpha = 0.65f),
+                            Color.Transparent
+                        ),
+                        startX = secStartX,
+                        endX = secEndX
+                    ),
+                    topLeft = Offset(secLeft, 1.5.dp.toPx()),
+                    size = Size(secRight - secLeft, (h - 3.dp.toPx()).coerceAtLeast(2f)),
+                    cornerRadius = CornerRadius(h / 2f, h / 2f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun SnakeDownloadProgressBar(
+    progress: Float,
+    isAnimating: Boolean,
+    palette: SheetVisualPalette,
+    modifier: Modifier = Modifier
+) {
+    val clampedTarget = progress.coerceIn(0f, 1f)
+    val animatedProgress by animateFloatAsState(
+        targetValue = clampedTarget,
+        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+        label = "snake_forward_progress"
+    )
+    val infiniteTransition = rememberInfiniteTransition(label = "snake_wave_transition")
+    val wavePhase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2.0 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 580, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "snake_wave_phase"
+    )
+    val effectivePhase = if (isAnimating) wavePhase else 0f
+
+    Box(
+        modifier = modifier
+            .height(12.dp)
+            .clip(CircleShape)
+            .background(palette.cardElevatedBg)
+            .border(0.75.dp, palette.cardBorder.copy(alpha = 0.7f), CircleShape)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            val centerY = h / 2f
+            val headRadius = (h * 0.34f).coerceAtLeast(3f)
+            val startX = headRadius + 2.dp.toPx()
+            val maxHeadX = (w - headRadius - 2.dp.toPx()).coerceAtLeast(startX)
+            val headX = (startX + (maxHeadX - startX) * animatedProgress).coerceIn(startX, maxHeadX)
+
+            // 1. Soft illuminated track behind the advancing snake
+            drawRoundRect(
+                color = palette.accentPrimary.copy(alpha = 0.16f),
+                topLeft = Offset(0f, 0f),
+                size = Size((headX + headRadius).coerceAtMost(w), h),
+                cornerRadius = CornerRadius(h / 2f, h / 2f)
+            )
+
+            // 2. Forward-slithering undulating snake body from startX to headX
+            val wavelength = 20.dp.toPx().coerceAtLeast(16f)
+            val amplitude = (h * 0.24f).coerceAtLeast(1.5f)
+            val snakePath = Path()
+            val stepPx = 2.5f
+            var x = startX
+            var firstPoint = true
+            while (x <= headX) {
+                val angle = ((x / wavelength) * (2.0 * Math.PI)) - effectivePhase.toDouble()
+                val y = centerY + (kotlin.math.sin(angle).toFloat() * amplitude)
+                if (firstPoint) {
+                    snakePath.moveTo(x, y)
+                    firstPoint = false
+                } else {
+                    snakePath.lineTo(x, y)
+                }
+                x += stepPx
+            }
+            val headAngle = ((headX / wavelength) * (2.0 * Math.PI)) - effectivePhase.toDouble()
+            val headY = centerY + (kotlin.math.sin(headAngle).toFloat() * amplitude)
+            if (firstPoint) {
+                snakePath.moveTo(headX, headY)
+            } else {
+                snakePath.lineTo(headX, headY)
+            }
+
+            drawPath(
+                path = snakePath,
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        palette.accentSecondary,
+                        palette.accentPrimary,
+                        Color(0xFF00E5FF)
+                    ),
+                    startX = 0f,
+                    endX = headX.coerceAtLeast(1f)
+                ),
+                style = Stroke(
+                    width = 3.2.dp.toPx(),
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
+            )
+
+            // 3. Glowing snake head leading forward at (headX, headY)
+            drawCircle(
+                color = palette.accentPrimary.copy(alpha = 0.34f),
+                radius = headRadius * 1.45f,
+                center = Offset(headX, headY)
+            )
+            drawCircle(
+                color = palette.accentPrimary,
+                radius = headRadius,
+                center = Offset(headX, headY)
+            )
+            drawCircle(
+                color = Color.White,
+                radius = headRadius * 0.38f,
+                center = Offset(headX + (headRadius * 0.2f), headY)
+            )
         }
     }
 }
