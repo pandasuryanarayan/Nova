@@ -4,23 +4,23 @@
 
 ### **Fast, Private, Ad-Free & Developer-Grade Open-Source Android Web Browser**
 
-[![Version](https://img.shields.io/badge/Release-v6.9.9%20(code%2024)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v6.9.9/Netra-v6.9.9-release.apk)
+[![Version](https://img.shields.io/badge/Release-v7.0.0%20(code%2025)-FF6D00?style=for-the-badge&logo=android&logoColor=white)](releases/v7.0.0/Netra-v7.0.0-release.apk)
 [![Platform](https://img.shields.io/badge/Android-API%2024%E2%80%9336-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#building-from-source)
 [![Kotlin](https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](#tech-stack--architecture)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](#key-features)
 [![Ad-Blocker](https://img.shields.io/badge/Ad--Shield-3--Tier%20(Up%20to%20267%20Rules)-00C853?style=for-the-badge&logo=shield&logoColor=white)](#3-tier-cumulative-ad-blocker--tracker-shield)
-[![APK Size](https://img.shields.io/badge/APK%20Size-1017.3%20KB%20(%3C1%20MiB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v699)
+[![APK Size](https://img.shields.io/badge/APK%20Size-1066.9%20KB%20(~1.04%20MiB%20R8%20Optimized)-00B0FF?style=for-the-badge&logo=googleplay&logoColor=white)](#signed-release-apk-v700)
 [![License](https://img.shields.io/badge/License-GNU%20GPL%20v3.0-D50000?style=for-the-badge&logo=gnu&logoColor=white)](LICENSE)
 
 <br/>
 
-[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-Netra--v6.9.9--release.apk-FF6D00?style=for-the-badge)](releases/v6.9.9/Netra-v6.9.9-release.apk)
-[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v6.9.9-263238?style=for-the-badge)](releases/v6.9.9/RELEASE_NOTES.md)
+[![Download APK](https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20Signed%20Release%20APK-Netra--v7.0.0--release.apk-FF6D00?style=for-the-badge)](releases/v7.0.0/Netra-v7.0.0-release.apk)
+[![Release Notes](https://img.shields.io/badge/%F0%9F%93%9D%20Release%20Notes-v7.0.0-263238?style=for-the-badge)](releases/v7.0.0/RELEASE_NOTES.md)
 [![CI Workflow](https://img.shields.io/badge/GitHub%20Actions-Release%20Pipeline-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/release.yml)
 
 ---
 
-**Package ID:** `com.suryatech.browser.netra` &nbsp;•&nbsp; **Version:** `6.9.9` (`versionCode = 24`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
+**Package ID:** `com.suryatech.browser.netra` &nbsp;•&nbsp; **Version:** `7.0.0` (`versionCode = 25`) &nbsp;•&nbsp; **Min SDK:** `24` (Android 7.0+) &nbsp;•&nbsp; **Target SDK:** `36`
 
 </div>
 
@@ -47,18 +47,18 @@
 
 ---
 
-## 📦 Signed Release APK (`v6.9.9`)
+## 📦 Signed Release APK (`v7.0.0`)
 
-A production-ready, R8 full-mode minified, resource-shrunk, V1/V2/V3 signed release APK is included directly in the repository under [`releases/v6.9.9/`](releases/v6.9.9/):
+A production-ready, R8 full-mode minified, resource-shrunk, V2 signed release APK is included directly in the repository under [`releases/v7.0.0/`](releases/v7.0.0/):
 
 | Property | Details |
 | :--- | :--- |
-| **APK File** | [`releases/v6.9.9/Netra-v6.9.9-release.apk`](releases/v6.9.9/Netra-v6.9.9-release.apk) |
-| **Release Notes** | [`releases/v6.9.9/RELEASE_NOTES.md`](releases/v6.9.9/RELEASE_NOTES.md) |
+| **APK File** | [`releases/v7.0.0/Netra-v7.0.0-release.apk`](releases/v7.0.0/Netra-v7.0.0-release.apk) |
+| **Release Notes** | [`releases/v7.0.0/RELEASE_NOTES.md`](releases/v7.0.0/RELEASE_NOTES.md) |
 | **Application ID** | `com.suryatech.browser.netra` |
-| **Version** | `6.9.9` (`versionCode = 24`) |
-| **APK Size** | `1,041,743 bytes` (**1,017.3 KB** — `~0.99 MiB`) |
-| **SHA-256 Checksum** | `bf84cc41f643e1300c3bdfb08bca0726061a2ef4b25488cb232c1b8eee111cc8` |
+| **Version** | `7.0.0` (`versionCode = 25`) |
+| **APK Size** | `1,092,543 bytes` (**1,066.9 KB** — `~1.04 MiB`) |
+| **SHA-256 Checksum** | `62cb0e35b47dba4b5d9dda94a24ad7119b789a6ba067e2719808ab4f1e75c3cf` |
 | **Signing Cert SHA-256** | `c585099e00ff5e42e727ae4f0cd2921799950805233b2914f0c63e8bb9362203` |
 | **Optimization** | R8 Full Mode (`isMinifyEnabled = true`, `isShrinkResources = true`, `isCrunchPngs = true`, `localeFilters = [en, hi]`, lightweight vector icons & native system typography) |
 
@@ -229,9 +229,10 @@ ytd-rich-item-renderer:has(ytd-display-ad-renderer)
 - **Success**: Finished downloads (`COMPLETED`) automatically move into **Success** for 1-tap playback/opening.
 - **Failure**: Failed downloads (`FAILED`) automatically move into **Failure** with error details and 1-tap **Retry** (returning the item back into **Ongoing**).
 
-### 🌐 Android Inbuilt System Language & 3-Dot Language Selector
-- **Automatic Device Language**: Defaults to **System** (`AppLanguage.SYSTEM`), reading Android's inbuilt configuration locale (`Resources.getSystem().configuration` + `locales_config.xml`) so the app automatically matches the device language (`English` or `हिन्दी`).
-- **3-Dot Menu Language Section**: Switch anytime between **System**, **English**, and **हिन्दी (Hindi)** directly inside the 3-dot browser menu without reloading active `WebView` tabs.
+### ⚙️ Advanced Settings Pop-Out, Password Manager & App Language
+- **Pop-Out Overlay & Close Toggle**: Tapping the **Advanced** button in the top quick-action bar of Settings opens an overlapping Advanced Settings panel and switches the button into a **Close (`✕`)** toggle.
+- **Built-In Password Manager**: Toggle auto-save & autofill, search/add/edit/delete saved credentials, reveal masked passwords, generate strong passwords, copy credentials, and autofill directly into WebView login forms.
+- **App Language & Localized App Identity**: Switch between **System**, **English**, and **हिन्दी (Hindi)** inside Advanced Settings, paired with a localized **Netra / नेत्र** + **`Android • v7.0.0`** identity card.
 
 ### 🛠️ Desktop-Grade Split-Screen DevTools, Video Sniffer & Downloader
 - **DevTools Panel**: Live **Elements** DOM tree inspector & editor, **Sources** viewer, **Console** JS REPL, and **Network** request profiler.
@@ -268,6 +269,7 @@ app/src/main/java/com/example/
 ├── ui/
 │   ├── NetraBrowserApp.kt           # Root Scaffold, radial wave canvas & sheet orchestration
 │   ├── components/
+│   │   ├── AdvancedSettingsOverlay.kt # Advanced Settings pop-out, Password Manager & App Language
 │   │   ├── BottomBrowserBar.kt      # Top URL bar (Copy/Edit/Share) & Bottom navigation bar
 │   │   ├── BrowserSheets.kt         # Menu, Blocked Ads + Mode/Rule Inspector, Tabs, History, Downloads
 │   │   ├── DevToolsPanel.kt         # Split-screen Elements, Sources, Console & Network inspector
