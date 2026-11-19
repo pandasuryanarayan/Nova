@@ -13,7 +13,8 @@ data class BrowserPreferences(
     val adBlockMode: AdBlockMode = AdBlockMode.MINIMAL,
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val defaultTextZoom: Int = 100,
-    val totalAdsBlocked: Long = 0L
+    val totalAdsBlocked: Long = 0L,
+    val isPasswordManagerEnabled: Boolean = true
 )
 
 class BrowserRepository(
@@ -32,6 +33,7 @@ class BrowserRepository(
         const val TOTAL_ADS_BLOCKED = "total_ads_blocked"
         const val DEFAULT_SHORTCUTS_SEEDED = "default_shortcuts_seeded"
         const val SITE_CONFIGS_JSON = "site_configs_json"
+        const val PASSWORD_MANAGER_ENABLED = "password_manager_enabled"
     }
 
     private fun normalizeDomainKey(domain: String): String =
@@ -43,7 +45,8 @@ class BrowserRepository(
         adBlockMode = AdBlockMode.fromName(prefs.getString(PrefKeys.AD_BLOCK_MODE, null)),
         appLanguage = AppLanguage.fromCode(prefs.getString(PrefKeys.APP_LANGUAGE, null)),
         defaultTextZoom = prefs.getInt(PrefKeys.DEFAULT_TEXT_ZOOM, 100),
-        totalAdsBlocked = prefs.getLong(PrefKeys.TOTAL_ADS_BLOCKED, 0L)
+        totalAdsBlocked = prefs.getLong(PrefKeys.TOTAL_ADS_BLOCKED, 0L),
+        isPasswordManagerEnabled = prefs.getBoolean(PrefKeys.PASSWORD_MANAGER_ENABLED, true)
     )
 
     private fun readSiteConfigs(): Map<String, SiteConfigSettings> {
@@ -143,6 +146,7 @@ class BrowserRepository(
     val historyFlow: Flow<List<HistoryEntity>> = dao.getAllHistory()
     val shortcutsFlow: Flow<List<QuickShortcutEntity>> = dao.getAllShortcuts()
     val downloadsFlow: Flow<List<DownloadItemEntity>> = dao.getAllDownloads()
+    val passwordsFlow: Flow<List<SavedPasswordEntity>> = dao.getAllPasswords()
 
     suspend fun ensureDefaultShortcutsSeeded() {
         val alreadySeeded = prefs.getBoolean(PrefKeys.DEFAULT_SHORTCUTS_SEEDED, false)
@@ -243,4 +247,32 @@ class BrowserRepository(
     suspend fun getActiveDownloads(): List<DownloadItemEntity> = dao.getActiveDownloads()
 
     suspend fun deleteDownloadById(id: Long) = dao.deleteDownloadById(id)
+
+    suspend fun setPasswordManagerEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PrefKeys.PASSWORD_MANAGER_ENABLED, enabled).apply()
+        _preferencesFlow.value = readPreferences()
+    }
+
+    suspend fun savePassword(
+        id: Long = 0L,
+        siteName: String,
+        domain: String,
+        url: String,
+        username: String,
+        password: String
+    ): Long = dao.upsertPassword(
+        SavedPasswordEntity(
+            id = id,
+            siteName = siteName,
+            domain = domain,
+            url = url,
+            username = username,
+            password = password,
+            updatedAt = System.currentTimeMillis()
+        )
+    )
+
+    suspend fun deletePassword(id: Long) = dao.deletePasswordById(id)
+
+    suspend fun clearAllPasswords() = dao.clearAllPasswords()
 }

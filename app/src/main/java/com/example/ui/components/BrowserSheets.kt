@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -8,6 +11,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -42,6 +49,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +61,9 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
@@ -65,6 +75,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.example.R
 import com.example.browser.AdBlocker
 import com.example.browser.AdFilterRuleItem
 import com.example.browser.rememberShortcutIcon
@@ -84,6 +96,7 @@ import com.example.data.BrowserTab
 import com.example.data.DownloadItemEntity
 import com.example.data.DownloadStatus
 import com.example.data.HistoryEntity
+import com.example.data.SavedPasswordEntity
 import com.example.data.SiteConfigSettings
 import com.example.data.SiteCookieEntry
 import com.example.data.SiteCookiePolicy
@@ -200,7 +213,7 @@ internal fun rememberSheetPalette(
 }
 
 @Composable
-private fun SheetHeaderIconBadge(
+internal fun SheetHeaderIconBadge(
     icon: ImageVector,
     palette: SheetVisualPalette,
     modifier: Modifier = Modifier
@@ -218,7 +231,7 @@ private fun SheetHeaderIconBadge(
 }
 
 @Composable
-private fun MonogramSiteBadge(
+internal fun MonogramSiteBadge(
     label: String,
     url: String? = null,
     modifier: Modifier = Modifier
@@ -282,7 +295,7 @@ private fun FilterPill(
     }
 }
 
-private fun extractHostClean(url: String): String = try {
+internal fun extractHostClean(url: String): String = try {
     val host = URI(url).host?.removePrefix("www.")
     if (!host.isNullOrBlank()) host else url.removePrefix("https://").removePrefix("http://").substringBefore("/")
 } catch (_: Exception) {
@@ -2380,11 +2393,19 @@ fun BrowserMenuSheet(
     adBlockMode: AdBlockMode,
     appLanguage: AppLanguage,
     isDarkMode: Boolean,
+    isPasswordManagerEnabled: Boolean,
+    savedPasswords: List<SavedPasswordEntity>,
     totalAdsBlocked: Long,
     onToggleBookmark: () -> Unit,
     onToggleAdBlock: () -> Unit,
     onSelectAdBlockMode: (AdBlockMode) -> Unit,
     onSelectAppLanguage: (AppLanguage) -> Unit,
+    onTogglePasswordManager: () -> Unit,
+    onSavePassword: (id: Long, siteName: String, domainOrUrl: String, username: String, password: String) -> Unit,
+    onDeletePassword: (Long) -> Unit,
+    onAutofillPassword: (SavedPasswordEntity) -> Unit,
+    onCopyPasswordText: (label: String, value: String) -> Unit,
+    onGeneratePassword: () -> String,
     onOpenBlockedAdsList: () -> Unit,
     onToggleDesktopMode: () -> Unit,
     onToggleDarkMode: () -> Unit,
@@ -2397,7 +2418,6 @@ fun BrowserMenuSheet(
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
     onSharePage: () -> Unit,
-    onCopyPageLink: () -> Unit,
     onOpenClearData: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -2407,6 +2427,11 @@ fun BrowserMenuSheet(
     val proTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.PRO) }
     val maxTotal = remember { AdBlocker.getTotalRuleCount(AdBlockMode.MAX) }
     val activeModeLabel = strings.adBlockModeLabel(adBlockMode)
+    var isAdvancedSettingsOpen by rememberSaveable { mutableStateOf(false) }
+
+    BackHandler(enabled = isAdvancedSettingsOpen) {
+        isAdvancedSettingsOpen = false
+    }
 
     NetraBottomSheet(
         onDismissRequest = onDismiss,
@@ -2414,23 +2439,43 @@ fun BrowserMenuSheet(
         modifier = Modifier.testTag("browser_menu_sheet")
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 6.dp)
-                .padding(bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // 5 Quick Action Tiles
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            // Top 5 Quick Action Tiles (Fixed header so Advanced Settings <-> Close stays accessible at top)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 ControlCenterQuickTile(NetraIcons.Bookmarks, strings.quickActionBookmarks, palette, onOpenBookmarks, Modifier.testTag("menu_bookmarks_button"))
                 ControlCenterQuickTile(NetraIcons.Download, strings.quickActionDownloads, palette, onOpenDownloads, Modifier.testTag("menu_downloads_button"))
                 ControlCenterQuickTile(NetraIcons.History, strings.quickActionHistory, palette, onOpenHistory, Modifier.testTag("menu_history_button"))
                 ControlCenterQuickTile(NetraIcons.Share, strings.quickActionShare, palette, onSharePage, Modifier.testTag("menu_share_button"))
-                ControlCenterQuickTile(NetraIcons.ContentCopy, strings.quickActionCopyLink, palette, onCopyPageLink, Modifier.testTag("menu_copy_link_button"))
+                AdvancedSettingsToggleTile(
+                    isOpen = isAdvancedSettingsOpen,
+                    palette = palette,
+                    onClick = { isAdvancedSettingsOpen = !isAdvancedSettingsOpen },
+                    modifier = Modifier.testTag("menu_advanced_settings_button")
+                )
             }
 
-            HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.7f))
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(
+                color = palette.cardBorder.copy(alpha = 0.7f),
+                modifier = Modifier.padding(horizontal = 18.dp)
+            )
+
+            // Main Settings content with overlapping / popping Advanced Settings card above it
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 18.dp, vertical = 14.dp)
+                        .padding(bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
 
             // Ad-block shield header + switch
             Row(
@@ -2709,86 +2754,6 @@ fun BrowserMenuSheet(
                 }
             }
 
-            // Language selector card
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.cardBg,
-                border = BorderStroke(1.dp, palette.cardBorder),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(palette.cardElevatedBg)
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(NetraIcons.Translate, null, tint = palette.accentPrimary, modifier = Modifier.size(19.dp))
-                        }
-                        Text(
-                            text = strings.languageSectionTitle,
-                            style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                            color = palette.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf(
-                            Triple(AppLanguage.SYSTEM, strings.languageSystemOption, "menu_language_system"),
-                            Triple(AppLanguage.ENGLISH, strings.languageEnglishOption, "menu_language_en"),
-                            Triple(AppLanguage.HINDI, strings.languageHindiOption, "menu_language_hi")
-                        ).forEach { (lang, label, tag) ->
-                            val isSelected = appLanguage == lang
-                            Surface(
-                                onClick = { onSelectAppLanguage(lang) },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) palette.activePillBg else palette.cardElevatedBg,
-                                border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) palette.activePillBorder else palette.cardBorder),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(42.dp)
-                                    .testTag(tag)
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 8.dp)
-                                ) {
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.labelLarge.copy(
-                                            fontSize = 13.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
-                                        ),
-                                        color = if (isSelected) palette.accentPrimary else palette.textPrimary,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -2851,7 +2816,116 @@ fun BrowserMenuSheet(
                     }
                 }
             }
+                }
+
+                // Pop / Overlap Advanced Settings layer right above the existing settings content
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isAdvancedSettingsOpen,
+                    enter = fadeIn(tween(180)) + scaleIn(
+                        initialScale = 0.94f,
+                        transformOrigin = TransformOrigin(0.9f, 0f),
+                        animationSpec = tween(220, easing = FastOutSlowInEasing)
+                    ),
+                    exit = fadeOut(tween(150)) + scaleOut(
+                        targetScale = 0.94f,
+                        transformOrigin = TransformOrigin(0.9f, 0f),
+                        animationSpec = tween(160)
+                    ),
+                    modifier = Modifier
+                        .matchParentSize()
+                        .zIndex(5f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.42f))
+                            .clickable(onClick = { isAdvancedSettingsOpen = false })
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = false) {}
+                        ) {
+                            AdvancedSettingsOverlayContent(
+                                activeTab = activeTab,
+                                appLanguage = appLanguage,
+                                isPasswordManagerEnabled = isPasswordManagerEnabled,
+                                savedPasswords = savedPasswords,
+                                palette = palette,
+                                onSelectAppLanguage = onSelectAppLanguage,
+                                onTogglePasswordManager = onTogglePasswordManager,
+                                onSavePassword = onSavePassword,
+                                onDeletePassword = onDeletePassword,
+                                onAutofillPassword = onAutofillPassword,
+                                onCopyPasswordText = onCopyPasswordText,
+                                onGeneratePassword = onGeneratePassword
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun AdvancedSettingsToggleTile(
+    isOpen: Boolean,
+    palette: SheetVisualPalette,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val strings = LocalNetraStrings.current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.clickable(onClick = onClick)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(54.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (isOpen) palette.activePillBg else palette.cardElevatedBg)
+                .border(
+                    width = if (isOpen) 1.5.dp else 1.dp,
+                    color = if (isOpen) palette.activePillBorder else palette.cardBorder,
+                    shape = RoundedCornerShape(16.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Crossfade(targetState = isOpen, animationSpec = tween(180)) { open ->
+                if (open) {
+                    Icon(
+                        imageVector = NetraIcons.Close,
+                        contentDescription = strings.closeActionShort,
+                        tint = palette.accentPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_advanced_settings),
+                        contentDescription = strings.advancedSettingsTitle,
+                        colorFilter = ColorFilter.tint(palette.accentPrimary),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = if (isOpen) strings.closeActionShort else strings.quickActionAdvanced,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                letterSpacing = 0.4.sp,
+                fontWeight = if (isOpen) FontWeight.Bold else FontWeight.Normal
+            ),
+            color = if (isOpen) palette.accentPrimary else palette.textSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

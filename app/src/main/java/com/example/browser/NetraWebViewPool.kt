@@ -89,7 +89,8 @@ class NetraWebViewPool(
         req.deny()
     },
     private val onWebPermissionCanceled: (request: PermissionRequest) -> Unit = {},
-    private val onPopupBlocked: (domain: String) -> Unit = {}
+    private val onPopupBlocked: (domain: String) -> Unit = {},
+    private val onLoginFormSubmitted: (tabId: String, url: String, username: String, password: String) -> Unit = { _, _, _, _ -> }
 ) {
     private val webViews = mutableMapOf<String, WebView>()
     private val tabStates = ConcurrentHashMap<String, BrowserTab>()
@@ -139,6 +140,40 @@ class NetraWebViewPool(
             "Sec-CH-UA-Mobile" to "?1",
             "Sec-CH-UA-Platform" to "\"Android\""
         )
+
+        private val PASSWORD_MANAGER_HOOK_JS = """
+            (function() {
+              try {
+                if (window.__netraPwHookInstalled) return;
+                window.__netraPwHookInstalled = true;
+                var captureFromScope = function(scopeEl) {
+                  var root = scopeEl || document;
+                  var pwEl = root.querySelector('input[type="password"]');
+                  if (!pwEl || !pwEl.value) return;
+                  var userInputs = root.querySelectorAll('input[type="email"], input[type="text"], input[name*="user" i], input[name*="email" i], input[name*="login" i], input:not([type])');
+                  var userVal = '';
+                  for (var i = 0; i < userInputs.length; i++) {
+                    var el = userInputs[i];
+                    if (el !== pwEl && el.type !== 'hidden' && el.value && el.value.trim()) {
+                      userVal = el.value.trim();
+                    }
+                  }
+                  if (window.NetraVideoBridge && window.NetraVideoBridge.onLoginFormSubmitted) {
+                    window.NetraVideoBridge.onLoginFormSubmitted(location.href || '', userVal, pwEl.value);
+                  }
+                };
+                document.addEventListener('submit', function(e) {
+                  captureFromScope(e.target);
+                }, true);
+                document.addEventListener('click', function(e) {
+                  var btn = e.target && e.target.closest ? e.target.closest('button,input[type="submit"]') : null;
+                  if (btn) {
+                    captureFromScope(btn.form || document);
+                  }
+                }, true);
+              } catch (e) {}
+            })();
+        """.trimIndent()
 
         private const val DESKTOP_MODE_INJECTION_JS = """
             (function() {
@@ -941,6 +976,14 @@ class NetraWebViewPool(
                         } catch (_: Exception) {
                         }
                     }
+                },
+                onLoginSubmitted = { pageUrl, username, password ->
+                    val liveTab = tabStates[tabId]
+                    if (liveTab?.isIncognito != true && password.isNotBlank()) {
+                        mainHandler.post {
+                            onLoginFormSubmitted(tabId, pageUrl, username, password)
+                        }
+                    }
                 }
             ),
             "NetraVideoBridge"
@@ -1516,6 +1559,51 @@ class NetraWebViewPool(
                 webView.evaluateJavascript(darkHintJs, null)
             }
         }
+
+        // 6. Password Manager login-form capture hook (Standard tabs only)
+        if (liveTab?.isIncognito != true) {
+            val curUrl = webView.url ?: ""
+            if (curUrl.startsWith("http://") || curUrl.startsWith("https://")) {
+                webView.evaluateJavascript(PASSWORD_MANAGER_HOOK_JS, null)
+            }
+        }
+    }
+
+    fun autofillCredentials(tabId: String, username: String, password: String): Boolean {
+        val wv = webViews[tabId] ?: return false
+        val qUser = JSONObject.quote(username)
+        val qPass = JSONObject.quote(password)
+        val js = """
+            (function(u, p) {
+              try {
+                var setNativeValue = function(el, val) {
+                  if (!el) return;
+                  var proto = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+                  if (proto && proto.set) proto.set.call(el, val);
+                  else el.value = val;
+                  el.dispatchEvent(new Event('input', { bubbles: true }));
+                  el.dispatchEvent(new Event('change', { bubbles: true }));
+                };
+                var pwFields = Array.prototype.slice.call(document.querySelectorAll('input[type="password"]'));
+                if (!pwFields.length) return false;
+                var targetPw = pwFields.find(function(f) { return f.offsetParent !== null; }) || pwFields[0];
+                setNativeValue(targetPw, p);
+                if (u) {
+                  var scope = targetPw.form || document;
+                  var userCandidates = Array.prototype.slice.call(
+                    scope.querySelectorAll('input[type="email"], input[type="text"], input[name*="user" i], input[name*="email" i], input[name*="login" i], input:not([type])')
+                  ).filter(function(el) {
+                    return el !== targetPw && el.type !== 'hidden' && el.type !== 'submit' && el.type !== 'button' && el.offsetParent !== null;
+                  });
+                  var targetUser = userCandidates[userCandidates.length - 1] || userCandidates[0];
+                  if (targetUser) setNativeValue(targetUser, u);
+                }
+                return true;
+              } catch (e) { return false; }
+            })($qUser, $qPass);
+        """.trimIndent()
+        wv.post { wv.evaluateJavascript(js, null) }
+        return true
     }
 
     private fun parseVideoPayload(jsonStr: String): DetectedVideoInfo? {
@@ -1596,7 +1684,8 @@ class NetraWebViewPool(
         private val onChunk: (Long, String, Long, Long) -> Unit,
         private val onFinished: (Long, Long) -> Unit,
         private val onError: (Long, String) -> Unit,
-        private val onDomAdBlockedJson: (String) -> Unit
+        private val onDomAdBlockedJson: (String) -> Unit,
+        private val onLoginSubmitted: (String, String, String) -> Unit
     ) {
         @JavascriptInterface
         fun onVideoLongPressed(payloadJson: String) {
@@ -1626,6 +1715,11 @@ class NetraWebViewPool(
         @JavascriptInterface
         fun onDomAdBlocked(payloadJson: String) {
             onDomAdBlockedJson(payloadJson)
+        }
+
+        @JavascriptInterface
+        fun onLoginFormSubmitted(url: String, username: String, password: String) {
+            onLoginSubmitted(url, username, password)
         }
     }
 

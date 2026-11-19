@@ -330,6 +330,25 @@ data class BackgroundMediaState(
     val domain: String = ""
 )
 
+data class SavedPasswordEntity(
+    val id: Long = 0,
+    val siteName: String,
+    val domain: String,
+    val url: String,
+    val username: String,
+    val password: String,
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+data class PendingSavePasswordPrompt(
+    val id: String = UUID.randomUUID().toString(),
+    val siteName: String,
+    val domain: String,
+    val url: String,
+    val username: String,
+    val password: String
+)
+
 // --- Desktop-Style DevTools Inspector Models (Elements, Sources, Console, Network ONLY) ---
 
 enum class DevToolsTab(val title: String) {

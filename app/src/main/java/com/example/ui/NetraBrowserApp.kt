@@ -103,6 +103,7 @@ fun NetraBrowserApp(
     val history by viewModel.history.collectAsStateWithLifecycle()
     val shortcuts by viewModel.shortcuts.collectAsStateWithLifecycle()
     val downloads by viewModel.downloads.collectAsStateWithLifecycle()
+    val savedPasswords by viewModel.savedPasswords.collectAsStateWithLifecycle()
 
     val activeTab = uiState.activeTab
     val isBookmarked = remember(bookmarks, activeTab.url) {
@@ -591,11 +592,22 @@ fun NetraBrowserApp(
                                 adBlockMode = preferences.adBlockMode,
                                 appLanguage = preferences.appLanguage,
                                 isDarkMode = preferences.isDarkMode,
+                                isPasswordManagerEnabled = preferences.isPasswordManagerEnabled,
+                                savedPasswords = savedPasswords,
                                 totalAdsBlocked = preferences.totalAdsBlocked,
                                 onToggleBookmark = viewModel::toggleBookmarkForActiveTab,
                                 onToggleAdBlock = viewModel::toggleAdBlock,
                                 onSelectAdBlockMode = viewModel::selectAdBlockMode,
                                 onSelectAppLanguage = viewModel::selectAppLanguage,
+                                onTogglePasswordManager = viewModel::togglePasswordManager,
+                                onSavePassword = viewModel::saveOrUpdatePassword,
+                                onDeletePassword = viewModel::deleteSavedPassword,
+                                onAutofillPassword = viewModel::autofillSavedPassword,
+                                onCopyPasswordText = { label, text ->
+                                    copyTextToClipboard(context, label, text)
+                                    viewModel.emitToast("$label copied to clipboard")
+                                },
+                                onGeneratePassword = { viewModel.generateStrongPassword() },
                                 onOpenBlockedAdsList = { viewModel.setActiveSheet(ActiveSheet.BLOCKED_ADS) },
                                 onToggleDesktopMode = viewModel::toggleDesktopMode,
                                 onToggleDarkMode = viewModel::toggleDarkMode,
@@ -619,11 +631,6 @@ fun NetraBrowserApp(
                                 onSharePage = {
                                     viewModel.dismissSheet()
                                     shareUrl(context, activeTab.title, activeTab.url)
-                                },
-                                onCopyPageLink = {
-                                    copyTextToClipboard(context, "Page Link", activeTab.url)
-                                    viewModel.emitToast("Link copied to clipboard")
-                                    viewModel.dismissSheet()
                                 },
                                 onOpenClearData = { viewModel.setActiveSheet(ActiveSheet.CLEAR_DATA_DIALOG) },
                                 onDismiss = viewModel::dismissSheet
@@ -736,6 +743,42 @@ fun NetraBrowserApp(
                                     },
                                     modifier = Modifier.testTag("web_perm_block_button")
                                 ) { Text(netraStrings.sitePermBlock) }
+                            }
+                        )
+                    }
+
+                    val pendingSavePw = uiState.pendingSavePassword
+                    if (pendingSavePw != null) {
+                        val userLine = if (pendingSavePw.username.isNotBlank()) {
+                            "\n${netraStrings.usernameOrEmailLabel}: ${pendingSavePw.username}"
+                        } else {
+                            ""
+                        }
+                        AlertDialog(
+                            onDismissRequest = viewModel::dismissPendingSavePassword,
+                            title = {
+                                Text(
+                                    text = "${netraStrings.savePasswordPromptTitle} ${pendingSavePw.domain}",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            },
+                            text = {
+                                Text(
+                                    text = "${netraStrings.savePasswordPromptSubtitle}$userLine",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = viewModel::confirmSavePendingPassword,
+                                    modifier = Modifier.testTag("confirm_save_password_button")
+                                ) { Text(netraStrings.saveButton) }
+                            },
+                            dismissButton = {
+                                TextButton(
+                                    onClick = viewModel::dismissPendingSavePassword,
+                                    modifier = Modifier.testTag("dismiss_save_password_button")
+                                ) { Text(netraStrings.cancelButton) }
                             }
                         )
                     }

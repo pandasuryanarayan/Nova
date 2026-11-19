@@ -4,6 +4,7 @@ import android.graphics.Typeface
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
+import android.text.method.PasswordTransformationMethod
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
@@ -662,6 +663,7 @@ fun NetraEditText(
     onImeAction: (() -> Unit)? = null,
     requestFocusOnMount: Boolean = false,
     monospace: Boolean = false,
+    isPasswordMasked: Boolean = false,
     textSizeSp: Float = 14f,
     minHeight: Dp = 48.dp,
     borderWidth: Dp = 1.dp,
@@ -720,7 +722,12 @@ fun NetraEditText(
                         isSingleLine = true
                         maxLines = 1
                         gravity = Gravity.CENTER_VERTICAL
-                        inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                        inputType = if (isPasswordMasked) {
+                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                        } else {
+                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                        }
+                        transformationMethod = if (isPasswordMasked) PasswordTransformationMethod.getInstance() else null
                         this.imeOptions = imeAction
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp)
                         typeface = if (monospace) Typeface.MONOSPACE else Typeface.SANS_SERIF
@@ -795,6 +802,21 @@ fun NetraEditText(
                     et.setHintTextColor(hintColor.toArgb())
                     if (et.imeOptions != imeAction) et.imeOptions = imeAction
                     if (et.hint?.toString() != placeholder) et.hint = placeholder
+                    val wantMasked = isPasswordMasked
+                    val isCurrentlyMasked = et.transformationMethod is PasswordTransformationMethod
+                    if (wantMasked != isCurrentlyMasked) {
+                        val selStart = et.selectionStart.coerceAtLeast(0)
+                        val selEnd = et.selectionEnd.coerceAtLeast(0)
+                        et.inputType = if (wantMasked) {
+                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                        } else {
+                            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                        }
+                        et.transformationMethod = if (wantMasked) PasswordTransformationMethod.getInstance() else null
+                        et.typeface = if (monospace) Typeface.MONOSPACE else Typeface.SANS_SERIF
+                        val maxLen = et.text?.length ?: 0
+                        et.setSelection(selStart.coerceAtMost(maxLen), selEnd.coerceAtMost(maxLen))
+                    }
                     if (et.text?.toString() != value) {
                         lastText = value
                         et.setText(value)

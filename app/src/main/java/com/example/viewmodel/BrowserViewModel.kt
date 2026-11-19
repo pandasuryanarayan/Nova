@@ -35,12 +35,15 @@ import com.example.data.DownloadItemEntity
 import com.example.data.HistoryEntity
 import com.example.data.NETRA_HOME_URL
 import com.example.data.NetraDatabase
+import com.example.data.PendingSavePasswordPrompt
 import com.example.data.PendingWebPermissionRequest
 import com.example.data.QuickShortcutEntity
+import com.example.data.SavedPasswordEntity
 import com.example.data.SiteConfigSettings
 import com.example.data.SitePermissionMode
 import com.example.data.TabGroup
 import com.example.data.WebPermissionKind
+import java.security.SecureRandom
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +76,8 @@ data class BrowserUiState(
     val backgroundMedia: BackgroundMediaState = BackgroundMediaState(),
     val devToolsState: DevToolsState = DevToolsState(),
     val blockedAdsLog: List<BlockedAdEntry> = emptyList(),
-    val pendingWebPermission: PendingWebPermissionRequest? = null
+    val pendingWebPermission: PendingWebPermissionRequest? = null,
+    val pendingSavePassword: PendingSavePasswordPrompt? = null
 ) {
     val activeTab: BrowserTab
         get() = tabs.find { it.id == activeTabId } ?: tabs.first()
@@ -125,6 +129,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     )
 
     val downloads: StateFlow<List<DownloadItemEntity>> = repository.downloadsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    val savedPasswords: StateFlow<List<SavedPasswordEntity>> = repository.passwordsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -275,6 +285,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         },
         onPopupBlocked = { domain ->
             emitToast("Pop-up blocked on $domain")
+        },
+        onLoginFormSubmitted = { tabId, pageUrl, username, password ->
+            handleLoginFormSubmitted(tabId, pageUrl, username, password)
         }
     )
 
@@ -1527,6 +1540,133 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 AppLanguage.HINDI -> "भाषा हिन्दी में बदल दी गई है (Hindi)"
             }
             emitToast(msg)
+        }
+    }
+
+    // --- Password Manager Actions ---
+
+    fun togglePasswordManager() {
+        val next = !preferences.value.isPasswordManagerEnabled
+        viewModelScope.launch {
+            repository.setPasswordManagerEnabled(next)
+            emitToast(
+                if (next) {
+                    if (preferences.value.appLanguage == AppLanguage.HINDI) "पासवर्ड मैनेजर चालू किया गया" else "Password Manager enabled"
+                } else {
+                    if (preferences.value.appLanguage == AppLanguage.HINDI) "पासवर्ड मैनेजर बंद किया गया" else "Password Manager paused"
+                }
+            )
+        }
+    }
+
+    fun saveOrUpdatePassword(
+        id: Long = 0L,
+        siteName: String,
+        rawUrlOrDomain: String,
+        username: String,
+        password: String
+    ) {
+        if (password.isBlank()) return
+        val cleanInput = rawUrlOrDomain.trim()
+        val domain = BrowserUrlUtils.extractDomain(cleanInput).ifBlank {
+            cleanInput.removePrefix("https://").removePrefix("http://").removePrefix("www.").substringBefore("/").lowercase()
+        }
+        if (domain.isBlank()) return
+        val finalUrl = if (cleanInput.startsWith("http://") || cleanInput.startsWith("https://")) {
+            cleanInput
+        } else {
+            "https://$domain"
+        }
+        val finalSiteName = siteName.trim().ifBlank { domain }
+        viewModelScope.launch {
+            repository.savePassword(
+                id = id,
+                siteName = finalSiteName,
+                domain = domain,
+                url = finalUrl,
+                username = username.trim(),
+                password = password
+            )
+            emitToast(
+                if (preferences.value.appLanguage == AppLanguage.HINDI) "पासवर्ड सुरक्षित रूप से सहेजा गया" else "Password saved for $domain"
+            )
+        }
+    }
+
+    fun deleteSavedPassword(id: Long) {
+        viewModelScope.launch {
+            repository.deletePassword(id)
+            emitToast(
+                if (preferences.value.appLanguage == AppLanguage.HINDI) "पासवर्ड हटाया गया" else "Saved password deleted"
+            )
+        }
+    }
+
+    fun autofillSavedPassword(entry: SavedPasswordEntity) {
+        val active = _uiState.value.activeTab
+        if (active.isHomePage) {
+            loadUrlOrSearch(entry.url.ifBlank { "https://${entry.domain}" })
+            _uiState.update { it.copy(activeSheet = ActiveSheet.NONE) }
+            emitToast("Opening ${entry.domain}…")
+            return
+        }
+        val triggered = webViewPool.autofillCredentials(active.id, entry.username, entry.password)
+        if (triggered) {
+            _uiState.update { it.copy(activeSheet = ActiveSheet.NONE) }
+            emitToast(
+                if (preferences.value.appLanguage == AppLanguage.HINDI) "${entry.domain} के लिए ऑटोफ़िल किया गया" else "Autofilled login for ${entry.domain}"
+            )
+        }
+    }
+
+    private fun handleLoginFormSubmitted(tabId: String, pageUrl: String, username: String, password: String) {
+        if (!preferences.value.isPasswordManagerEnabled) return
+        val tab = _uiState.value.tabs.find { it.id == tabId } ?: return
+        if (tab.isIncognito) return
+        val domain = BrowserUrlUtils.extractDomain(pageUrl).lowercase().removePrefix("www.")
+        if (domain.isBlank()) return
+        val cleanUser = username.trim()
+        val alreadyMatches = savedPasswords.value.any {
+            it.domain.equals(domain, ignoreCase = true) &&
+                it.username.equals(cleanUser, ignoreCase = true) &&
+                it.password == password
+        }
+        if (alreadyMatches) return
+        _uiState.update {
+            it.copy(
+                pendingSavePassword = PendingSavePasswordPrompt(
+                    siteName = tab.title.takeIf { t -> t.isNotBlank() && !t.startsWith("http") } ?: domain,
+                    domain = domain,
+                    url = pageUrl,
+                    username = cleanUser,
+                    password = password
+                )
+            )
+        }
+    }
+
+    fun confirmSavePendingPassword() {
+        val pending = _uiState.value.pendingSavePassword ?: return
+        _uiState.update { it.copy(pendingSavePassword = null) }
+        saveOrUpdatePassword(
+            siteName = pending.siteName,
+            rawUrlOrDomain = pending.url,
+            username = pending.username,
+            password = pending.password
+        )
+    }
+
+    fun dismissPendingSavePassword() {
+        _uiState.update { it.copy(pendingSavePassword = null) }
+    }
+
+    fun generateStrongPassword(length: Int = 16): String {
+        val chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*"
+        val rng = SecureRandom()
+        return buildString(length) {
+            repeat(length) {
+                append(chars[rng.nextInt(chars.length)])
+            }
         }
     }
 

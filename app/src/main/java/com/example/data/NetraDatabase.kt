@@ -15,12 +15,14 @@ class BrowserDao(private val dbHelper: NetraSqliteHelper) {
     private val _history = MutableStateFlow<List<HistoryEntity>>(emptyList())
     private val _shortcuts = MutableStateFlow<List<QuickShortcutEntity>>(emptyList())
     private val _downloads = MutableStateFlow<List<DownloadItemEntity>>(emptyList())
+    private val _passwords = MutableStateFlow<List<SavedPasswordEntity>>(emptyList())
 
     init {
         refreshBookmarks()
         refreshHistory()
         refreshShortcuts()
         refreshDownloads()
+        refreshPasswords()
     }
 
     private fun refreshBookmarks() {
@@ -118,6 +120,29 @@ class BrowserDao(private val dbHelper: NetraSqliteHelper) {
             }
         }
         _downloads.value = list
+    }
+
+    private fun refreshPasswords() {
+        val list = mutableListOf<SavedPasswordEntity>()
+        dbHelper.readableDatabase.rawQuery(
+            "SELECT id, siteName, domain, url, username, password, updatedAt FROM passwords ORDER BY updatedAt DESC",
+            null
+        ).use { c ->
+            while (c.moveToNext()) {
+                list.add(
+                    SavedPasswordEntity(
+                        id = c.getLong(0),
+                        siteName = c.getString(1) ?: "",
+                        domain = c.getString(2) ?: "",
+                        url = c.getString(3) ?: "",
+                        username = c.getString(4) ?: "",
+                        password = c.getString(5) ?: "",
+                        updatedAt = c.getLong(6)
+                    )
+                )
+            }
+        }
+        _passwords.value = list
     }
 
     // Bookmarks
@@ -281,14 +306,58 @@ class BrowserDao(private val dbHelper: NetraSqliteHelper) {
             if (d.referer != null) put("referer", d.referer) else putNull("referer")
             put("createdAt", d.createdAt)
         }
+
+    // Passwords
+    fun getAllPasswords(): Flow<List<SavedPasswordEntity>> = _passwords.asStateFlow()
+
+    suspend fun upsertPassword(entry: SavedPasswordEntity): Long = withContext(Dispatchers.IO) {
+        val normalizedDomain = entry.domain.trim().lowercase().removePrefix("www.")
+        val existingId: Long = if (entry.id > 0L) {
+            entry.id
+        } else {
+            dbHelper.readableDatabase.rawQuery(
+                "SELECT id FROM passwords WHERE LOWER(domain) = ? AND LOWER(username) = ? LIMIT 1",
+                arrayOf(normalizedDomain, entry.username.trim().lowercase())
+            ).use { c ->
+                if (c.moveToFirst()) c.getLong(0) else 0L
+            }
+        }
+        val cv = ContentValues().apply {
+            put("siteName", entry.siteName.ifBlank { normalizedDomain })
+            put("domain", normalizedDomain)
+            put("url", entry.url)
+            put("username", entry.username.trim())
+            put("password", entry.password)
+            put("updatedAt", entry.updatedAt)
+        }
+        val resultId = if (existingId > 0L) {
+            dbHelper.writableDatabase.update("passwords", cv, "id = ?", arrayOf(existingId.toString()))
+            existingId
+        } else {
+            dbHelper.writableDatabase.insertWithOnConflict("passwords", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+        }
+        refreshPasswords()
+        resultId
+    }
+
+    suspend fun deletePasswordById(id: Long) = withContext(Dispatchers.IO) {
+        dbHelper.writableDatabase.delete("passwords", "id = ?", arrayOf(id.toString()))
+        refreshPasswords()
+    }
+
+    suspend fun clearAllPasswords() = withContext(Dispatchers.IO) {
+        dbHelper.writableDatabase.delete("passwords", null, null)
+        refreshPasswords()
+    }
 }
 
-class NetraSqliteHelper(context: Context) : SQLiteOpenHelper(context, "netra_browser.db", null, 2) {
+class NetraSqliteHelper(context: Context) : SQLiteOpenHelper(context, "netra_browser.db", null, 3) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE IF NOT EXISTS bookmarks (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, domain TEXT NOT NULL, createdAt INTEGER NOT NULL)")
         db.execSQL("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, domain TEXT NOT NULL, visitedAt INTEGER NOT NULL)")
         db.execSQL("CREATE TABLE IF NOT EXISTS shortcuts (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, subtitle TEXT NOT NULL, badgeText TEXT NOT NULL, accentColorHex INTEGER NOT NULL, sortOrder INTEGER NOT NULL)")
         db.execSQL("CREATE TABLE IF NOT EXISTS downloads (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, systemDownloadId INTEGER NOT NULL, fileName TEXT NOT NULL, url TEXT NOT NULL, pageTitle TEXT NOT NULL, domain TEXT NOT NULL, mimeType TEXT NOT NULL, filePath TEXT NOT NULL, totalBytes INTEGER NOT NULL, downloadedBytes INTEGER NOT NULL, status TEXT NOT NULL, errorReason TEXT, userAgent TEXT NOT NULL, cookies TEXT, referer TEXT, createdAt INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS passwords (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, siteName TEXT NOT NULL, domain TEXT NOT NULL, url TEXT NOT NULL, username TEXT NOT NULL, password TEXT NOT NULL, updatedAt INTEGER NOT NULL)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
